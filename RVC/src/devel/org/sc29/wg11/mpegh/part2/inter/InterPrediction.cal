@@ -65,7 +65,7 @@ import std.util.Math.*;
 import devel.org.sc29.wg11.mpegh.part2.common.CommonConstantHEVC.*;
 import devel.org.sc29.wg11.mpegh.part2.inter.NaluType.*;
 
-actor InterPrediction()
+actor InterPrediction(bool DECODE_LUMA, bool DECODE_CHROMA)
 	uint(size=16) CUInfo,
 	uint(size=2)  IsBiPredOrLx,
 	int (size=16) Mv,
@@ -165,7 +165,9 @@ int(size=8) interPredCoeff[3][8][8] =
 		int          w0,
 		int          w1,
 		uint(size=3) idxL0 = (refIdxL0+1)&7,
-		uint(size=3) idxL1 = (refIdxL1+1)&7
+		uint(size=3) idxL1 = (refIdxL1+1)&7,
+		uint(size=2) COMP_MIN = if(not DECODE_LUMA) then 1 else 0 end,
+		uint(size=2) COMP_MAX = if(DECODE_CHROMA) then 2 else 1 end
 	begin
 		/*Implicit weighted prediction : we compute the weights thanks the the
 		 * poc value of the reference pictures
@@ -192,7 +194,7 @@ int(size=8) interPredCoeff[3][8][8] =
 					w0 := 64 - (weightScalFact>>2);
 					w1 := weightScalFact>>2;
 				end
-				foreach int component in 0 .. 2
+				foreach int component in COMP_MIN .. COMP_MAX
 				do
 					logWDTab[idxL0][idxL1][component] := 5+shift1;
 					offsetCuTab[idxL0][idxL1][component][0] := 0;
@@ -201,7 +203,7 @@ int(size=8) interPredCoeff[3][8][8] =
 					weightCuTab[idxL0][idxL1][component][1] := w1;
 				end
 			else
-				foreach int component in 0 .. 2
+				foreach int component in COMP_MIN .. COMP_MAX
 				do
 					logWDTab[idxL0][idxL1][component] := shift1;
 					offsetCuTab[idxL0][idxL1][component][0] := 0;
@@ -214,7 +216,7 @@ int(size=8) interPredCoeff[3][8][8] =
 		 * predWeight table (decoded at the beginning of each slice).
 		 */
 		else if (wpIdc = 1) then
-			foreach int component in 0 .. 2
+			foreach int component in COMP_MIN .. COMP_MAX
 			do
 				logWDTab[idxL0][idxL1][component] := log2WeightDenom[component] + shift1;
 				if(refIdxL0 >=0) then
@@ -243,7 +245,7 @@ int(size=8) interPredCoeff[3][8][8] =
 		 * depend on the movement vector (if it's equal to a 8th, 4th or half
 		 * of pixel).
 		 */
-		if(component = 0) then
+		if((DECODE_LUMA && not DECODE_CHROMA) || (DECODE_LUMA && component = 0)) then
 			if(isHoriz) then
 				foreach int idx in 0 .. 7
 				do
@@ -609,7 +611,9 @@ int(size=8) interPredCoeff[3][8][8] =
 		isBiPredOrLx != BI_PRED
 	var
 		uint idxL0,
-		uint idxL1
+		uint idxL1,
+		uint(size=2) COMP_MIN = if(not DECODE_LUMA) then 1 else 0 end,
+		uint(size=2) COMP_MAX = if(DECODE_CHROMA) then 2 else 1 end
 	do
 		if(isBiPredOrLx = PRED_L0) then
 			mvLx[0] := [mv[i]:for int i in 0 .. 1];
@@ -624,7 +628,7 @@ int(size=8) interPredCoeff[3][8][8] =
 		end
 		idxL0 := (refIdxLx[0]+1)&7;
 		idxL1 := (refIdxLx[1]+1)&7;
-		foreach int component in 0 .. 2
+		foreach int component in COMP_MIN .. COMP_MAX
 		do
 			logWD[component] := logWDTab[idxL0][idxL1][component];
 			foreach int list in 0 .. 1
@@ -641,13 +645,15 @@ int(size=8) interPredCoeff[3][8][8] =
 		isBiPredOrLx = BI_PRED
 	var
 		uint idxL0,
-		uint idxL1
+		uint idxL1,
+		uint(size=2) COMP_MIN = if(not DECODE_LUMA) then 1 else 0 end,
+		uint(size=2) COMP_MAX = if(DECODE_CHROMA) then 2 else 1 end
 	do
 		mvLx := [[mv[2*i+j]:for uint j in 0 ..1]: for int i in 0 .. 1];
 		refIdxLx := [refIndexLx[i]: for uint i in 0 .. 1];
 		idxL0 := (refIdxLx[0]+1)&7;
 		idxL1 := (refIdxLx[1]+1)&7;
-		foreach int component in 0 .. 2
+		foreach int component in COMP_MIN .. COMP_MAX
 		do
 			logWD[component] := logWDTab[idxL0][idxL1][component];
 			foreach int list in 0 .. 1
@@ -752,13 +758,15 @@ int(size=8) interPredCoeff[3][8][8] =
 		uint maskMv[3] = [3, 7, 7],
 		uint(size=4) numCoeff[3] = [8, 4, 4],
 		int mvQuartPix[2],
-		uint(size=7) compPuIdxMax[2]
+		uint(size=7) compPuIdxMax[2],
+		uint(size=2) COMP_MIN = if(not DECODE_LUMA) then 1 else 0 end,
+		uint(size=2) COMP_MAX = if(DECODE_CHROMA) then 2 else 1 end
 	do
 		if( not (refIdxLx[listIdx] = -1 || listIdx = 1 && numList = 1 &&
 			refIdxLx[0]!=-1)) then
 
 			compPuIdxMax := [cuSize[i]-1:for int i in 0 .. 1];
-			foreach int component in 0 .. 2 /* Y, Cb, Cr */
+			foreach int component in COMP_MIN .. COMP_MAX /* Y, Cb, Cr */
 			do
 				/* We just need to do the fractionnal part of the movement
 				 * interpolation.
@@ -812,10 +820,12 @@ int(size=8) interPredCoeff[3][8][8] =
 	guard
 		listIdx=2 || listIdx=1 && isBiPredOrLx = PRED_L0
 	var
-		uint(size=7) compPuIdxMax[2]
+		uint(size=7) compPuIdxMax[2],
+		uint(size=2) COMP_MIN = if(not DECODE_LUMA) then 1 else 0 end,
+		uint(size=2) COMP_MAX = if(DECODE_CHROMA) then 2 else 1 end
 	do
 		compPuIdxMax := [cuSize[i]-1:for int i in 0 .. 1];
-		foreach int component in 0 .. 2 /* Y, Cb, Cr */
+		foreach int component in COMP_MIN .. COMP_MAX /* Y, Cb, Cr */
 		do
 			foreach int y in 0 .. compPuIdxMax[1]
 			do
@@ -830,9 +840,9 @@ int(size=8) interPredCoeff[3][8][8] =
 		jLoop := 0;
 	end
 
-	sendCu.launch: action ==> PredSample:[pix] repeat 16+2*4
+	sendCu.launch.allComp: action ==> PredSample:[pix] repeat 16+2*4
 	guard
-		jLoop < cuSize[1]
+		DECODE_LUMA && DECODE_CHROMA && jLoop < cuSize[1]
 	var
 		uint(size=8) pix[16+2*4],
 		uint(size=5) off
@@ -845,6 +855,51 @@ int(size=8) interPredCoeff[3][8][8] =
 			end
 		end
 		off := 16;
+		foreach uint component in 1 .. 2
+		do
+			foreach uint y in 0 .. 1
+			do
+				foreach uint x in 0 .. 1
+				do
+					pix[y*2+x+off] := predSamples[component][iLoop/2+x][jLoop/2+y][0];
+				end
+			end
+			off := off + 4;
+		end
+		iLoop := iLoop + 4;
+		if(iLoop = cuSize[0]) then
+			iLoop := 0;
+			jLoop := jLoop + 4;
+		end
+	end
+
+	sendCu.launch.lumaComp: action ==> PredSample:[pix] repeat 16
+	guard
+		DECODE_LUMA && not DECODE_CHROMA && jLoop < cuSize[1]
+	var
+		uint(size=8) pix[16]
+	do
+		foreach uint y in 0 .. 3
+		do
+			foreach uint x in 0 .. 3
+			do
+				pix[y*4+x] := predSamples[0][iLoop+x][jLoop+y][0];
+			end
+		end
+		iLoop := iLoop + 4;
+		if(iLoop = cuSize[0]) then
+			iLoop := 0;
+			jLoop := jLoop + 4;
+		end
+	end
+
+	sendCu.launch.chromaComp: action ==> PredSample:[pix] repeat 2*4
+	guard
+		not DECODE_LUMA && DECODE_CHROMA && jLoop < cuSize[1]
+	var
+		uint(size=8) pix[2*4],
+		uint(size=5) off := 0
+	do
 		foreach uint component in 1 .. 2
 		do
 			foreach uint y in 0 .. 1
