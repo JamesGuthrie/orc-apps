@@ -117,8 +117,7 @@ actor InterPrediction(bool DECODE_LUMA, bool DECODE_CHROMA)
 	int weightCuTab[8][8][3][2];
 	int offsetCuTab[8][8][3][2];
 
-	int (size=16) refSamples[3][64+7][64+7];
-	int (size=16) predSamples[2][3][64][64];
+	int (size=16) predSamples[2][3][64+7][64+7];
 
 /* Coefficients used for the 8-tap filter (luma component) and 4-tap filter
  * (chroma component).
@@ -249,13 +248,13 @@ int(size=8) interPredCoeff[3][8][8] =
 				foreach int idx in 0 .. 7
 				do
 					pixVal := pixVal +  interPredCoeff[0][coeffIdx][idx] *
-						refSamples[0][xRd+idx][yRd];
+						predSamples[listIdx][0][xRd+idx][yRd];
 				end
 			else
 				foreach int idx in 0 .. 7
 				do
 					pixVal := pixVal +  interPredCoeff[0][coeffIdx][idx] *
-						refSamples[0][xRd][yRd+idx];
+						predSamples[listIdx][0][xRd][yRd+idx];
 				end
 			end
 		else
@@ -263,13 +262,13 @@ int(size=8) interPredCoeff[3][8][8] =
 				foreach int idx in 0 .. 3
 				do
 					pixVal := pixVal +  interPredCoeff[1][coeffIdx][idx] *
-						refSamples[component][xRd+idx][yRd];
+						predSamples[listIdx][component][xRd+idx][yRd];
 				end
 			else
 				foreach int idx in 0 .. 3
 				do
 					pixVal := pixVal +  interPredCoeff[1][coeffIdx][idx] *
-						refSamples[component][xRd][yRd+idx];
+						predSamples[listIdx][component][xRd][yRd+idx];
 				end
 			end
 		end
@@ -289,7 +288,7 @@ int(size=8) interPredCoeff[3][8][8] =
 			/* When we mvQuartPix is equal to [0,0], we multiply by 1^shift1,
 			 * because after this procedure we will have the weighted prediction.
 			 */
-			predSamples[listIdx][component][x][y] :=refSamples[component][x+idxOff[component]]
+			predSamples[listIdx][component][x][y] := predSamples[listIdx][component][x+idxOff[component]]
 				[y+idxOff[component]]<<shift1;
 		else if(mvQuartPix[1]=0) then /* Horizontal interpolation */
 			coord := [x, y+idxOff[component]];
@@ -307,7 +306,7 @@ int(size=8) interPredCoeff[3][8][8] =
 			foreach int idx in 0 .. numCoeff-1
 			do
 				pixValue := pixValue +  interPredCoeff[component][mvQuartPix[1]]
-					[idx] * refSamples[component][x][y+idx];
+					[idx] * predSamples[listIdx][component][x][y+idx];
 			end
 			predSamples[listIdx][component][x][y] := pixValue >> 6;
 		end end end
@@ -683,11 +682,11 @@ int(size=8) interPredCoeff[3][8][8] =
 			isBiPredOrLx = PRED_L1),
 		predCuSize = 64
 	do
-		refSamples[0] := [[sample[x+y*(64+7)]:for uint y in 0 .. 64+7-1]:
+		predSamples[listIdx][0] := [[sample[x+y*(64+7)]:for uint y in 0 .. 64+7-1]:
 			for uint x in 0 .. 64+7-1];
-		refSamples[1] := [[sample[x+y*(32+3)+5041]:for uint y in 0 .. 32+3-1]:
+		predSamples[listIdx][1] := [[sample[x+y*(32+3)+5041]:for uint y in 0 .. 32+3-1]:
 			for uint x in 0 .. 32+3-1];
-		refSamples[2] := [[sample[x+y*(32+3)+6266]:for uint y in 0 .. 32+3-1]:
+		predSamples[listIdx][2] := [[sample[x+y*(32+3)+6266]:for uint y in 0 .. 32+3-1]:
 			for uint x in 0 .. 32+3-1];
 	end
 
@@ -698,11 +697,11 @@ int(size=8) interPredCoeff[3][8][8] =
 			isBiPredOrLx = PRED_L1),
 		predCuSize = 32
 	do
-		refSamples[0] := [[sample[x+y*(32+7)]:for uint y in 0 .. 32+7-1]:
+		predSamples[listIdx][0] := [[sample[x+y*(32+7)]:for uint y in 0 .. 32+7-1]:
 			for uint x in 0 .. 32+7-1];
-		refSamples[1] := [[sample[x+y*(16+3)+1521]:for uint y in 0 .. 16+3-1]:
+		predSamples[listIdx][1] := [[sample[x+y*(16+3)+1521]:for uint y in 0 .. 16+3-1]:
 			for uint x in 0 .. 16+3-1];
-		refSamples[2] := [[sample[x+y*(16+3)+1882]:for uint y in 0 .. 16+3-1]:
+		predSamples[listIdx][2] := [[sample[x+y*(16+3)+1882]:for uint y in 0 .. 16+3-1]:
 			for uint x in 0 .. 16+3-1];
 	end
 
@@ -713,11 +712,11 @@ int(size=8) interPredCoeff[3][8][8] =
 			isBiPredOrLx = PRED_L1),
 		predCuSize = 16
 	do
-		refSamples[0] := [[sample[x+y*(16+7)]:for uint y in 0 .. 16+7-1]:
+		predSamples[listIdx][0] := [[sample[x+y*(16+7)]:for uint y in 0 .. 16+7-1]:
 			for uint x in 0 .. 16+7-1];
-		refSamples[1] := [[sample[x+y*(8+3)+529]:for uint y in 0 .. 8+3-1]:
+		predSamples[listIdx][1] := [[sample[x+y*(8+3)+529]:for uint y in 0 .. 8+3-1]:
 			for uint x in 0 .. 8+3-1];
-		refSamples[2] := [[sample[x+y*(8+3)+650]:for uint y in 0 .. 8+3-1]:
+		predSamples[listIdx][2] := [[sample[x+y*(8+3)+650]:for uint y in 0 .. 8+3-1]:
 			for uint x in 0 .. 8+3-1];
 	end
 
@@ -728,11 +727,11 @@ int(size=8) interPredCoeff[3][8][8] =
 			isBiPredOrLx = PRED_L1),
 		predCuSize = 8
 	do
-		refSamples[0] := [[sample[x+y*(8+7)]:for uint y in 0 .. 8+7-1]:
+		predSamples[listIdx][0] := [[sample[x+y*(8+7)]:for uint y in 0 .. 8+7-1]:
 			for uint x in 0 .. 8+7-1];
-		refSamples[1] := [[sample[x+y*(4+3)+225]:for uint y in 0 .. 4+3-1]:
+		predSamples[listIdx][1] := [[sample[x+y*(4+3)+225]:for uint y in 0 .. 4+3-1]:
 			for uint x in 0 .. 4+3-1];
-		refSamples[2] := [[sample[x+y*(4+3)+274]:for uint y in 0 .. 4+3-1]:
+		predSamples[listIdx][2] := [[sample[x+y*(4+3)+274]:for uint y in 0 .. 4+3-1]:
 			for uint x in 0 .. 4+3-1];
 	end
 
@@ -743,11 +742,11 @@ int(size=8) interPredCoeff[3][8][8] =
 			isBiPredOrLx = PRED_L1),
 		predCuSize = 4
 	do
-		refSamples[0] := [[sample[x+y*(4+7)]:for uint y in 0 .. 4+7-1]:
+		predSamples[listIdx][0] := [[sample[x+y*(4+7)]:for uint y in 0 .. 4+7-1]:
 			for uint x in 0 .. 4+7-1];
-		refSamples[1] := [[sample[x+y*(2+3)+225]:for uint y in 0 .. 2+3-1]:
+		predSamples[listIdx][1] := [[sample[x+y*(2+3)+225]:for uint y in 0 .. 2+3-1]:
 			for uint x in 0 .. 2+3-1];
-		refSamples[2] := [[sample[x+y*(2+3)+274]:for uint y in 0 .. 2+3-1]:
+		predSamples[listIdx][2] := [[sample[x+y*(2+3)+274]:for uint y in 0 .. 2+3-1]:
 			for uint x in 0 .. 2+3-1];
 	end
 
@@ -788,7 +787,6 @@ int(size=8) interPredCoeff[3][8][8] =
 							coord := [x, y];
 							predictionFiltering(true, coord, [x, y],  mvQuartPix[0],
 								-8192, 0, component);
-							refSamples[component][x][y] := predSamples[listIdx][component][x][y];
 						end
 					end
 				end
@@ -796,9 +794,9 @@ int(size=8) interPredCoeff[3][8][8] =
 				/* We realize the interpolation then the weighted prediction
 				 * for all pixel of the Cu.
 				 */
-				foreach int y in 0 .. compPuIdxMax[1]
+				foreach int x in 0 .. compPuIdxMax[0]
 				do
-					foreach int x in 0 .. compPuIdxMax[0]
+					foreach int y in 0 .. compPuIdxMax[1]
 					do
 						if(component=0) then
 							interpolOneSample(x, y, mvQuartPix, 8,
