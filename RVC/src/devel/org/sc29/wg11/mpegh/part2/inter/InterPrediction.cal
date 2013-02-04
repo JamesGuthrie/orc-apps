@@ -118,6 +118,7 @@ actor InterPrediction(bool DECODE_LUMA, bool DECODE_CHROMA, uint(size=2) PROCESS
 	int (size=16) mvLx[2][2];
 	uint(size=2)  numList;
 	uint(size=7)  predCuSize;
+	uint(size=7)  predPuSizeChr;
 	int           logWDTab[8][8][3];
 	int           weightCuTab[8][8][3][2];
 	int           offsetCuTab[8][8][3][2];
@@ -586,6 +587,7 @@ int(size=8) interPredCoeff[3][8][8] =
 		cuSize    := [cuInfo[i] : for int i in 3 .. 4];
 		puSizeChr := [cuInfo[i]>>1 : for int i in 3 .. 4];
 		predCuSize := max(cuInfo[3], cuInfo[4]);
+		predPuSizeChr := predCuSize >> 1;
 		numPartDecoded := numPartDecoded + 1;
 	end
 
@@ -642,6 +644,8 @@ int(size=8) interPredCoeff[3][8][8] =
 			end
 		end
 		numList := 1;
+		iLoop   := 0;
+		jLoop   := 0;
 	end
 
 	getRefIdx.biPred: action RefIdx:[refIndexLx] repeat 2, Mv:[mv] repeat 4 ==>
@@ -667,9 +671,11 @@ int(size=8) interPredCoeff[3][8][8] =
 			end
 		end
 		listIdx := 0;
+		iLoop   := 0;
+		jLoop   := 0;
 		numList :=
 			/* If we have the same picture with the same movement vectors we 
-			 * can don't need to do the same interpolation twice :)
+			 * don't need to do the same interpolation twice :)
 			 */
 			if(refListX[0][refIdxLx[0]] = refListX[1][refIdxLx[1]] &&
 				mvLx[0][0] = mvLx[1][0] && mvLx[0][1] = mvLx[1][1] &&
@@ -681,79 +687,54 @@ int(size=8) interPredCoeff[3][8][8] =
 	end
 
 	/* Getting the samples from the DPB and realizing the interpolation. */
-	getSamples.launch.is64x64: action Sample:[sample] repeat (64+7)*(64+7)+
-		(32+3)*(32+3)*2 ==>
+
+	getSamples.luma.launch: action Sample:[sample] ==>
 	guard
-		listIdx=0 || listIdx=1 && (isBiPredOrLx = BI_PRED ||
-			isBiPredOrLx = PRED_L1),
-		predCuSize = 64
+		listIdx=0 || listIdx=1 && isBiPredOrLx !=  PRED_L0,
+		jLoop < predCuSize+7
 	do
-		predSamples[listIdx][0] := [[sample[x+y*(64+7)]:for uint y in 0 .. 64+7-1]:
-			for uint x in 0 .. 64+7-1];
-		predSamples[listIdx][1] := [[sample[x+y*(32+3)+5041]:for uint y in 0 .. 32+3-1]:
-			for uint x in 0 .. 32+3-1];
-		predSamples[listIdx][2] := [[sample[x+y*(32+3)+6266]:for uint y in 0 .. 32+3-1]:
-			for uint x in 0 .. 32+3-1];
+		predSamples[listIdx][0][iLoop][jLoop] := sample;
+
+		iLoop := iLoop + 1;
+		if(iLoop = predCuSize+7) then
+			iLoop := 0;
+			jLoop := jLoop + 1;
+		end
 	end
 
-	getSamples.launch.is32x32: action Sample:[sample] repeat (32+7)*(32+7)+
-		(16+3)*(16+3)*2 ==>
+	getSamples.luma.done: action ==>
 	guard
-		listIdx=0 || listIdx=1 && (isBiPredOrLx = BI_PRED ||
-			isBiPredOrLx = PRED_L1),
-		predCuSize = 32
+		listIdx=0 || listIdx=1 && isBiPredOrLx !=  PRED_L0,
+		jLoop = predCuSize+7
 	do
-		predSamples[listIdx][0] := [[sample[x+y*(32+7)]:for uint y in 0 .. 32+7-1]:
-			for uint x in 0 .. 32+7-1];
-		predSamples[listIdx][1] := [[sample[x+y*(16+3)+1521]:for uint y in 0 .. 16+3-1]:
-			for uint x in 0 .. 16+3-1];
-		predSamples[listIdx][2] := [[sample[x+y*(16+3)+1882]:for uint y in 0 .. 16+3-1]:
-			for uint x in 0 .. 16+3-1];
+		compIdx := 1;
+		iLoop   := 0;
+		jLoop   := 0;
 	end
 
-	getSamples.launch.is16x16: action Sample:[sample] repeat (16+7)*(16+7)+
-		(8+3)*(8+3)*2 ==>
+	getSamples.chroma.launch: action Sample:[sample] ==>
 	guard
-		listIdx=0 || listIdx=1 && (isBiPredOrLx = BI_PRED ||
-			isBiPredOrLx = PRED_L1),
-		predCuSize = 16
+		listIdx=0 || listIdx=1 && isBiPredOrLx !=  PRED_L0,
+		compIdx < 3
 	do
-		predSamples[listIdx][0] := [[sample[x+y*(16+7)]:for uint y in 0 .. 16+7-1]:
-			for uint x in 0 .. 16+7-1];
-		predSamples[listIdx][1] := [[sample[x+y*(8+3)+529]:for uint y in 0 .. 8+3-1]:
-			for uint x in 0 .. 8+3-1];
-		predSamples[listIdx][2] := [[sample[x+y*(8+3)+650]:for uint y in 0 .. 8+3-1]:
-			for uint x in 0 .. 8+3-1];
+		predSamples[listIdx][compIdx][iLoop][jLoop] := sample;
+
+		iLoop := iLoop + 1;
+		if(iLoop = predPuSizeChr+3) then
+			iLoop := 0;
+			jLoop := jLoop + 1;
+			if(jLoop = predPuSizeChr+3) then
+				iLoop := 0;
+				jLoop := 0;
+				compIdx := compIdx + 1;
+			end
+		end
 	end
 
-	getSamples.launch.is8x8: action Sample:[sample] repeat (8+7)*(8+7)+
-		(4+3)*(4+3)*2 ==>
+	getSamples.chroma.done: action ==>
 	guard
-		listIdx=0 || listIdx=1 && (isBiPredOrLx = BI_PRED ||
-			isBiPredOrLx = PRED_L1),
-		predCuSize = 8
-	do
-		predSamples[listIdx][0] := [[sample[x+y*(8+7)]:for uint y in 0 .. 8+7-1]:
-			for uint x in 0 .. 8+7-1];
-		predSamples[listIdx][1] := [[sample[x+y*(4+3)+225]:for uint y in 0 .. 4+3-1]:
-			for uint x in 0 .. 4+3-1];
-		predSamples[listIdx][2] := [[sample[x+y*(4+3)+274]:for uint y in 0 .. 4+3-1]:
-			for uint x in 0 .. 4+3-1];
-	end
-
-	getSamples.launch.is4x4: action Sample:[sample] repeat (4+7)*(4+7)+
-		(2+3)*(2+3)*2 ==>
-	guard
-		listIdx=0 || listIdx=1 && (isBiPredOrLx = BI_PRED ||
-			isBiPredOrLx = PRED_L1),
-		predCuSize = 4
-	do
-		predSamples[listIdx][0] := [[sample[x+y*(4+7)]:for uint y in 0 .. 4+7-1]:
-			for uint x in 0 .. 4+7-1];
-		predSamples[listIdx][1] := [[sample[x+y*(2+3)+225]:for uint y in 0 .. 2+3-1]:
-			for uint x in 0 .. 2+3-1];
-		predSamples[listIdx][2] := [[sample[x+y*(2+3)+274]:for uint y in 0 .. 2+3-1]:
-			for uint x in 0 .. 2+3-1];
+		listIdx=0 || listIdx=1 && isBiPredOrLx !=  PRED_L0,
+		compIdx = 3
 	end
 
 	interpolateSamples: action ==>
@@ -820,6 +801,8 @@ int(size=8) interPredCoeff[3][8][8] =
 			end
 		end
 		listIdx := listIdx + 1;
+		iLoop := 0;
+		jLoop := 0;
 	end
 
 	getSamples.done: action ==>
@@ -1017,8 +1000,14 @@ int(size=8) interPredCoeff[3][8][8] =
 
 		GetRefIdx (getRefIdx )--> GetSamples;
 
-		GetSamples (getSamples.launch )--> InterpolateSamples;
-		GetSamples (getSamples.done   )--> SendPu;
+		GetSamples (getSamples.luma )--> GetLumaSamples;
+		GetSamples (getSamples.done )--> SendPu;
+
+		GetLumaSamples (getSamples.luma.launch )--> GetLumaSamples;
+		GetLumaSamples (getSamples.luma.done   )--> GetChromaSamples;
+
+		GetChromaSamples (getSamples.chroma.launch )--> GetChromaSamples;
+		GetChromaSamples (getSamples.chroma.done   )--> InterpolateSamples;
 
 		InterpolateSamples (interpolateSamples )--> GetSamples;
 
