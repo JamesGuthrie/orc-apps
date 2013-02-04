@@ -197,13 +197,12 @@ actor DecodingPictureBuffer ()
 	/* We get the whole Cu decoded (luma and chroma components) and we save
 	 * it in the Dpb (pictureBuffer).
 	 */
-	getCuPix.launch: action Sample:[samp] repeat 64*64 + 32*32*2==>
+	getCuPix.launch.luma: action Sample:[samp] repeat 64*64 ==>
 	guard
 		yIdx < picSizeInCu[1]
 	var
 		uint(size=16) xPixIdx,
-		uint(size=16) yPixIdx,
-		uint tokenOffset
+		uint(size=16) yPixIdx
 	do
 		xPixIdx := BORDER_SIZE + xIdx*64;
 		yPixIdx := BORDER_SIZE + yIdx*64;
@@ -214,12 +213,18 @@ actor DecodingPictureBuffer ()
 				pictureBuffer[lastIdx][0][xPixIdx+x][yPixIdx+y] := samp[x+y*64];
 			end
 		end
+	end
 
+	getCuPix.launch.chroma: action Sample:[samp] repeat 32*32*2==>
+	var
+		uint(size=16) xPixIdx,
+		uint(size=16) yPixIdx,
+		uint tokenOffset := 0
+	do
 		xPixIdx := (BORDER_SIZE + xIdx*64)>>1;
 		yPixIdx := (BORDER_SIZE + yIdx*64)>>1;
 		foreach uint component in 1 .. 2
 		do
-			tokenOffset:= 64*64 + 32*32*(component-1);
 			foreach uint y in 0 .. 32
 			do
 				foreach uint x in 0 .. 32
@@ -228,6 +233,7 @@ actor DecodingPictureBuffer ()
 						samp[x+y*32 + tokenOffset];
 				end
 			end
+			tokenOffset:= 32*32;
 		end
 
 		xIdx := xIdx + 1;
@@ -443,11 +449,13 @@ actor DecodingPictureBuffer ()
 		GetRpsPoc (getRpsPoc.launch )--> GetRpsPoc;
 		GetRpsPoc (getRpsPoc.done   )--> GetRps;
 
-		CheckIsNewPict (checkIsNewPict.isTrue  )--> GetCuPix;
+		CheckIsNewPict (checkIsNewPict.isTrue  )--> GetCuPixLuma;
 		CheckIsNewPict (checkIsNewPict.isFalse )--> IsNewSlice;
 
-		GetCuPix (getCuPix.launch )--> GetCuPix;
-		GetCuPix (getCuPix.done   )--> IsNewSlice;
+		GetCuPixLuma (getCuPix.launch.luma )--> GetCuPixChroma;
+		GetCuPixLuma (getCuPix.done        )--> IsNewSlice;
+
+		GetCuPixChroma (getCuPix.launch.chroma )--> GetCuPixLuma;
 
 		GetMvInfo (getMvInfo.launch   )--> SendCu;
 		GetMvInfo (getMvInfo.done     )--> IsNewSlice;
