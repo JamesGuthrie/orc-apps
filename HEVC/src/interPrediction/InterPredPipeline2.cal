@@ -1018,7 +1018,7 @@ int(size=8) interPredCoeff[3][8][8] =
 		SendIntermPuLuma (sendIntermPu.launch.lumaComp )--> SendIntermPuLuma;
 		SendIntermPuLuma (sendIntermPu.launch.lumaDone )--> SendIntermPuChr;
 
-		SendIntermPuChr (sendIntermPu.launch.chromaComp )--> SendIntermPuLuma;
+		SendIntermPuChr (sendIntermPu.launch.chromaComp )--> SendIntermPuChr;
 		SendIntermPuChr (sendIntermPu.done              )--> GetCuInfo;
 	end
 	priority

@@ -14,5 +14,6 @@
 		<vertex id="PredSample" x="947" y="448"/>
 		<vertex id="InterPredictionPart1" x="356" y="141"/>
 		<vertex id="InterPredictionPart2" x="626" y="443"/>
+		<vertex id="BH" x="907" y="154"/>
 	</vertices>
 </layout>

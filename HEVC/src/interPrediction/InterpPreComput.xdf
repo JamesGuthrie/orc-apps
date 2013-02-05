@@ -90,7 +90,7 @@
         </Parameter>
     </Instance>
     <Instance id="InterPredictionPart2">
-        <Class name="interPrediction.InterPredPipeline2"/>
+        <Class name="devel.org.sc29.wg11.mpegh.part2.inter.InterPrediction"/>
         <Parameter name="DECODE_CHROMA">
             <Expr kind="Literal" literal-kind="Boolean" value="true"/>
         </Parameter>
@@ -98,8 +98,11 @@
             <Expr kind="Literal" literal-kind="Boolean" value="true"/>
         </Parameter>
         <Parameter name="PROCESS_MODE_HALF_PIX">
-            <Expr kind="Literal" literal-kind="Integer" value="2"/>
+            <Expr kind="Literal" literal-kind="Integer" value="3"/>
         </Parameter>
+    </Instance>
+    <Instance id="BH">
+        <Class name="testBench.common.BHi16"/>
     </Instance>
     <Connection dst="InterPredictionPart1" dst-port="IsBiPredOrLx"
         src="" src-port="IsBiPredOrLx"/>
@@ -114,8 +117,6 @@
     <Connection dst="InterPredictionPart1" dst-port="WeightedPredSe"
         src="" src-port="WeightedPredSe"/>
     <Connection dst="" dst-port="PredSample" src="InterPredictionPart2" src-port="PredSample"/>
-    <Connection dst="InterPredictionPart2" dst-port="Sample"
-        src="InterPredictionPart1" src-port="PredSample"/>
     <Connection dst="InterPredictionPart2" dst-port="IsBiPredOrLx"
         src="" src-port="IsBiPredOrLx"/>
     <Connection dst="InterPredictionPart2" dst-port="CUInfo" src="" src-port="CUInfo"/>
@@ -127,4 +128,6 @@
     <Connection dst="InterPredictionPart2" dst-port="SliceType" src="" src-port="SliceType"/>
     <Connection dst="InterPredictionPart2" dst-port="WeightedPredSe"
         src="" src-port="WeightedPredSe"/>
+    <Connection dst="BH" dst-port="Byte" src="InterPredictionPart1" src-port="PredSample"/>
+    <Connection dst="InterPredictionPart2" dst-port="Sample" src="" src-port="Sample"/>
 </XDF>
