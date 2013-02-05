@@ -63,7 +63,7 @@ actor SelectCu()
 	uint(size=4)  PartMode,
 	int (size=9)  ResidualSample
 		==>
-//	uint(size=8) IntraRefSample,
+	uint(size=8) IntraRefSample,
 	uint(size=8) Sample
 		:
 
@@ -153,7 +153,6 @@ actor SelectCu()
 	do
 		lastLcuAddr := curLcuAddr;
 		yIdx := 0;
-		println("NewLcu");
 	end
 
 	isNewPu: action ==>
@@ -161,7 +160,7 @@ actor SelectCu()
 		lastLcuAddr = curLcuAddr
 	end
 
-	sendLcuLuma.launch: action ==> //IntraRefSample:[samples] repeat 256
+	sendLcuLuma.launch: action ==> IntraRefSample:[samples] repeat 256
 	guard
 		yIdx < 64
 	var
@@ -182,10 +181,10 @@ actor SelectCu()
 		yIdx = 64
 	do
 		yIdx := 0;
-		cIdx := 0;
+		cIdx := 1;
 	end
 
-	sendLcuChroma.launch: action ==> //IntraRefSample:[samples] repeat 256
+	sendLcuChroma.launch: action ==> IntraRefSample:[samples] repeat 256
 	guard
 		cIdx < 3
 	var
@@ -199,7 +198,7 @@ actor SelectCu()
 			end
 		end
 		yIdx := yIdx + 8;
-		if(yIdx = 64) then
+		if(yIdx = 32) then
 			yIdx := 0;
 			cIdx := cIdx + 1;
 		end
@@ -390,7 +389,7 @@ actor SelectCu()
 		GetPartMode (isNewSlice       )--> GetPartMode;
 		GetPartMode (getPartMode      )--> GetCuInfo;
 
-		GetCuInfo   (getCuInfo.launch )--> GetCuMode;
+		GetCuInfo   (getCuInfo.launch )--> CheckNewLcu;
 		GetCuInfo   (getCuInfo.done   )--> GetPartMode;
 
 		CheckNewLcu (isNewLcu )--> SendLcuLuma;
