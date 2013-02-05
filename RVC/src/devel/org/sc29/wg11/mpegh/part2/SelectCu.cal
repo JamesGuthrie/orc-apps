@@ -63,6 +63,7 @@ actor SelectCu()
 	uint(size=4)  PartMode,
 	int (size=9)  ResidualSample
 		==>
+//	uint(size=8) IntraRefSample,
 	uint(size=8) Sample
 		:
 
@@ -75,6 +76,7 @@ actor SelectCu()
 	uint(size=7)  cuWidth;
 	uint(size=9)  nbBlk;
 	uint(size=9)  idxBlk;
+	uint(size=8)  predSamp[3][64][64];
 	uint(size=8)  interSamp[16][16][16+2*4];
 	uint(size=5)  xIdx;
 	uint(size=5)  yIdx;
@@ -166,15 +168,43 @@ actor SelectCu()
 	guard
 		idxBlk < nbBlk
 	var
-		uint(size=8) sample[16+2*4]
+		uint(size=8) sample[16+2*4],
+		uint(size=5) sampleIdx := 0,
+		uint(size=16) blkIdx[2]
 	do
+		rasterScanToAbsCoord(idxBlk, blkIdx);
+		foreach uint y in 0 .. 3
+		do
+			foreach uint x in 0 .. 3
+			do
+				predSamp[0][blkIdx[0]+x][blkIdx[1]+y] :=
+					clip_i32(intraSample[sampleIdx]+resSample[sampleIdx], 0, 255);
+				sample[sampleIdx] := predSamp[0][blkIdx[0]+x][blkIdx[1]+y];
+				sampleIdx := sampleIdx + 1;
+			end
+		end
+		blkIdx[0] := blkIdx[0] >> 1;
+		blkIdx[1] := blkIdx[1] >> 1;
+		foreach uint cIdx in 1 .. 2
+		do
+			foreach uint y in 0 .. 1
+			do
+				foreach uint x in 0 .. 1
+				do
+					predSamp[cIdx][blkIdx[0]+x][blkIdx[1]+y] :=
+						clip_i32(intraSample[sampleIdx]+resSample[sampleIdx], 0, 255);
+					sample[sampleIdx] := predSamp[cIdx][blkIdx[0]+x][blkIdx[1]+y];
+					sampleIdx := sampleIdx + 1;
+				end
+			end
+		end
 		idxBlk := idxBlk + 1;
 		/* Reordering the sample is not needed because both (Residual and
 		 * prediction parts) sample are in the rasterScan order
 		 */
 		foreach int i in 0 .. 16+2*4-1
 		do
-			sample[i] := clip_i32(intraSample[i]+resSample[i], 0, 255);
+	//		sample[i] := clip_i32(intraSample[i]+resSample[i], 0, 255);
 		end
 	end
 
@@ -183,10 +213,34 @@ actor SelectCu()
 	guard
 		idxBlk < nbBlk
 	var
+		uint(size=5) sampleIdx := 0,
+		uint(size=16) blkIdx[2],
 		/* Offset is not null when numPart = 2 and partIdx = 1. */
 		uint xOff = cuOff[numPartDecoded][0],
 		uint yOff = cuOff[numPartDecoded][1]
 	do
+		rasterScanToAbsCoord(idxBlk, blkIdx);
+		foreach uint y in 0 .. 3
+		do
+			foreach uint x in 0 .. 3
+			do
+				predSamp[0][blkIdx[0]+x][blkIdx[1]+y] := interSample[sampleIdx];
+				sampleIdx := sampleIdx + 1;
+			end
+		end
+		blkIdx[0] := blkIdx[0] >> 1;
+		blkIdx[1] := blkIdx[1] >> 1;
+		foreach uint cIdx in 1 .. 2
+		do
+			foreach uint y in 0 .. 1
+			do
+				foreach uint x in 0 .. 1
+				do
+					predSamp[cIdx][blkIdx[0]+x][blkIdx[1]+y] := interSample[sampleIdx];
+					sampleIdx := sampleIdx + 1;
+				end
+			end
+		end
 		/* Saving the inter prediction part because it's in ZScan instead of
 		 * RasterScan.
 		 */
@@ -216,9 +270,40 @@ actor SelectCu()
 	guard
 		idxBlk < nbBlk
 	var
+		uint(size=5) sampleIdx := 0,
+		uint(size=16) blkIdx[2],
 		uint(size=8)  sample[16+2*4],
 		uint(size=16) interIdx[2]
 	do
+		rasterScanToAbsCoord(idxBlk, blkIdx);
+		foreach uint y in 0 .. 3
+		do
+			foreach uint x in 0 .. 3
+			do
+				predSamp[0][blkIdx[0]+x][blkIdx[1]+y] :=
+					clip_i32(predSamp[0][blkIdx[0]+x][blkIdx[1]+y] +
+					resSample[sampleIdx], 0, 255);
+				sample[sampleIdx] := predSamp[0][blkIdx[0]+x][blkIdx[1]+y];
+				sampleIdx := sampleIdx + 1;
+			end
+		end
+		blkIdx[0] := blkIdx[0] >> 1;
+		blkIdx[1] := blkIdx[1] >> 1;
+		foreach uint cIdx in 1 .. 2
+		do
+			foreach uint y in 0 .. 1
+			do
+				foreach uint x in 0 .. 1
+				do
+					predSamp[cIdx][blkIdx[0]+x][blkIdx[1]+y] := 
+						clip_i32(predSamp[cIdx][blkIdx[0]+x][blkIdx[1]+y] +
+						resSample[sampleIdx], 0, 255);
+					sample[sampleIdx] := predSamp[cIdx][blkIdx[0]+x][blkIdx[1]+y];
+					sampleIdx := sampleIdx + 1;
+				end
+			end
+		end
+
 		rasterScanToAbsCoord(idxBlk, interIdx);
 		interIdx[0] := interIdx[0]>>2;
 		interIdx[1] := interIdx[1]>>2;
