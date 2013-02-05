@@ -77,7 +77,6 @@ actor SelectCu()
 	uint(size=9)  nbBlk;
 	uint(size=9)  idxBlk;
 	uint(size=8)  predSamp[3][64][64];
-	uint(size=8)  interSamp[16][16][16+2*4];
 	uint(size=5)  xIdx;
 	uint(size=5)  yIdx;
 
@@ -172,7 +171,11 @@ actor SelectCu()
 		uint(size=5) sampleIdx := 0,
 		uint(size=16) blkAddr[2]
 	do
+		/* Reordering the sample is not needed because both (Residual and
+		 * prediction parts) sample are in the rasterScan order
+		 */
 		rasterScanToAbsCoord(idxBlk, blkAddr);
+
 		foreach uint y in 0 .. 3
 		do
 			foreach uint x in 0 .. 3
@@ -183,6 +186,7 @@ actor SelectCu()
 				sampleIdx := sampleIdx + 1;
 			end
 		end
+
 		blkAddr[0] := blkAddr[0] >> 1;
 		blkAddr[1] := blkAddr[1] >> 1;
 		foreach uint cIdx in 1 .. 2
@@ -198,14 +202,8 @@ actor SelectCu()
 				end
 			end
 		end
+
 		idxBlk := idxBlk + 1;
-		/* Reordering the sample is not needed because both (Residual and
-		 * prediction parts) sample are in the rasterScan order
-		 */
-		foreach int i in 0 .. 16+2*4-1
-		do
-	//		sample[i] := clip_i32(intraSample[i]+resSample[i], 0, 255);
-		end
 	end
 
 	/* Getting prediction samples from interPrediction */
@@ -228,6 +226,7 @@ actor SelectCu()
 				sampleIdx := sampleIdx + 1;
 			end
 		end
+
 		blkAddr[0] := blkAddr[0] >> 1;
 		blkAddr[1] := blkAddr[1] >> 1;
 		foreach uint cIdx in 1 .. 2
@@ -241,14 +240,8 @@ actor SelectCu()
 				end
 			end
 		end
-		/* Saving the inter prediction part because it's in ZScan instead of
-		 * RasterScan.
-		 */
-		foreach uint i in 0 .. 16+2*4-1
-		do
-//			interSamp[xIdx+xOff][yIdx+yOff][i] := interSample[i];
-		end
-		/* Computing the location of the next block. */
+
+		/* Computing the location of the next block (it's sent in ZScan order instead of RasterScan. */
 		xIdx := xIdx + 1;
 		if(xIdx = cuSize[numPartDecoded][0]) then
 			xIdx := 0;
@@ -291,6 +284,7 @@ actor SelectCu()
 				sampleIdx := sampleIdx + 1;
 			end
 		end
+
 		blkAddr[0] := blkAddr[0] >> 1;
 		blkAddr[1] := blkAddr[1] >> 1;
 		foreach uint cIdx in 1 .. 2
@@ -309,11 +303,6 @@ actor SelectCu()
 		end
 
 		idxBlk := idxBlk + 1;
-		foreach int i in 0 .. 16+2*4-1
-		do
-//			sample[i] := clip_i32(interSamp[interIdx[0]][interIdx[1]][i] +
-//				resSample[i], 0, 255);
-		end
 	end
 
 	getCuSample.done: action ==>
