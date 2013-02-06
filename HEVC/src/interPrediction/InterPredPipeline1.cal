@@ -914,10 +914,21 @@ int(size=8) interPredCoeff[3][8][8] =
 
 	sendPu.done: action ==>
 	guard
+		(PROCESS_MODE_HALF_PIX & HALF_PIX_2ND_PART) = 0 ||
 		jLoop = cuSize[1]
 	do
 		iLoop := 0;
 		jLoop := 0;
+	end
+
+	checkSendIntermPu.isTrue: action ==>
+	guard
+		(PROCESS_MODE_HALF_PIX & HALF_PIX_2ND_PART) = 0
+	end
+
+	checkSendIntermPu.isFalse: action ==>
+	guard
+		(PROCESS_MODE_HALF_PIX & HALF_PIX_2ND_PART) != 0
 	end
 
 	sendIntermPu.launch.lumaComp: action ==> PredSample:[sampVal]
@@ -927,7 +938,7 @@ int(size=8) interPredCoeff[3][8][8] =
 	var
 		int(size=16) sampVal
 	do
-		sampVal := predSamples[0/*listIdx*/][0][iLoop][jLoop];
+		sampVal := predSamples[listIdx-1][0][iLoop][jLoop];
 		iLoop := iLoop + 1;
 		if(iLoop = predCuSize+7) then
 			iLoop := 0;
@@ -951,7 +962,7 @@ int(size=8) interPredCoeff[3][8][8] =
 	var
 		int(size=16) sampVal
 	do
-		sampVal := predSamples[0/*listIdx*/][compIdx][iLoop][jLoop];
+		sampVal := predSamples[listIdx-1][compIdx][iLoop][jLoop];
 		iLoop := iLoop + 1;
 		if(iLoop = predPuSizeChr+3) then
 			iLoop := 0;
@@ -1011,17 +1022,19 @@ int(size=8) interPredCoeff[3][8][8] =
 		GetChromaSamples (getSamples.chroma.launch )--> GetChromaSamples;
 		GetChromaSamples (getSamples.chroma.done   )--> InterpolateSamples;
 
-		InterpolateSamples (interpolateSamples )--> GetSamples;
+		InterpolateSamples (interpolateSamples )--> CheckSendIntermPu;
 
 		SendPu (sendPu.launch )--> SendPu;
 		SendPu (sendPu.done   )--> GetCuInfo;
-		SendPu (sendIntermPu.launch.lumaComp ) --> SendIntermPuLuma;
+
+		CheckSendIntermPu (checkSendIntermPu.isTrue )--> SendIntermPuLuma;
+		CheckSendIntermPu (checkSendIntermPu.isFalse )--> GetSamples;
 
 		SendIntermPuLuma (sendIntermPu.launch.lumaComp )--> SendIntermPuLuma;
 		SendIntermPuLuma (sendIntermPu.launch.lumaDone )--> SendIntermPuChr;
 
 		SendIntermPuChr (sendIntermPu.launch.chromaComp )--> SendIntermPuChr;
-		SendIntermPuChr (sendIntermPu.done              )--> GetCuInfo;
+		SendIntermPuChr (sendIntermPu.done              )--> GetSamples;
 	end
 	priority
 		getWeightLX.launch > getWeightLX.skip >getWeightLX.done;
