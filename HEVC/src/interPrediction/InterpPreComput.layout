@@ -12,8 +12,9 @@
 		<vertex id="SliceType" x="41" y="577"/>
 		<vertex id="WeightedPredSe" x="14" y="611"/>
 		<vertex id="PredSample" x="947" y="448"/>
-		<vertex id="InterPredictionPart1" x="356" y="141"/>
-		<vertex id="InterPredictionPart2" x="626" y="443"/>
-		<vertex id="BH" x="907" y="154"/>
+		<vertex id="InterPredictionPart1" x="443" y="37"/>
+		<vertex id="InterPredictionPart2" x="670" y="324"/>
+		<vertex id="Comp" x="1032" y="626"/>
+		<vertex id="InterPrediction" x="628" y="697"/>
 	</vertices>
 </layout>
