@@ -101,21 +101,6 @@
             <Expr kind="Literal" literal-kind="Boolean" value="true"/>
         </Parameter>
     </Instance>
-    <Instance id="Comp">
-        <Class name="testBench.common.CheckU8"/>
-    </Instance>
-    <Instance id="InterPrediction">
-        <Class name="devel.org.sc29.wg11.mpegh.part2.inter.InterPrediction"/>
-        <Parameter name="DECODE_CHROMA">
-            <Expr kind="Literal" literal-kind="Boolean" value="true"/>
-        </Parameter>
-        <Parameter name="DECODE_LUMA">
-            <Expr kind="Literal" literal-kind="Boolean" value="true"/>
-        </Parameter>
-        <Parameter name="PROCESS_MODE_HALF_PIX">
-            <Expr kind="Literal" literal-kind="Integer" value="3"/>
-        </Parameter>
-    </Instance>
     <Connection dst="InterPredictionPart1" dst-port="IsBiPredOrLx"
         src="" src-port="IsBiPredOrLx"/>
     <Connection dst="InterPredictionPart1" dst-port="CUInfo" src="" src-port="CUInfo"/>
@@ -141,18 +126,5 @@
         src="" src-port="WeightedPredSe"/>
     <Connection dst="InterPredictionPart2" dst-port="Sample"
         src="InterPredictionPart1" src-port="PredSample"/>
-    <Connection dst="InterPrediction" dst-port="IsBiPredOrLx" src="" src-port="IsBiPredOrLx"/>
-    <Connection dst="InterPrediction" dst-port="CUInfo" src="" src-port="CUInfo"/>
-    <Connection dst="InterPrediction" dst-port="Mv" src="" src-port="Mv"/>
-    <Connection dst="InterPrediction" dst-port="PartMode" src="" src-port="PartMode"/>
-    <Connection dst="InterPrediction" dst-port="Poc" src="" src-port="Poc"/>
-    <Connection dst="InterPrediction" dst-port="RefIdx" src="" src-port="RefIdx"/>
-    <Connection dst="InterPrediction" dst-port="RefList" src="" src-port="RefList"/>
-    <Connection dst="InterPrediction" dst-port="Sample" src="" src-port="Sample"/>
-    <Connection dst="InterPrediction" dst-port="SliceType" src="" src-port="SliceType"/>
-    <Connection dst="InterPrediction" dst-port="WeightedPredSe" src="" src-port="WeightedPredSe"/>
     <Connection dst="" dst-port="PredSample" src="InterPredictionPart2" src-port="PredSample"/>
-    <Connection dst="Comp" dst-port="RealValue" src="InterPrediction" src-port="PredSample"/>
-    <Connection dst="Comp" dst-port="ValueGenerated"
-        src="InterPredictionPart2" src-port="PredSample"/>
 </XDF>
