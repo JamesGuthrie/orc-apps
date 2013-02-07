@@ -1,5 +1,5 @@
---- ../../RVC/src/devel/org/sc29/wg11/mpegh/part2/inter/InterPrediction.cal	2013-02-06 16:37:59.671693953 +0100
-+++ ../src/interPrediction/InterPredPipeline1.cal	2013-02-06 17:03:54.163721474 +0100
+--- ../../RVC/src/devel/org/sc29/wg11/mpegh/part2/inter/InterPrediction.cal	2013-02-07 14:21:12.901320152 +0100
++++ ../src/interPrediction/InterPredPipeline1.cal	2013-02-07 14:31:18.925330880 +0100
 @@ -59,13 +59,13 @@
   * @author Damien de Saint Jorre (EPFL) <damien.desaintjorre@epfl.ch>
   */
@@ -11,8 +11,8 @@
  import devel.org.sc29.wg11.mpegh.part2.common.CommonConstantHEVC.*;
  import devel.org.sc29.wg11.mpegh.part2.inter.NaluType.*;
  
--actor InterPrediction(bool DECODE_LUMA, bool DECODE_CHROMA, uint(size=2) PROCESS_MODE_HALF_PIX)
-+actor InterPredPipeline1(bool DECODE_LUMA, bool DECODE_CHROMA, uint(size=2) PROCESS_MODE_HALF_PIX)
+-actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_PIX)
++actor InterPredPipeline1(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_PIX)
  	uint(size=16) CUInfo,
  	uint(size=2)  IsBiPredOrLx,
  	int (size=16) Mv,

@@ -79,26 +79,20 @@
     </Port>
     <Instance id="InterPredictionPart1">
         <Class name="interPrediction.InterPredPipeline1"/>
+        <Parameter name="DECODE_COMP">
+            <Expr kind="Literal" literal-kind="Integer" value="3"/>
+        </Parameter>
         <Parameter name="PROCESS_MODE_HALF_PIX">
             <Expr kind="Literal" literal-kind="Integer" value="1"/>
-        </Parameter>
-        <Parameter name="DECODE_LUMA">
-            <Expr kind="Literal" literal-kind="Boolean" value="true"/>
-        </Parameter>
-        <Parameter name="DECODE_CHROMA">
-            <Expr kind="Literal" literal-kind="Boolean" value="true"/>
         </Parameter>
     </Instance>
     <Instance id="InterPredictionPart2">
         <Class name="interPrediction.InterPredPipeline2"/>
+        <Parameter name="DECODE_COMP">
+            <Expr kind="Literal" literal-kind="Integer" value="3"/>
+        </Parameter>
         <Parameter name="PROCESS_MODE_HALF_PIX">
             <Expr kind="Literal" literal-kind="Integer" value="2"/>
-        </Parameter>
-        <Parameter name="DECODE_LUMA">
-            <Expr kind="Literal" literal-kind="Boolean" value="true"/>
-        </Parameter>
-        <Parameter name="DECODE_CHROMA">
-            <Expr kind="Literal" literal-kind="Boolean" value="true"/>
         </Parameter>
     </Instance>
     <Connection dst="InterPredictionPart1" dst-port="IsBiPredOrLx"

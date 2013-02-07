@@ -79,14 +79,11 @@
     </Port>
     <Instance id="InterPrediction">
         <Class name="devel.org.sc29.wg11.mpegh.part2.inter.InterPrediction"/>
-        <Parameter name="PROCESS_MODE_HALF_PIX">
+        <Parameter name="DECODE_COMP">
             <Expr kind="Literal" literal-kind="Integer" value="3"/>
         </Parameter>
-        <Parameter name="DECODE_LUMA">
-            <Expr kind="Literal" literal-kind="Boolean" value="true"/>
-        </Parameter>
-        <Parameter name="DECODE_CHROMA">
-            <Expr kind="Literal" literal-kind="Boolean" value="true"/>
+        <Parameter name="PROCESS_MODE_HALF_PIX">
+            <Expr kind="Literal" literal-kind="Integer" value="3"/>
         </Parameter>
     </Instance>
     <Connection dst="InterPrediction" dst-port="IsBiPredOrLx" src="" src-port="IsBiPredOrLx"/>
