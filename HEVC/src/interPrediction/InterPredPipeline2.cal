@@ -674,8 +674,7 @@ int(size=8) interPredCoeff[3][8][8] =
 			 * don't need to do the same interpolation twice :)
 			 */
 			if(refListX[0][refIdxLx[0]] = refListX[1][refIdxLx[1]] &&
-				mvLx[0][0] = mvLx[1][0] && mvLx[0][1] = mvLx[1][1] &&
-				refIdxLx[0] = refIdxLx[1]) then
+				mvLx[0][0] = mvLx[1][0] && mvLx[0][1] = mvLx[1][1]) then
 				1
 			else
 				2
@@ -686,7 +685,7 @@ int(size=8) interPredCoeff[3][8][8] =
 
 	getSamples.luma.launch: action Sample:[sample] ==>
 	guard
-		listIdx=0 || listIdx=1 && isBiPredOrLx !=  PRED_L0,
+		listIdx=0 || listIdx=1 && numList = 2,
 		jLoop < cuSize[1]+7
 	do
 		predSamples[listIdx][0][iLoop][jLoop] := sample;
@@ -803,7 +802,7 @@ int(size=8) interPredCoeff[3][8][8] =
 
 	getSamples.done: action ==>
 	guard
-		listIdx=2 || listIdx=1 && isBiPredOrLx = PRED_L0
+		listIdx=2 || listIdx=1 && numList = 1
 	var
 		uint(size=7) compPuIdxMax[2],
 		uint(size=2) COMP_MIN = if(not DECODE_LUMA) then 1 else 0 end,
