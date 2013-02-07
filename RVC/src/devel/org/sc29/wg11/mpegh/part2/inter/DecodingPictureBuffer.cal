@@ -82,8 +82,8 @@ actor DecodingPictureBuffer ()
 	bool          isRef[7];
 	bool          isStillRef[7];
 
-	uint(size=7)  sideMax;
-	uint(size=7)  sideMaxChr;
+	uint(size=7)  puSize[2];
+	uint(size=7)  puSizeChr[2];
 
 	int (size=4)  refPicIdx;
 	int (size=4)  currIdx := -1;
@@ -316,12 +316,17 @@ actor DecodingPictureBuffer ()
 	/* We get all the informations needed for sending the reference Cu. We save
 	 * these samples in RefCu, it will be sent with the actions sendCu.isYxY
 	 */
-	getMvInfo.launch: action PocRef:[poc], PredCuSize:[predCuSize],
+	getMvInfo.launch: action PocRef:[poc], PredCuSize:[predUnitSize] repeat 2,
 		Mv:[mvX, mvY] ==>
 	guard
 		numPocRef != 0
+	var
+		int(size=7)  sideMax,
+		uint(size=7)  sideMaxChr
 	do
-		sideMax := predCuSize;
+		sideMax := max(predUnitSize[0], predUnitSize[1]);
+		puSize := predUnitSize;
+		puSizeChr := [puSize[i]>>1: for int i in 0 .. 1];
 		sideMaxChr := sideMax >> 1;
 		refPicIdx := 0;
 		foreach uint i in 0 .. 6
@@ -367,7 +372,7 @@ actor DecodingPictureBuffer ()
 	/** We send the reference samples according to the size of the predCu. **/
 	sendCu.luma.launch: action ==> RefSample:[sample]
 	guard
-		jLoop < sideMax+7
+		jLoop < puSize[1]+7
 	var
 		uint(size=8) sample
 	do
@@ -375,7 +380,7 @@ actor DecodingPictureBuffer ()
 
 		readIdx := readIdx + 1;
 		iLoop := iLoop + 1;
-		if(iLoop = sideMax+7) then
+		if(iLoop = puSize[0]+7) then
 			iLoop := 0;
 			jLoop := jLoop + 1;
 		end
@@ -383,7 +388,7 @@ actor DecodingPictureBuffer ()
 
 	sendCu.luma.done: action ==>
 	guard
-		jLoop = sideMax+7
+		jLoop = puSize[1]+7
 	do
 		iLoop   := 0;
 		jLoop   := 0;
@@ -400,10 +405,10 @@ actor DecodingPictureBuffer ()
 
 		readIdx := readIdx + 1;
 		iLoop := iLoop + 1;
-		if(iLoop = sideMaxChr+3) then
+		if(iLoop = puSizeChr[0]+3) then
 			iLoop := 0;
 			jLoop := jLoop + 1;
-			if(jLoop = sideMaxChr+3) then
+			if(jLoop = puSizeChr[1]+3) then
 				jLoop   := 0;
 				compIdx := compIdx + 1;
 			end

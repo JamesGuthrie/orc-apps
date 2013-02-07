@@ -117,8 +117,6 @@ actor InterPredPipeline2(bool DECODE_LUMA, bool DECODE_CHROMA, uint(size=2) PROC
 	int (size=4)  refIdxLx[2];
 	int (size=16) mvLx[2][2];
 	uint(size=2)  numList;
-	uint(size=7)  predCuSize;
-	uint(size=7)  predPuSizeChr;
 	int           logWDTab[8][8][3];
 	int           weightCuTab[8][8][3][2];
 	int           offsetCuTab[8][8][3][2];
@@ -586,8 +584,6 @@ int(size=8) interPredCoeff[3][8][8] =
 		cuMode := cuInfo[0];
 		cuSize    := [cuInfo[i] : for int i in 3 .. 4];
 		puSizeChr := [cuInfo[i]>>1 : for int i in 3 .. 4];
-		predCuSize := max(cuInfo[3], cuInfo[4]);
-		predPuSizeChr := predCuSize >> 1;
 		numPartDecoded := numPartDecoded + 1;
 	end
 
@@ -691,12 +687,12 @@ int(size=8) interPredCoeff[3][8][8] =
 	getSamples.luma.launch: action Sample:[sample] ==>
 	guard
 		listIdx=0 || listIdx=1 && isBiPredOrLx !=  PRED_L0,
-		jLoop < predCuSize+7
+		jLoop < cuSize[1]+7
 	do
 		predSamples[listIdx][0][iLoop][jLoop] := sample;
 
 		iLoop := iLoop + 1;
-		if(iLoop = predCuSize+7) then
+		if(iLoop = cuSize[0]+7) then
 			iLoop := 0;
 			jLoop := jLoop + 1;
 		end
@@ -705,7 +701,7 @@ int(size=8) interPredCoeff[3][8][8] =
 	getSamples.luma.done: action ==>
 	guard
 		listIdx=0 || listIdx=1 && isBiPredOrLx !=  PRED_L0,
-		jLoop = predCuSize+7
+		jLoop = cuSize[1]+7
 	do
 		compIdx := 1;
 		iLoop   := 0;
@@ -720,10 +716,10 @@ int(size=8) interPredCoeff[3][8][8] =
 		predSamples[listIdx][compIdx][iLoop][jLoop] := sample;
 
 		iLoop := iLoop + 1;
-		if(iLoop = predPuSizeChr+3) then
+		if(iLoop = puSizeChr[0]+3) then
 			iLoop := 0;
 			jLoop := jLoop + 1;
-			if(jLoop = predPuSizeChr+3) then
+			if(jLoop = puSizeChr[1]+3) then
 				iLoop := 0;
 				jLoop := 0;
 				compIdx := compIdx + 1;
@@ -934,13 +930,13 @@ int(size=8) interPredCoeff[3][8][8] =
 	sendIntermPu.launch.lumaComp: action ==> PredSample:[sampVal]
 	guard
 		(PROCESS_MODE_HALF_PIX & HALF_PIX_2ND_PART) = 0,
-		jLoop < predCuSize+7
+		jLoop < cuSize[1]+7
 	var
 		int(size=16) sampVal
 	do
 		sampVal := predSamples[listIdx-1][0][iLoop][jLoop];
 		iLoop := iLoop + 1;
-		if(iLoop = predCuSize+7) then
+		if(iLoop = cuSize[0]+7) then
 			iLoop := 0;
 			jLoop := jLoop + 1;
 		end
@@ -948,7 +944,7 @@ int(size=8) interPredCoeff[3][8][8] =
 
 	sendIntermPu.launch.lumaDone: action ==>
 	guard
-		jLoop = predCuSize+7
+		jLoop = cuSize[1]+7
 	do
 		iLoop   := 0;
 		jLoop   := 0;
@@ -964,10 +960,10 @@ int(size=8) interPredCoeff[3][8][8] =
 	do
 		sampVal := predSamples[listIdx-1][compIdx][iLoop][jLoop];
 		iLoop := iLoop + 1;
-		if(iLoop = predPuSizeChr+3) then
+		if(iLoop = puSizeChr[0]+3) then
 			iLoop := 0;
 			jLoop := jLoop + 1;
-			if(jLoop = predPuSizeChr+3) then
+			if(jLoop = puSizeChr[1]+3) then
 				iLoop := 0;
 				jLoop := 0;
 				compIdx := compIdx + 1;
