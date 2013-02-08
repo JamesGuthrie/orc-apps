@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<XDF name="InterPredictionBase">
+<XDF name="InterpSubPu">
     <Port kind="Input" name="IsBiPredOrLx">
         <Type name="uint">
             <Entry kind="Expr" name="size">
@@ -90,7 +90,7 @@
         </Parameter>
         <Parameter name="LOG2_NUM_SUB_BLK">
             <Expr kind="List">
-                <Expr kind="Literal" literal-kind="Integer" value="0"/>
+                <Expr kind="Literal" literal-kind="Integer" value="1"/>
                 <Expr kind="Literal" literal-kind="Integer" value="0"/>
             </Expr>
         </Parameter>

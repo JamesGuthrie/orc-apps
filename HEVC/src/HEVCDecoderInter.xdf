@@ -56,7 +56,7 @@
         <Class name="devel.org.sc29.wg11.mpegh.part2.inter.DecodingPictureBuffer"/>
     </Instance>
     <Instance id="InterPrediction">
-        <Class name="interPrediction.InterpPreComput"/>
+        <Class name="interPrediction.InterpSubPu"/>
     </Instance>
     <Instance id="LCU_reord2">
         <Class name="devel.org.sc29.wg11.mpegh.part2.inter.FrameDelayBorder"/>

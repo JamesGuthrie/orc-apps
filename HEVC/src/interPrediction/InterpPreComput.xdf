@@ -82,6 +82,18 @@
         <Parameter name="DECODE_COMP">
             <Expr kind="Literal" literal-kind="Integer" value="3"/>
         </Parameter>
+        <Parameter name="IDX_SUB_BLOCK">
+            <Expr kind="List">
+                <Expr kind="Literal" literal-kind="Integer" value="0"/>
+                <Expr kind="Literal" literal-kind="Integer" value="0"/>
+            </Expr>
+        </Parameter>
+        <Parameter name="LOG2_NUM_SUB_BLK">
+            <Expr kind="List">
+                <Expr kind="Literal" literal-kind="Integer" value="0"/>
+                <Expr kind="Literal" literal-kind="Integer" value="0"/>
+            </Expr>
+        </Parameter>
         <Parameter name="PROCESS_MODE_HALF_PIX">
             <Expr kind="Literal" literal-kind="Integer" value="1"/>
         </Parameter>
@@ -90,6 +102,18 @@
         <Class name="interPrediction.InterPredPipeline2"/>
         <Parameter name="DECODE_COMP">
             <Expr kind="Literal" literal-kind="Integer" value="3"/>
+        </Parameter>
+        <Parameter name="IDX_SUB_BLOCK">
+            <Expr kind="List">
+                <Expr kind="Literal" literal-kind="Integer" value="0"/>
+                <Expr kind="Literal" literal-kind="Integer" value="0"/>
+            </Expr>
+        </Parameter>
+        <Parameter name="LOG2_NUM_SUB_BLK">
+            <Expr kind="List">
+                <Expr kind="Literal" literal-kind="Integer" value="0"/>
+                <Expr kind="Literal" literal-kind="Integer" value="0"/>
+            </Expr>
         </Parameter>
         <Parameter name="PROCESS_MODE_HALF_PIX">
             <Expr kind="Literal" literal-kind="Integer" value="2"/>
