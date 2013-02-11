@@ -11,7 +11,11 @@
 		<vertex id="Sample" x="40" y="347"/>
 		<vertex id="SliceType" x="32" y="378"/>
 		<vertex id="WeightedPredSe" x="6" y="409"/>
-		<vertex id="PredSample" x="663" y="216"/>
-		<vertex id="InterPrediction" x="361" y="196"/>
+		<vertex id="PredSample" x="989" y="299"/>
+		<vertex id="SubPuMux" x="787" y="283"/>
+		<vertex id="Interp_0_0" x="401" y="-116"/>
+		<vertex id="Interp_1_0" x="399" y="136"/>
+		<vertex id="Interp_0_1" x="397" y="386"/>
+		<vertex id="Interp_1_1" x="393" y="638"/>
 	</vertices>
 </layout>

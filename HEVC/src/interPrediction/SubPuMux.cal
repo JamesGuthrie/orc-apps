@@ -1,0 +1,213 @@
+/*
+ * Copyright (c) 2012, EPFL
+ * All rights reserved.
+ * 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ * 
+ *   * Redistributions of source code must retain the above copyright notice,
+ *     this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *   * Neither the name of the EPFL nor the names of its
+ *     contributors may be used to endorse or promote products derived from this
+ *     software without specific prior written permission.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+ * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY
+ * WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+ 
+package interPrediction;
+
+import devel.org.sc29.wg11.mpegh.part2.inter.NaluType.*;
+
+actor SubPuMux(uint(size=3) LOG2_NUM_SUB_BLK[2])
+	uint(size=16) PuInfo,
+	uint(size=8)  InSample1,
+	uint(size=8)  InSample2,
+	uint(size=8)  InSample3,
+	uint(size=8)  InSample4
+		==>
+	uint(size=8)  OutSample
+		:
+
+	uint(size=5) puMode;
+	uint(size=7) puSize[2];
+
+	uint(size=7) subPuIdxMin[16][16][2];
+	uint(size=7) subPuIdxMax[16][16][2];
+
+	uint(size=7)  xIdx;
+	uint(size=7)  yIdx;
+	uint(size=13) tokenToSend;
+
+	/* Getting informations of the next PU. */
+	getPuInfo.launch: action PuInfo:[puInfo] repeat 5 ==>
+	var
+		uint(size=8) subPuIdx[2],
+		uint(size=5) numBlk,
+		uint(size=5) blkRemain
+	do
+		puMode  := puInfo[0];
+		puSize  := [puInfo[3]>>2, puInfo[4]>>2];
+
+		if(puMode = INTER || puMode = SKIP) then
+			foreach uint yIdx in 0 .. (1<<LOG2_NUM_SUB_BLK[1])-1
+			do
+				foreach uint xIdx in 0 .. (1<<LOG2_NUM_SUB_BLK[0])-1
+				do
+					subPuIdx := [xIdx, yIdx];
+					foreach uint i in 0 .. 1
+					do
+						numBlk    := puSize[i] >> LOG2_NUM_SUB_BLK[i];
+						blkRemain := puSize[i] - (numBlk << LOG2_NUM_SUB_BLK[i]);
+						subPuIdxMin[xIdx][yIdx][i] := subPuIdx[i] * numBlk;
+						if(subPuIdx[i] >= (1 << LOG2_NUM_SUB_BLK[i]) - blkRemain) then
+							subPuIdxMin[xIdx][yIdx][i] := subPuIdxMin[xIdx][yIdx][i] + subPuIdx[i]
+								- (1 << LOG2_NUM_SUB_BLK[i]) + blkRemain;
+							numBlk := numBlk + 1;
+						end
+						subPuIdxMax[xIdx][yIdx][i] := subPuIdxMin[xIdx][yIdx][i] + numBlk;
+					end
+				end
+			end
+		end
+	end
+
+	procedure updateIdx(uint(size=7) tokenRead)
+	begin
+		xIdx := xIdx + tokenRead;
+		if(xIdx = puSize[0]) then
+			xIdx := 0;
+			yIdx := yIdx + 1;
+		end
+	end
+
+
+	checkPuMode.isInter: action ==>
+	guard
+		puMode = INTER || puMode = SKIP
+	do
+		xIdx := 0;
+		yIdx := 0;
+	end
+
+	checkPuMode.isOther: action ==>
+	guard
+		puMode = OTHER || puMode = INTRA
+	end
+
+	checkInput.input1: action ==>
+	guard
+		yIdx < puSize[1],
+		xIdx >= subPuIdxMin[0][0][0] && xIdx < subPuIdxMax[0][0][0],
+		yIdx >= subPuIdxMin[0][0][1] && yIdx < subPuIdxMax[0][0][1]
+	do
+		tokenToSend := subPuIdxMax[0][0][0] - xIdx;
+		updateIdx(tokenToSend);
+	end
+
+	checkInput.input2: action ==>
+	guard
+		yIdx < puSize[1],
+		xIdx >= subPuIdxMin[1][0][0] && xIdx < subPuIdxMax[1][0][0],
+		yIdx >= subPuIdxMin[1][0][1] && yIdx < subPuIdxMax[1][0][1]
+	do
+		tokenToSend := subPuIdxMax[1][0][0] - xIdx;
+		updateIdx(tokenToSend);
+	end
+
+	checkInput.input3: action ==>
+	guard
+		yIdx < puSize[1],
+		xIdx >= subPuIdxMin[0][1][0] && xIdx < subPuIdxMax[0][1][0],
+		yIdx >= subPuIdxMin[0][1][1] && yIdx < subPuIdxMax[0][1][1]
+	do
+		tokenToSend := subPuIdxMax[0][1][0] - xIdx;
+		updateIdx(tokenToSend);
+	end
+
+	checkInput.input4: action ==>
+	guard
+		yIdx < puSize[1],
+		xIdx >= subPuIdxMin[1][1][0] && xIdx < subPuIdxMax[1][1][0],
+		yIdx >= subPuIdxMin[1][1][1] && yIdx < subPuIdxMax[1][1][1]
+	do
+		tokenToSend := subPuIdxMax[1][1][0] - xIdx;
+		updateIdx(tokenToSend);
+	end
+
+	checkInput.done: action ==>
+	guard
+		yIdx = puSize[1]
+	end
+
+	forward.input1: action InSample1:[in1] repeat 24, InSample2:[in2] repeat 24, InSample3:[in3] repeat 24, InSample4:[in4] repeat 24 ==> OutSample:[in1] repeat 24
+	guard
+		tokenToSend > 0
+	do
+		tokenToSend := tokenToSend - 1;
+	end
+
+	forward.input2: action InSample1:[in1] repeat 24, InSample2:[in2] repeat 24, InSample3:[in3] repeat 24, InSample4:[in4] repeat 24 ==> OutSample:[in2] repeat 24
+	guard
+		tokenToSend > 0
+	do
+		tokenToSend := tokenToSend - 1;
+	end
+
+	forward.input3: action InSample1:[in1] repeat 24, InSample2:[in2] repeat 24, InSample3:[in3] repeat 24, InSample4:[in4] repeat 24 ==> OutSample:[in3] repeat 24
+	guard
+		tokenToSend > 0
+	do
+		tokenToSend := tokenToSend - 1;
+	end
+
+	forward.input4: action InSample1:[in1] repeat 24, InSample2:[in2] repeat 24, InSample3:[in3] repeat 24, InSample4:[in4] repeat 24 ==> OutSample:[in4] repeat 24
+	guard
+		tokenToSend > 0
+	do
+		tokenToSend := tokenToSend - 1;
+	end
+
+	forward.done: action ==>
+	guard
+		tokenToSend = 0
+	end
+
+	schedule fsm GetPuInfo:
+
+		GetPuInfo   (getPuInfo )--> CheckPuMode;
+
+		CheckPuMode (checkPuMode.isInter )--> CheckIn2Forw;
+		CheckPuMode (checkPuMode.isOther )--> GetPuInfo;
+
+		CheckIn2Forw (checkInput.input1 )--> ForwardIn1;
+		CheckIn2Forw (checkInput.input2 )--> ForwardIn2;
+		CheckIn2Forw (checkInput.input3 )--> ForwardIn3;
+		CheckIn2Forw (checkInput.input4 )--> ForwardIn4;
+		CheckIn2Forw (checkInput.done   )--> GetPuInfo;
+
+		ForwardIn1 (forward.input1 )--> ForwardIn1;
+		ForwardIn1 (forward.done   )--> CheckIn2Forw;
+
+		ForwardIn2 (forward.input2 )--> ForwardIn2;
+		ForwardIn2 (forward.done   )--> CheckIn2Forw;
+
+		ForwardIn3 (forward.input3 )--> ForwardIn3;
+		ForwardIn3 (forward.done   )--> CheckIn2Forw;
+
+		ForwardIn4 (forward.input4 )--> ForwardIn4;
+		ForwardIn4 (forward.done   )--> CheckIn2Forw;
+	end
+end
