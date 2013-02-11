@@ -243,8 +243,8 @@
     <Connection dst="InterpPreComput" dst-port="Sample" src="" src-port="Sample"/>
     <Connection dst="InterpPreComput" dst-port="SliceType" src="" src-port="SliceType"/>
     <Connection dst="InterpPreComput" dst-port="WeightedPredSe" src="" src-port="WeightedPredSe"/>
-    <Connection dst="Interp_0_0" dst-port="Sample" src="InterpPreComput" src-port="PredSample"/>
     <Connection dst="Interp_1_0" dst-port="Sample" src="InterpPreComput" src-port="PredSample"/>
     <Connection dst="Interp_0_1" dst-port="Sample" src="InterpPreComput" src-port="PredSample"/>
     <Connection dst="Interp_1_1" dst-port="Sample" src="InterpPreComput" src-port="PredSample"/>
+    <Connection dst="Interp_0_0" dst-port="Sample" src="InterpPreComput" src-port="PredSample"/>
 </XDF>

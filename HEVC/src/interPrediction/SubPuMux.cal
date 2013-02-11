@@ -152,28 +152,28 @@ actor SubPuMux(uint(size=3) LOG2_NUM_SUB_BLK[2])
 		yIdx = puSize[1]
 	end
 
-	forward.input1: action InSample1:[in1] repeat 24, InSample2:[in2] repeat 24, InSample3:[in3] repeat 24, InSample4:[in4] repeat 24 ==> OutSample:[in1] repeat 24
+	forward.input1: action InSample1:[in1] repeat 24 ==> OutSample:[in1] repeat 24
 	guard
 		tokenToSend > 0
 	do
 		tokenToSend := tokenToSend - 1;
 	end
 
-	forward.input2: action InSample1:[in1] repeat 24, InSample2:[in2] repeat 24, InSample3:[in3] repeat 24, InSample4:[in4] repeat 24 ==> OutSample:[in2] repeat 24
+	forward.input2: action InSample2:[in2] repeat 24 ==> OutSample:[in2] repeat 24
 	guard
 		tokenToSend > 0
 	do
 		tokenToSend := tokenToSend - 1;
 	end
 
-	forward.input3: action InSample1:[in1] repeat 24, InSample2:[in2] repeat 24, InSample3:[in3] repeat 24, InSample4:[in4] repeat 24 ==> OutSample:[in3] repeat 24
+	forward.input3: action InSample3:[in3] repeat 24 ==> OutSample:[in3] repeat 24
 	guard
 		tokenToSend > 0
 	do
 		tokenToSend := tokenToSend - 1;
 	end
 
-	forward.input4: action InSample1:[in1] repeat 24, InSample2:[in2] repeat 24, InSample3:[in3] repeat 24, InSample4:[in4] repeat 24 ==> OutSample:[in4] repeat 24
+	forward.input4: action InSample4:[in4] repeat 24 ==> OutSample:[in4] repeat 24
 	guard
 		tokenToSend > 0
 	do

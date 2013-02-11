@@ -889,6 +889,20 @@ int(size=8) interPredCoeff[3][8][8] =
 		jLoop := 0;
 	end
 
+	sendPu.skip: action ==>
+	guard
+		LOG2_NUM_SUB_BLK[0] != 0 || LOG2_NUM_SUB_BLK[1] != 0,
+		jLoop < cuSize[1],
+		iLoop < subPuIdxMin[0] || iLoop >= subPuIdxMax[0] ||
+		jLoop < subPuIdxMin[1] || jLoop >= subPuIdxMax[1]
+	do
+		iLoop := iLoop + 4;
+		if(iLoop = cuSize[0]) then
+			iLoop := 0;
+			jLoop := jLoop + 4;
+		end
+	end
+
 	sendPu.launch.allComp: action ==> PredSample:[pix] repeat 16+2*4
 	guard
 		(PROCESS_MODE_HALF_PIX & HALF_PIX_2ND_PART) != 0,
@@ -1082,6 +1096,7 @@ int(size=8) interPredCoeff[3][8][8] =
 
 		InterpolateSamples (interpolateSamples )--> CheckSendIntermPu;
 
+		SendPu (sendPu.skip   )--> SendPu;
 		SendPu (sendPu.launch )--> SendPu;
 		SendPu (sendPu.done   )--> GetCuInfo;
 
@@ -1096,5 +1111,6 @@ int(size=8) interPredCoeff[3][8][8] =
 	end
 	priority
 		getWeightLX.launch > getWeightLX.skip >getWeightLX.done;
+		sendPu.skip > sendPu.launch > sendPu.done;
 	end
 end
