@@ -406,6 +406,15 @@ int(size=8) interPredCoeff[3][8][8] =
 		end
 	end
 
+
+	initialize ==>
+	guard
+		PROCESS_MODE_HALF_PIX = 3 && (LOG2_NUM_SUB_BLK[0] != 0 || LOG2_NUM_SUB_BLK[1] != 0)
+	do
+		print(" Warning in InterPrediction : Using SubBlk with no pre-computing for Half/Quarter Pix.");
+		println(" There will be more interpolation than needed.");
+	end
+
 	/* We have a new slice, we will update differents value then get the new
 	 * refList and weights
 	 */
@@ -775,8 +784,10 @@ int(size=8) interPredCoeff[3][8][8] =
 		int mvQuartPix[2],
 		uint(size=2) COMP_MIN = if((DECODE_COMP & LUMA_COMP) = 0) then 1 else 0 end,
 		uint(size=2) COMP_MAX = if((DECODE_COMP & CHROMA_COMP) != 0) then 2 else 1 end,
-		uint(size=2) puIdxMin[2],
-		uint(size=2) puIdxMax[2]
+		uint(size=7) puIdxMin[2],
+		uint(size=7) puIdxMax[2],
+		uint(size=7) fullPuIdxMin[2] = [0, 0],
+		uint(size=7) fullPuIdxMax[2]
 	do
 		/* This condition is not usefull anymore */
 		if( not (refIdxLx[listIdx] = -1 || listIdx = 1 && numList = 1 &&
@@ -789,10 +800,11 @@ int(size=8) interPredCoeff[3][8][8] =
 				end;
 			puIdxMax := 
 				if(LOG2_NUM_SUB_BLK[0] = 0 && LOG2_NUM_SUB_BLK[1] = 0) then
-					[cuSize[i]:for int i in 0 .. 1]
+					[cuSize[i]: for int i in 0 .. 1]
 				else
 					[subPuIdxMax[0], subPuIdxMax[1]]
 				end;
+			fullPuIdxMax := [cuSize[i]: for int i in 0 .. 1];
 
 			foreach int component in COMP_MIN .. COMP_MAX /* Y, Cb, Cr */
 			do
@@ -815,9 +827,9 @@ int(size=8) interPredCoeff[3][8][8] =
 				 */
 				if(((PROCESS_MODE_HALF_PIX & HALF_PIX_1ST_PART) != 0) &&
 					mvQuartPix[0]!=0 && mvQuartPix[1]!=0) then
-					foreach int y in puIdxMin[1] .. puIdxMax[1] + numCoeff[component]-1
+					foreach int y in fullPuIdxMin[1] .. fullPuIdxMax[1] + numCoeff[component]-1
 					do
-						foreach int x in puIdxMin[0] .. puIdxMax[0]-1
+						foreach int x in fullPuIdxMin[0] .. fullPuIdxMax[0]-1
 						do
 							coord := [x, y];
 							predictionFiltering(true, coord, [x, y],  mvQuartPix[0],
