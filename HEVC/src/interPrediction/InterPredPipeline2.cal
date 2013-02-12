@@ -121,6 +121,7 @@ actor InterPredPipeline2(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 	uint(size=2)  cuMode;
 	uint(size=7)  subPuIdxMin[2][2];
 	uint(size=7)  subPuIdxMax[2][2];
+	uint(size=7)  subPuSize[2][2];
 
 	int           logWD[3];
 	int           weightCu[3][2];
@@ -645,6 +646,8 @@ int(size=8) interPredCoeff[3][8][8] =
 				end
 				subPuIdxMax[0][i] := subPuIdxMin[0][i] + numBlk;
 
+				subPuSize[0][i]   := numBlk << 2;
+				subPuSize[1][i]   := numBlk << 1;
 				subPuIdxMin[1][i] := subPuIdxMin[0][i] << 1;
 				subPuIdxMax[1][i] := subPuIdxMax[0][i] << 1;
 				subPuIdxMin[0][i] := subPuIdxMin[0][i] << 2;
@@ -787,46 +790,32 @@ int(size=8) interPredCoeff[3][8][8] =
 
 	interpolateSamples: action ==>
 	var
-		int coord[2],
 		uint maskMv[3] = [3, 7, 7],
 		uint(size=4) numCoeff[3] = [8, 4, 4],
 		int mvQuartPix[2],
 		uint(size=2) COMP_MIN = if((DECODE_COMP & LUMA_COMP) = 0) then 1 else 0 end,
 		uint(size=2) COMP_MAX = if((DECODE_COMP & CHROMA_COMP) != 0) then 2 else 1 end,
-		uint(size=7) puIdxMin[2],
 		uint(size=7) puIdxMax[2],
-		uint(size=7) fullPuIdxMin[2] = [0, 0],
 		uint(size=7) fullPuIdxMax[2]
 	do
-		puIdxMin := 
-			if(LOG2_NUM_SUB_BLK[0] = 0 && LOG2_NUM_SUB_BLK[1] = 0) then
-				[0, 0]
-			else
-				[0, 0]
-			end;
 		puIdxMax := 
 			if(LOG2_NUM_SUB_BLK[0] = 0 && LOG2_NUM_SUB_BLK[1] = 0) then
 				[cuSize[i]: for int i in 0 .. 1]
 			else
-				[subPuIdxMax[0][0] - subPuIdxMin[0][0], subPuIdxMax[0][1] - subPuIdxMin[0][1]]
+				[subPuSize[0][0], subPuSize[0][1]]
 			end;
 		fullPuIdxMax := [cuSize[i]: for int i in 0 .. 1];
 
 		foreach int component in COMP_MIN .. COMP_MAX /* Y, Cb, Cr */
 		do
 			if(component = 1) then
-				puIdxMin := 
-					if(LOG2_NUM_SUB_BLK[0] = 0 && LOG2_NUM_SUB_BLK[1] = 0) then
-						[0, 0]
-					else
-						[0, 0]
-					end;
 				puIdxMax := 
 					if(LOG2_NUM_SUB_BLK[0] = 0 && LOG2_NUM_SUB_BLK[1] = 0) then
 						[cuSize[i]: for int i in 0 .. 1]
 					else
-						[subPuIdxMax[1][0] - subPuIdxMin[1][0], subPuIdxMax[1][1] - subPuIdxMin[1][1]]
+						[subPuSize[1][0], subPuSize[1][1]]
 					end;
+				fullPuIdxMax := [fullPuIdxMax[i]>>1: for int i in 0 .. 1];
 			end
 			/* We just need to do the fractionnal part of the movement
 			 * interpolation.
@@ -843,12 +832,11 @@ int(size=8) interPredCoeff[3][8][8] =
 			 */
 			if(((PROCESS_MODE_HALF_PIX & HALF_PIX_1ST_PART) != 0) &&
 				mvQuartPix[0]!=0 && mvQuartPix[1]!=0) then
-				foreach int y in fullPuIdxMin[1] .. fullPuIdxMax[1] + numCoeff[component]-1
+				foreach int y in 0 .. fullPuIdxMax[1]-1 + numCoeff[component]-1
 				do
-					foreach int x in fullPuIdxMin[0] .. fullPuIdxMax[0]-1
+					foreach int x in 0 .. fullPuIdxMax[0]-1
 					do
-						coord := [x, y];
-						predictionFiltering(true, coord, [x, y],  mvQuartPix[0],
+						predictionFiltering(true, [x, y], [x, y],  mvQuartPix[0],
 							-8192, 0, component);
 					end
 				end
@@ -858,9 +846,9 @@ int(size=8) interPredCoeff[3][8][8] =
 			 * for all pixel of the Cu.
 			 */
 			if((PROCESS_MODE_HALF_PIX & HALF_PIX_2ND_PART) != 0) then
-				foreach int x in puIdxMin[0] .. puIdxMax[0]-1
+				foreach int x in 0 .. puIdxMax[0]-1
 				do
-					foreach int y in puIdxMin[1] .. puIdxMax[1]-1
+					foreach int y in 0 .. puIdxMax[1]-1
 					do
 						if(component=0) then
 							interpolOneSample(x, y, mvQuartPix, 8,
@@ -891,7 +879,7 @@ int(size=8) interPredCoeff[3][8][8] =
 			if(LOG2_NUM_SUB_BLK[0] = 0 && LOG2_NUM_SUB_BLK[1] = 0) then
 				[cuSize[i]: for int i in 0 .. 1]
 			else
-				[subPuIdxMax[0][0] - subPuIdxMin[0][0], subPuIdxMax[0][1] - subPuIdxMin[0][1]]
+				[subPuSize[0][0], subPuSize[0][1]]
 			end;
 		if((PROCESS_MODE_HALF_PIX & HALF_PIX_2ND_PART) != 0) then
 			foreach int component in COMP_MIN .. COMP_MAX /* Y, Cb, Cr */
