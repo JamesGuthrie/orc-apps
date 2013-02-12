@@ -729,7 +729,7 @@ int(size=8) interPredCoeff[3][8][8] =
 
 	getSamples.luma.launch: action Sample:[sample] ==>
 	guard
-		listIdx=0 || listIdx=1 && numList = 2,
+		listIdx < numList,
 		jLoop < cuSize[1]+7
 	do
 		predSamples[listIdx][0][iLoop][jLoop] := sample;
@@ -743,7 +743,6 @@ int(size=8) interPredCoeff[3][8][8] =
 
 	getSamples.luma.done: action ==>
 	guard
-		listIdx=0 || listIdx=1 && isBiPredOrLx !=  PRED_L0,
 		jLoop = cuSize[1]+7
 	do
 		compIdx := 1;
@@ -753,7 +752,6 @@ int(size=8) interPredCoeff[3][8][8] =
 
 	getSamples.chroma.launch: action Sample:[sample] ==>
 	guard
-		listIdx=0 || listIdx=1 && isBiPredOrLx !=  PRED_L0,
 		compIdx < 3
 	do
 		predSamples[listIdx][compIdx][iLoop][jLoop] := sample;
@@ -772,7 +770,6 @@ int(size=8) interPredCoeff[3][8][8] =
 
 	getSamples.chroma.done: action ==>
 	guard
-		listIdx=0 || listIdx=1 && isBiPredOrLx !=  PRED_L0,
 		compIdx = 3
 	end
 
@@ -789,75 +786,72 @@ int(size=8) interPredCoeff[3][8][8] =
 		uint(size=7) fullPuIdxMin[2] = [0, 0],
 		uint(size=7) fullPuIdxMax[2]
 	do
-		/* This condition is not usefull anymore */
-		if( not (refIdxLx[listIdx] = -1 || listIdx = 1 && numList = 1 &&
-			refIdxLx[0]!=-1)) then
-			puIdxMin := 
-				if(LOG2_NUM_SUB_BLK[0] = 0 && LOG2_NUM_SUB_BLK[1] = 0) then
-					[0, 0]
-				else
-					[subPuIdxMin[0], subPuIdxMin[1]]
-				end;
-			puIdxMax := 
-				if(LOG2_NUM_SUB_BLK[0] = 0 && LOG2_NUM_SUB_BLK[1] = 0) then
-					[cuSize[i]: for int i in 0 .. 1]
-				else
-					[subPuIdxMax[0], subPuIdxMax[1]]
-				end;
-			fullPuIdxMax := [cuSize[i]: for int i in 0 .. 1];
+		puIdxMin := 
+			if(LOG2_NUM_SUB_BLK[0] = 0 && LOG2_NUM_SUB_BLK[1] = 0) then
+				[0, 0]
+			else
+				[subPuIdxMin[0], subPuIdxMin[1]]
+			end;
+		puIdxMax := 
+			if(LOG2_NUM_SUB_BLK[0] = 0 && LOG2_NUM_SUB_BLK[1] = 0) then
+				[cuSize[i]: for int i in 0 .. 1]
+			else
+				[subPuIdxMax[0], subPuIdxMax[1]]
+			end;
+		fullPuIdxMax := [cuSize[i]: for int i in 0 .. 1];
 
-			foreach int component in COMP_MIN .. COMP_MAX /* Y, Cb, Cr */
-			do
-				if(component = 1) then
-					puIdxMin := [puIdxMin[i]>>1: for uint i in 0 .. 1];
-					puIdxMax := [puIdxMax[i]>>1: for uint i in 0 .. 1];
-				end
-				/* We just need to do the fractionnal part of the movement
-				 * interpolation.
-				 */
-				mvQuartPix := [mvLx[listIdx][i] & maskMv[component]:
-					for int i in 0 .. 1];
+		foreach int component in COMP_MIN .. COMP_MAX /* Y, Cb, Cr */
+		do
+			if(component = 1) then
+				puIdxMin := [puIdxMin[i]>>1: for uint i in 0 .. 1];
+				puIdxMax := [puIdxMax[i]>>1: for uint i in 0 .. 1];
+			end
+			/* We just need to do the fractionnal part of the movement
+			 * interpolation.
+			 */
+			mvQuartPix := [mvLx[listIdx][i] & maskMv[component]:
+				for int i in 0 .. 1];
 
 
-				/* if quartPix (or eighthPix for chroma) is not equal to 0 for both
-				 * x and y, we realize the interpolation in 2 steps.
-				 */
-				/* We do the horizontal interpolation for all the samples which
-				 * will be needed for the vertical interpolation.
-				 */
-				if(((PROCESS_MODE_HALF_PIX & HALF_PIX_1ST_PART) != 0) &&
-					mvQuartPix[0]!=0 && mvQuartPix[1]!=0) then
-					foreach int y in fullPuIdxMin[1] .. fullPuIdxMax[1] + numCoeff[component]-1
+			/* if quartPix (or eighthPix for chroma) is not equal to 0 for both
+			 * x and y, we realize the interpolation in 2 steps.
+			 */
+			/* We do the horizontal interpolation for all the samples which
+			 * will be needed for the vertical interpolation.
+			 */
+			if(((PROCESS_MODE_HALF_PIX & HALF_PIX_1ST_PART) != 0) &&
+				mvQuartPix[0]!=0 && mvQuartPix[1]!=0) then
+				foreach int y in fullPuIdxMin[1] .. fullPuIdxMax[1] + numCoeff[component]-1
+				do
+					foreach int x in fullPuIdxMin[0] .. fullPuIdxMax[0]-1
 					do
-						foreach int x in fullPuIdxMin[0] .. fullPuIdxMax[0]-1
-						do
-							coord := [x, y];
-							predictionFiltering(true, coord, [x, y],  mvQuartPix[0],
-								-8192, 0, component);
-						end
+						coord := [x, y];
+						predictionFiltering(true, coord, [x, y],  mvQuartPix[0],
+							-8192, 0, component);
 					end
 				end
+			end
 
-				/* We realize the interpolation then the weighted prediction
-				 * for all pixel of the Cu.
-				 */
-				if((PROCESS_MODE_HALF_PIX & HALF_PIX_2ND_PART) != 0) then
-					foreach int x in puIdxMin[0] .. puIdxMax[0]-1
+			/* We realize the interpolation then the weighted prediction
+			 * for all pixel of the Cu.
+			 */
+			if((PROCESS_MODE_HALF_PIX & HALF_PIX_2ND_PART) != 0) then
+				foreach int x in puIdxMin[0] .. puIdxMax[0]-1
+				do
+					foreach int y in puIdxMin[1] .. puIdxMax[1]-1
 					do
-						foreach int y in puIdxMin[1] .. puIdxMax[1]-1
-						do
-							if(component=0) then
-								interpolOneSample(x, y, mvQuartPix, 8,
-									component);
-							else
-								interpolOneSample(x, y, mvQuartPix, 4,
-									component);
-							end
+						if(component=0) then
+							interpolOneSample(x, y, mvQuartPix, 8,
+								component);
+						else
+							interpolOneSample(x, y, mvQuartPix, 4,
+								component);
 						end
 					end
 				end
 			end
 		end
+
 		listIdx := listIdx + 1;
 		iLoop := 0;
 		jLoop := 0;
@@ -865,7 +859,7 @@ int(size=8) interPredCoeff[3][8][8] =
 
 	getSamples.done: action ==>
 	guard
-		listIdx=2 || listIdx=1 && numList = 1
+		listIdx = numList
 	var
 		uint(size=7) compPuIdxMax[2],
 		uint(size=2) COMP_MIN = if((DECODE_COMP & LUMA_COMP) = 0) then 1 else 0 end,
@@ -896,10 +890,15 @@ int(size=8) interPredCoeff[3][8][8] =
 		iLoop < subPuIdxMin[0] || iLoop >= subPuIdxMax[0] ||
 		jLoop < subPuIdxMin[1] || jLoop >= subPuIdxMax[1]
 	do
-		iLoop := iLoop + 4;
-		if(iLoop = cuSize[0]) then
-			iLoop := 0;
-			jLoop := jLoop + 4;
+		while(jLoop < cuSize[1] &&
+			(iLoop < subPuIdxMin[0] || iLoop >= subPuIdxMax[0] ||
+			 jLoop < subPuIdxMin[1] || jLoop >= subPuIdxMax[1]))
+		do
+			iLoop := iLoop + 4;
+			if(iLoop = cuSize[0]) then
+				iLoop := 0;
+				jLoop := jLoop + 4;
+			end
 		end
 	end
 
