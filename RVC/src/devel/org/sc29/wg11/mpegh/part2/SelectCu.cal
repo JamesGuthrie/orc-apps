@@ -63,21 +63,33 @@ actor SelectCu()
 	uint(size=4)  PartMode,
 	int (size=9)  ResidualSample
 		==>
+	uint(size=8) IntraRefSample,
 	uint(size=8) Sample
 		:
 
 	uint(size=4)  numPart;
 	uint(size=3)  numPartDecoded;
-	uint(size=7)  cuSize[4][2];
+
+	uint(size=8)  predSamp[3][64][64];
+
 	uint(size=5)  cuMode;
 	uint(size=4)  partMode;
+
+	uint(size=7)  cuSize[4][2];
 	uint(size=5)  cuOff[4][2] := [[0,0],[0,0],[0,0],[0,0]];
+	uint(size=6)  blkOff[2];
 	uint(size=7)  cuWidth;
+
 	uint(size=9)  nbBlk;
 	uint(size=9)  idxBlk;
-	uint(size=8)  interSamp[16][16][16+2*4];
-	uint(size=5)  xIdx;
-	uint(size=5)  yIdx;
+
+	uint(size=7)  xIdx;
+	uint(size=7)  yIdx;
+	uint(size=2)  cIdx;
+
+
+	uint(size=16) lastLcuAddr := 0;
+	uint(size=16) curLcuAddr := 0;
 
 	isNewSlice: action PartMode:[partModeVal] ==>
 	guard
@@ -102,8 +114,10 @@ actor SelectCu()
 		cuWidth := cuInfo[3];
 		nbBlk   := cuWidth*cuWidth/16;
 		idxBlk  := 0;
-		cuSize := [[cuInfo[i]/4:for int i in 3 .. 4]:for int j in 0 .. 3];
-		cuOff[1] := [0:for int i in 0 .. 1];
+		blkOff  := [cuInfo[i]&63: for int i in 1 .. 2];
+		curLcuAddr := cuInfo[1]&~63;
+		cuSize  := [[cuInfo[i]/4:for int i in 3 .. 4]:for int j in 0 .. 3];
+		cuOff[0] := [0:for int i in 0 .. 1];
 	end
 
 	/* Getting informations of the next CU when there are two part.
@@ -120,6 +134,8 @@ actor SelectCu()
 		cuWidth := max(cuInfo[3], cuInfo[4]);
 		nbBlk   := cuWidth*cuWidth/16;
 		idxBlk  := 0;
+		blkOff  := [cuInfo[i]&63: for int i in 1 .. 2];
+		curLcuAddr := cuInfo[1]&~63;
 		if(partMode=PART_2NxN || partMode=PART_2NxnU ||
 			partMode=PART_2NxnD) then
 			cuOff[1][0] := 0;
@@ -129,6 +145,68 @@ actor SelectCu()
 			cuOff[1][1] := 0;
 		end
 		numPartDecoded := 0;
+	end
+
+	isNewLcu: action ==>
+	guard
+		lastLcuAddr != curLcuAddr
+	do
+		lastLcuAddr := curLcuAddr;
+		yIdx := 0;
+	end
+
+	isNewPu: action ==>
+	guard
+		lastLcuAddr = curLcuAddr
+	end
+
+	sendLcuLuma.launch: action ==> IntraRefSample:[samples] repeat 256
+	guard
+		yIdx < 64
+	var
+		uint(size=8) samples[256]
+	do
+		foreach uint y in 0 .. 3
+		do
+			foreach uint x in 0 .. 63
+			do
+				samples[y*64+x] := predSamp[0][x][yIdx+y];
+			end
+		end
+		yIdx := yIdx + 4;
+	end
+
+	sendLcuLuma.done: action ==>
+	guard
+		yIdx = 64
+	do
+		yIdx := 0;
+		cIdx := 1;
+	end
+
+	sendLcuChroma.launch: action ==> IntraRefSample:[samples] repeat 256
+	guard
+		cIdx < 3
+	var
+		uint(size=8) samples[256]
+	do
+		foreach uint y in 0 .. 7
+		do
+			foreach uint x in 0 .. 31
+			do
+				samples[y*32+x] := predSamp[cIdx][x][yIdx+y];
+			end
+		end
+		yIdx := yIdx + 8;
+		if(yIdx = 32) then
+			yIdx := 0;
+			cIdx := cIdx + 1;
+		end
+	end
+
+	sendLcuChroma.done: action ==>
+	guard
+		cIdx = 3
 	end
 
 	getCuInfo.done: action ==>
@@ -166,16 +244,43 @@ actor SelectCu()
 	guard
 		idxBlk < nbBlk
 	var
-		uint(size=8) sample[16+2*4]
+		uint(size=8) sample[16+2*4],
+		uint(size=5) sampleIdx := 0,
+		uint(size=16) blkAddr[2]
 	do
-		idxBlk := idxBlk + 1;
 		/* Reordering the sample is not needed because both (Residual and
 		 * prediction parts) sample are in the rasterScan order
 		 */
-		foreach int i in 0 .. 16+2*4-1
+		rasterScanToAbsCoord(idxBlk, blkAddr);
+		blkAddr := [blkAddr[i]+blkOff[i]: for int i in 0 .. 1];
+		foreach uint y in 0 .. 3
 		do
-			sample[i] := clip_i32(intraSample[i]+resSample[i], 0, 255);
+			foreach uint x in 0 .. 3
+			do
+				predSamp[0][blkAddr[0]+x][blkAddr[1]+y] :=
+					clip_i32(intraSample[sampleIdx]+resSample[sampleIdx], 0, 255);
+				sample[sampleIdx] := predSamp[0][blkAddr[0]+x][blkAddr[1]+y];
+				sampleIdx := sampleIdx + 1;
+			end
 		end
+
+		blkAddr[0] := blkAddr[0] >> 1;
+		blkAddr[1] := blkAddr[1] >> 1;		
+		foreach uint cIdx in 1 .. 2
+		do
+			foreach uint y in 0 .. 1
+			do
+				foreach uint x in 0 .. 1
+				do
+					predSamp[cIdx][blkAddr[0]+x][blkAddr[1]+y] :=
+						clip_i32(intraSample[sampleIdx]+resSample[sampleIdx], 0, 255);
+					sample[sampleIdx] := predSamp[cIdx][blkAddr[0]+x][blkAddr[1]+y];
+					sampleIdx := sampleIdx + 1;
+				end
+			end
+		end
+
+		idxBlk := idxBlk + 1;
 	end
 
 	/* Getting prediction samples from interPrediction */
@@ -183,18 +288,37 @@ actor SelectCu()
 	guard
 		idxBlk < nbBlk
 	var
+		uint(size=5) sampleIdx := 0,
+		uint(size=16) blkAddr[2],
 		/* Offset is not null when numPart = 2 and partIdx = 1. */
 		uint xOff = cuOff[numPartDecoded][0],
 		uint yOff = cuOff[numPartDecoded][1]
 	do
-		/* Saving the inter prediction part because it's in ZScan instead of
-		 * RasterScan.
-		 */
-		foreach uint i in 0 .. 16+2*4-1
+		blkAddr := [((xIdx+xOff)<<2)+blkOff[0], ((yIdx+yOff)<<2)+blkOff[1]];
+		foreach uint y in 0 .. 3
 		do
-			interSamp[xIdx+xOff][yIdx+yOff][i] := interSample[i];
+			foreach uint x in 0 .. 3
+			do
+				predSamp[0][blkAddr[0]+x][blkAddr[1]+y] := interSample[sampleIdx];
+				sampleIdx := sampleIdx + 1;
+			end
 		end
-		/* Computing the location of the next block. */
+
+		blkAddr[0] := blkAddr[0] >> 1;
+		blkAddr[1] := blkAddr[1] >> 1;
+		foreach uint cIdx in 1 .. 2
+		do
+			foreach uint y in 0 .. 1
+			do
+				foreach uint x in 0 .. 1
+				do
+					predSamp[cIdx][blkAddr[0]+x][blkAddr[1]+y] := interSample[sampleIdx];
+					sampleIdx := sampleIdx + 1;
+				end
+			end
+		end
+
+		/* Computing the location of the next block (it's sent in ZScan order instead of RasterScan. */
 		xIdx := xIdx + 1;
 		if(xIdx = cuSize[numPartDecoded][0]) then
 			xIdx := 0;
@@ -216,18 +340,42 @@ actor SelectCu()
 	guard
 		idxBlk < nbBlk
 	var
-		uint(size=8)  sample[16+2*4],
-		uint(size=16) interIdx[2]
+		uint(size=5) sampleIdx := 0,
+		uint(size=16) blkAddr[2],
+		uint(size=8)  sample[16+2*4]
 	do
-		rasterScanToAbsCoord(idxBlk, interIdx);
-		interIdx[0] := interIdx[0]>>2;
-		interIdx[1] := interIdx[1]>>2;
-		idxBlk := idxBlk + 1;
-		foreach int i in 0 .. 16+2*4-1
+		rasterScanToAbsCoord(idxBlk, blkAddr);
+		blkAddr := [blkAddr[i]+blkOff[i]: for int i in 0 .. 1];
+		foreach uint y in 0 .. 3
 		do
-			sample[i] := clip_i32(interSamp[interIdx[0]][interIdx[1]][i] +
-				resSample[i], 0, 255);
+			foreach uint x in 0 .. 3
+			do
+				predSamp[0][blkAddr[0]+x][blkAddr[1]+y] :=
+					clip_i32(predSamp[0][blkAddr[0]+x][blkAddr[1]+y] +
+					resSample[sampleIdx], 0, 255);
+				sample[sampleIdx] := predSamp[0][blkAddr[0]+x][blkAddr[1]+y];
+				sampleIdx := sampleIdx + 1;
+			end
 		end
+
+		blkAddr[0] := blkAddr[0] >> 1;
+		blkAddr[1] := blkAddr[1] >> 1;
+		foreach uint cIdx in 1 .. 2
+		do
+			foreach uint y in 0 .. 1
+			do
+				foreach uint x in 0 .. 1
+				do
+					predSamp[cIdx][blkAddr[0]+x][blkAddr[1]+y] := 
+						clip_i32(predSamp[cIdx][blkAddr[0]+x][blkAddr[1]+y] +
+						resSample[sampleIdx], 0, 255);
+					sample[sampleIdx] := predSamp[cIdx][blkAddr[0]+x][blkAddr[1]+y];
+					sampleIdx := sampleIdx + 1;
+				end
+			end
+		end
+
+		idxBlk := idxBlk + 1;
 	end
 
 	getCuSample.done: action ==>
@@ -241,8 +389,17 @@ actor SelectCu()
 		GetPartMode (isNewSlice       )--> GetPartMode;
 		GetPartMode (getPartMode      )--> GetCuInfo;
 
-		GetCuInfo   (getCuInfo.launch )--> GetCuMode;
+		GetCuInfo   (getCuInfo.launch )--> CheckNewLcu;
 		GetCuInfo   (getCuInfo.done   )--> GetPartMode;
+
+		CheckNewLcu (isNewLcu )--> SendLcuLuma;
+		CheckNewLcu (isNewPu  )--> GetCuMode;
+
+		SendLcuLuma (sendLcuLuma.launch )--> SendLcuLuma;
+		SendLcuLuma (sendLcuLuma.done   )--> SendLcuChroma;
+
+		SendLcuChroma (sendLcuChroma.launch )--> SendLcuChroma;
+		SendLcuChroma (sendLcuChroma.done   )--> GetCuMode;
 
 		GetCuMode (getCuMode.isIntra )--> GetCuSampleIntra;
 		GetCuMode (getCuMode.isInter )--> GetCuSampleInter;

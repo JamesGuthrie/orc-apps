@@ -7,13 +7,6 @@
             </Entry>
         </Type>
     </Port>
-    <Port kind="Output" name="VID">
-        <Type name="int">
-            <Entry kind="Expr" name="size">
-                <Expr kind="Literal" literal-kind="Integer" value="32"/>
-            </Entry>
-        </Type>
-    </Port>
     <Port kind="Output" name="DispCoord">
         <Type name="int">
             <Entry kind="Expr" name="size">
@@ -28,6 +21,13 @@
             </Entry>
         </Type>
     </Port>
+    <Port kind="Output" name="VID">
+        <Type name="int">
+            <Entry kind="Expr" name="size">
+                <Expr kind="Literal" literal-kind="Integer" value="32"/>
+            </Entry>
+        </Type>
+    </Port>
     <Instance id="Algo_Parser">
         <Class name="devel.org.sc29.wg11.mpegh.part2.synParser.Algo_Parser"/>
     </Instance>
@@ -36,9 +36,6 @@
     </Instance>
     <Instance id="SelectCU">
         <Class name="devel.org.sc29.wg11.mpegh.part2.SelectCu"/>
-    </Instance>
-    <Instance id="LCU_reord">
-        <Class name="devel.org.sc29.wg11.mpegh.part2.inter.Framedelay"/>
     </Instance>
     <Instance id="feeder">
         <Class name="devel.org.sc29.wg11.mpegh.part2.common.feed_u8"/>
@@ -56,8 +53,6 @@
     <Connection dst="xIT" dst-port="Coeff" src="Algo_Parser" src-port="Coeff"/>
     <Connection dst="SelectCU" dst-port="PartMode" src="Algo_Parser" src-port="PartMode"/>
     <Connection dst="SelectCU" dst-port="CUInfo" src="Algo_Parser" src-port="CUInfo"/>
-    <Connection dst="LCU_reord" dst-port="Block_in" src="SelectCU" src-port="Sample"/>
-    <Connection dst="LCU_reord" dst-port="PictSize" src="Algo_Parser" src-port="PictSize"/>
     <Connection dst="Algo_Parser" dst-port="byte" src="" src-port="BYTE"/>
     <Connection dst="" dst-port="SIZE" src="Algo_Parser" src-port="PicSizeInMb"/>
     <Connection dst="" dst-port="DispCoord" src="Algo_Parser" src-port="DispCoord"/>
@@ -80,7 +75,6 @@
     <Connection dst="IntraPrediction" dst-port="IntraPredMode"
         src="Algo_Parser" src-port="IntraPredMode"/>
     <Connection dst="SelectCU" dst-port="ResidualSample" src="xIT" src-port="Block"/>
-    <Connection dst="" dst-port="VID" src="LCU_reord" src-port="Block_out"/>
     <Connection dst="ParserSink" dst-port="Poc" src="Algo_Parser" src-port="Poc"/>
     <Connection dst="ParserSink" dst-port="SliceType" src="Algo_Parser" src-port="SliceType"/>
     <Connection dst="ParserSink" dst-port="NumRefIdxLXAct"
@@ -91,4 +85,5 @@
     <Connection dst="ParserSink" dst-port="ColocInfo" src="Algo_Parser" src-port="ColocInfo"/>
     <Connection dst="ParserSink" dst-port="MvPredSyntaxElem"
         src="Algo_Parser" src-port="MvPredSyntaxElem"/>
+    <Connection dst="" dst-port="VID" src="SelectCU" src-port="IntraRefSample"/>
 </XDF>
