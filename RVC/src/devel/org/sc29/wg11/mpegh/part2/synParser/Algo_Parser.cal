@@ -1389,9 +1389,9 @@ actor Algo_Parser ()
 				end
     		end
     	end
-		if 	source_isMaxLoopsReached() then
+		/*if 	source_isMaxLoopsReached() then
 			source_exit(0);
-		end
+		end*/
 		if DEBUG_CABAC or CHECK_CABAC then
 			println("\tPOC: "+poc);
 		end
