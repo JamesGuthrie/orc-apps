@@ -43,6 +43,9 @@
     <Instance id="SelectCU">
         <Class name="devel.org.sc29.wg11.mpegh.part2.SelectCu"/>
     </Instance>
+    <Instance id="LCU_reord">
+        <Class name="devel.org.sc29.wg11.mpegh.part2.inter.Framedelay"/>
+    </Instance>
     <Instance id="GenerateInterInfo">
         <Class name="devel.org.sc29.wg11.mpegh.part2.inter.GenerateInterInformation"/>
     </Instance>
@@ -53,7 +56,7 @@
         <Class name="devel.org.sc29.wg11.mpegh.part2.inter.DecodingPictureBuffer"/>
     </Instance>
     <Instance id="InterPrediction">
-        <Class name="devel.org.sc29.wg11.mpegh.part2.inter.InterPredictionBase"/>
+        <Class name="interPrediction.InterpSubPu"/>
     </Instance>
     <Instance id="LCU_reord2">
         <Class name="devel.org.sc29.wg11.mpegh.part2.inter.FrameDelayBorder"/>
@@ -78,6 +81,8 @@
     <Connection dst="SelectCU" dst-port="CUInfo" src="Algo_Parser" src-port="CUInfo"/>
     <Connection dst="IntraPrediction" dst-port="StrongIntraSmoothing"
         src="Algo_Parser" src-port="StrongIntraSmoothing"/>
+    <Connection dst="LCU_reord" dst-port="Block_in" src="SelectCU" src-port="Sample"/>
+    <Connection dst="LCU_reord" dst-port="PictSize" src="Algo_Parser" src-port="PictSize"/>
     <Connection dst="Algo_Parser" dst-port="byte" src="" src-port="BYTE"/>
     <Connection dst="" dst-port="SIZE" src="Algo_Parser" src-port="PicSizeInMb"/>
     <Connection dst="" dst-port="DispCoord" src="Algo_Parser" src-port="DispCoord"/>
@@ -143,5 +148,5 @@
         src="LCU_reord2" src-port="Block_out"/>
     <Connection dst="" dst-port="VID" src="LCU_reord2" src-port="Block_out"/>
     <Connection dst="LCU_reord2" dst-port="PictSize" src="Algo_Parser" src-port="PictSize"/>
-    <Connection dst="LCU_reord2" dst-port="Block_in" src="SelectCU" src-port="IntraRefSample"/>
+    <Connection dst="LCU_reord2" dst-port="Block_in" src="LCU_reord" src-port="Block_out"/>
 </XDF>

@@ -8,11 +8,14 @@ actor CheckU8(String portName)
 		==>
 		:
 
+	uint numTokenRead;
+
 	action RealValue:[r], ValueGenerated:[v] ==> 
 	do
 		if(v!=r) then
-			println("Port "+portName+" : "+v+" instead of "+r);
+			println("Port "+portName+" : "+v+" instead of "+r+" ; @ "+numTokenRead);
 			source_exit(-1);
 		end
+		numTokenRead := numTokenRead + 1;
 	end
 end

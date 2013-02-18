@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<layout>
+	<vertices>
+		<vertex id="IsBiPredOrLx" x="30" y="317"/>
+		<vertex id="CUInfo" x="52" y="350"/>
+		<vertex id="Mv" x="67" y="382"/>
+		<vertex id="PartMode" x="42" y="415"/>
+		<vertex id="Poc" x="63" y="448"/>
+		<vertex id="RefIdx" x="53" y="479"/>
+		<vertex id="RefList" x="51" y="511"/>
+		<vertex id="Sample" x="50" y="543"/>
+		<vertex id="SliceType" x="41" y="577"/>
+		<vertex id="WeightedPredSe" x="14" y="611"/>
+		<vertex id="PredSample" x="947" y="448"/>
+		<vertex id="InterPredictionPart1" x="443" y="37"/>
+		<vertex id="InterPredictionPart2" x="670" y="324"/>
+	</vertices>
+</layout>

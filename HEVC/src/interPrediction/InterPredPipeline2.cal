@@ -59,13 +59,13 @@
  * @author Damien de Saint Jorre (EPFL) <damien.desaintjorre@epfl.ch>
  */
 
-package devel.org.sc29.wg11.mpegh.part2.inter;
+package interPrediction;
 
 import std.util.Math.*;
 import devel.org.sc29.wg11.mpegh.part2.common.CommonConstantHEVC.*;
 import devel.org.sc29.wg11.mpegh.part2.inter.NaluType.*;
 
-actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_PIX,
+actor InterPredPipeline2(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_PIX,
 		uint(size=8) LOG2_NUM_SUB_BLK[2], uint(size=8) IDX_SUB_BLOCK[2])
 
 	uint(size=16) CUInfo,
@@ -75,7 +75,7 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 	uint(size=16) Poc,
 	uint(size=3)  RefIdx,
 	int (size=16) RefList,
-	uint(size=8)  Sample,
+	int(size=16) Sample,
 	uint(size=2)  SliceType,
 	int (size=16) WeightedPredSe // is size correct ?
 		==>
