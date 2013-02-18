@@ -31,11 +31,11 @@
 
 unit NaluType:
 
-	int PICT_WIDTH  = 4096;
+	int PICT_WIDTH  = 512;
 	int LOG2_PICT_WIDTH = 12;
-	int PICT_HEIGHT = 2048;
-	int MASK_WIDTH  = 4095;
-	int MASK_HEIGHT = 2047;
+	int PICT_HEIGHT = 512;
+	int MASK_WIDTH  = 511;
+	int MASK_HEIGHT = 511;
 
 	uint(size=2) LUMA      = 0;
 	uint(size=2) CHROMA_CB = 1;

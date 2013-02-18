@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<layout>
+	<vertices>
+		<vertex id="Coeff" x="57" y="81"/>
+		<vertex id="Block" x="860" y="81"/>
+		<vertex id="IT8x8_1d_0" x="362" y="70"/>
+		<vertex id="Transpose8x8_0" x="174" y="70"/>
+		<vertex id="IT8x8_1d_1" x="705" y="70"/>
+		<vertex id="Transpose8x8_1" x="517" y="70"/>
+	</vertices>
+</layout>

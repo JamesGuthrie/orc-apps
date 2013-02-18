@@ -39,9 +39,29 @@
     <Instance id="Transpose32x32_1">
         <Class name="devel.org.sc29.wg11.mpegh.part2.xIT.Transpose32x32"/>
     </Instance>
-    <Connection dst="" dst-port="Block" src="IT32x32_1d_1" src-port="Dst"/>
-    <Connection dst="IT32x32_1d_1" dst-port="Src" src="Transpose32x32_1" src-port="Dst"/>
-    <Connection dst="Transpose32x32_1" dst-port="Src" src="IT32x32_1d_0" src-port="Dst"/>
-    <Connection dst="Transpose32x32_0" dst-port="Src" src="" src-port="Coeff"/>
-    <Connection dst="IT32x32_1d_0" dst-port="Src" src="Transpose32x32_0" src-port="Dst"/>
+    <Connection dst="" dst-port="Block" src="IT32x32_1d_1" src-port="Dst">
+        <Attribute kind="Value" name="bufferSize">
+            <Expr kind="Literal" literal-kind="Integer" value="2048"/>
+        </Attribute>
+    </Connection>
+    <Connection dst="IT32x32_1d_1" dst-port="Src" src="Transpose32x32_1" src-port="Dst">
+        <Attribute kind="Value" name="bufferSize">
+            <Expr kind="Literal" literal-kind="Integer" value="2048"/>
+        </Attribute>
+    </Connection>
+    <Connection dst="Transpose32x32_1" dst-port="Src" src="IT32x32_1d_0" src-port="Dst">
+        <Attribute kind="Value" name="bufferSize">
+            <Expr kind="Literal" literal-kind="Integer" value="2048"/>
+        </Attribute>
+    </Connection>
+    <Connection dst="Transpose32x32_0" dst-port="Src" src="" src-port="Coeff">
+        <Attribute kind="Value" name="bufferSize">
+            <Expr kind="Literal" literal-kind="Integer" value="2048"/>
+        </Attribute>
+    </Connection>
+    <Connection dst="IT32x32_1d_0" dst-port="Src" src="Transpose32x32_0" src-port="Dst">
+        <Attribute kind="Value" name="bufferSize">
+            <Expr kind="Literal" literal-kind="Integer" value="2048"/>
+        </Attribute>
+    </Connection>
 </XDF>

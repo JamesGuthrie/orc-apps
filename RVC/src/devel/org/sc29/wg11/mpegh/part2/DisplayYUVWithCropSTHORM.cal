@@ -1,4 +1,5 @@
   // Author: Damien de Saint Jorre
+package devel.org.sc29.wg11.mpegh.part2;
 import  std.video.Display.*;
 import  std.util.Math.*;
 import  std.stdio.Source.*;
@@ -99,14 +100,15 @@ actor DisplayYUVWithCropSTHORM(uint(size=8) BLK_SIDE)
 	
 	
 	schedule fsm GetPictureSize:
-		GetPictureSize  (getPictureSize                )--> GetLumaBlock;
-		GetLumaBlock    (getPixValue.launch.Luma.read  )--> GetLumaBlock;
-		GetLumaBlock    (getPixValue.launch.Luma.done  )--> GetChroma1Block;
+		GetPictureSize  (getPictureSize              )--> GetLumaBlock;
+		GetLumaBlock    (getPixValue.launch.Luma.read)--> GetLumaBlock;
+		GetLumaBlock    (getPixValue.launch.Luma.done)--> GetChroma1Block;
 		GetChroma1Block (getPixValue.launch.Chroma.read)--> GetChroma1Block;
 		GetChroma1Block (getPixValue.launch.Chroma.done)--> GetChroma2Block;
 		GetChroma2Block (getPixValue.launch.Chroma.read)--> GetChroma2Block;
 		GetChroma2Block (getPixValue.launch.Chroma.done)--> GetLumaBlock;
-		GetLumaBlock    (displayPicture                )--> GetPictureSize;
+		
+		GetLumaBlock    (displayPicture              )--> GetPictureSize;
 	end
 
 	priority

@@ -37,7 +37,7 @@ unit Algo_ParserUtils :
  	 *************************************************************************/
  	 uint(size= 6) NB_MAX_SPS					 = 32;
  	 uint(size= 8) NB_MAX_PPS					 = 32;
-	 uint(size= 8) NB_MAX_PICS					 = 32;
+	 uint(size= 8) NB_MAX_PICS					 = 6;
  	 uint(size= 6) MAX_TLAYER                   =  4; 
  	 uint(size= 6) MRG_MAX_NUM_CANDS            =  5;	 
 	/**************************************************************************
