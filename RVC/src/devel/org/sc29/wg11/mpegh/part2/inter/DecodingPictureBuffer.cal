@@ -89,7 +89,7 @@ actor DecodingPictureBuffer (bool READ_INPUT_PARAL)
 
 	int (size=4)  refPicIdx;
 	int (size=4)  currIdx := -1;
-	int (size=4)  lastIdx := -1;
+	int (size=4)  inputPicIdx := -1;
 
 	uint(size=6)  picSizeInCu[2];
 	uint(size=16) picSize[2];
@@ -138,7 +138,7 @@ actor DecodingPictureBuffer (bool READ_INPUT_PARAL)
 		picSize[1] := picHeightInPix;
 		xIdx := 0;
 		yIdx := 0;
-		lastIdx := currIdx;
+		inputPicIdx := currIdx;
 		foreach uint i in 0 .. 6
 		do
 			if(not isRef[i]) then
@@ -146,7 +146,7 @@ actor DecodingPictureBuffer (bool READ_INPUT_PARAL)
 			end
 		end
 		if(READ_INPUT_PARAL) then
-			lastIdx := currIdx;
+			inputPicIdx := currIdx;
 		end
 		isRef[currIdx]  := true;
 		pocRef[currIdx] := poc;
@@ -226,7 +226,7 @@ actor DecodingPictureBuffer (bool READ_INPUT_PARAL)
 		do
 			foreach uint x in 0 .. 63
 			do
-				pictureBuffer[lastIdx][0][xPixIdx+x][yPixIdx+y] := samp[x+y*64];
+				pictureBuffer[inputPicIdx][0][xPixIdx+x][yPixIdx+y] := samp[x+y*64];
 			end
 		end
 	end
@@ -245,7 +245,7 @@ actor DecodingPictureBuffer (bool READ_INPUT_PARAL)
 			do
 				foreach uint x in 0 .. 32
 				do
-					pictureBuffer[lastIdx][component][xPixIdx+x][yPixIdx+y] :=
+					pictureBuffer[inputPicIdx][component][xPixIdx+x][yPixIdx+y] :=
 						samp[x+y*32 + tokenOffset];
 				end
 			end
@@ -274,20 +274,20 @@ actor DecodingPictureBuffer (bool READ_INPUT_PARAL)
 		do
 			foreach uint y in 0 .. BORDER_SIZE - 1
 			do
-				pictureBuffer[lastIdx][0][x][y] :=
-					pictureBuffer[lastIdx][0][x][BORDER_SIZE];
-				pictureBuffer[lastIdx][0][x][y+ySize+BORDER_SIZE] :=
-					pictureBuffer[lastIdx][0][x][ySize+BORDER_SIZE-1];
+				pictureBuffer[inputPicIdx][0][x][y] :=
+					pictureBuffer[inputPicIdx][0][x][BORDER_SIZE];
+				pictureBuffer[inputPicIdx][0][x][y+ySize+BORDER_SIZE] :=
+					pictureBuffer[inputPicIdx][0][x][ySize+BORDER_SIZE-1];
 			end
 		end
 		foreach uint y in 0 .. ySize + 2*BORDER_SIZE
 		do
 			foreach uint x in 0 .. BORDER_SIZE - 1
 			do
-				pictureBuffer[lastIdx][0][x][y] :=
-					pictureBuffer[lastIdx][0][BORDER_SIZE][y];
-				pictureBuffer[lastIdx][0][x+xSize+BORDER_SIZE][y] :=
-					pictureBuffer[lastIdx][0][xSize+BORDER_SIZE-1][y];
+				pictureBuffer[inputPicIdx][0][x][y] :=
+					pictureBuffer[inputPicIdx][0][BORDER_SIZE][y];
+				pictureBuffer[inputPicIdx][0][x+xSize+BORDER_SIZE][y] :=
+					pictureBuffer[inputPicIdx][0][xSize+BORDER_SIZE-1][y];
 			end
 		end
 
@@ -298,20 +298,20 @@ actor DecodingPictureBuffer (bool READ_INPUT_PARAL)
 			do
 				foreach uint y in 0 .. BORDER_SIZE/2 - 1
 				do
-					pictureBuffer[lastIdx][comp][x][y] :=
-						pictureBuffer[lastIdx][comp][x][BORDER_SIZE/2];
-					pictureBuffer[lastIdx][comp][x][y+ySize/2+BORDER_SIZE/2] :=
-						pictureBuffer[lastIdx][comp][x][ySize/2+BORDER_SIZE/2-1];
+					pictureBuffer[inputPicIdx][comp][x][y] :=
+						pictureBuffer[inputPicIdx][comp][x][BORDER_SIZE/2];
+					pictureBuffer[inputPicIdx][comp][x][y+ySize/2+BORDER_SIZE/2] :=
+						pictureBuffer[inputPicIdx][comp][x][ySize/2+BORDER_SIZE/2-1];
 				end
 			end
 			foreach uint y in 0 .. ySize/2 + BORDER_SIZE*2/2
 			do
 				foreach uint x in 0 .. BORDER_SIZE/2 - 1
 				do
-					pictureBuffer[lastIdx][comp][x][y] :=
-						pictureBuffer[lastIdx][comp][BORDER_SIZE/2][y];
-					pictureBuffer[lastIdx][comp][x+xSize/2+BORDER_SIZE/2][y] :=
-						pictureBuffer[lastIdx][comp][xSize/2+BORDER_SIZE/2-1][y];
+					pictureBuffer[inputPicIdx][comp][x][y] :=
+						pictureBuffer[inputPicIdx][comp][BORDER_SIZE/2][y];
+					pictureBuffer[inputPicIdx][comp][x+xSize/2+BORDER_SIZE/2][y] :=
+						pictureBuffer[inputPicIdx][comp][xSize/2+BORDER_SIZE/2-1][y];
 				end
 			end
 		end
