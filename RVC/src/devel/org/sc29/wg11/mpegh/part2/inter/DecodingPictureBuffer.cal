@@ -479,17 +479,28 @@ actor DecodingPictureBuffer (bool READ_INPUT_PARAL)
 		GetRpsPoc (getRpsPoc.done   )--> GetRps;
 
 		/* Getting the decoded picture */
-		GetCuPixChroma (getCuPix.launch.chroma )--> IsNewSlice;
+		GetCuPixChroma  (getCuPix.launch.chroma  )--> IsNewSlice;
+		GetCuPixChroma2 (getCuPix.launch.chroma )--> SendCuLuma;
+		GetCuPixChroma3 (getCuPix.launch.chroma )--> SendCuChroma;
 
 		/* Send pixels needed for inter-prediction */
 		GetMvInfo (getMvInfo.launch )--> SendCuLuma;
 		GetMvInfo (getMvInfo.skip   )--> IsNewSlice;
 		GetMvInfo (getMvInfo.done   )--> IsNewSlice;
 
-		SendCuLuma (sendCu.luma.launch )--> SendCuLuma;
-		SendCuLuma (sendCu.luma.done   )--> SendCuChroma;
+		/* getCuPix might be launched when the actor is configured as a time-dependant one.
+		 * It avoids deadlock when fifo's size is limited.
+		 */
+		SendCuLuma (getCuPix.launch.luma )--> GetCuPixChroma2;
+		SendCuLuma (sendCu.luma.launch   )--> SendCuLuma;
+		SendCuLuma (sendCu.luma.done     )--> SendCuChroma;
 
+		SendCuChroma (getCuPix.launch.luma )--> GetCuPixChroma3;
 		SendCuChroma (sendCu.chroma.launch )--> SendCuChroma;
 		SendCuChroma (sendCu.chroma.done   )--> GetMvInfo;
+	end
+	priority
+		getCuPix > getReadAddr;
+		getCuPix > sendCu;
 	end
 end
