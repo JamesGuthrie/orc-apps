@@ -52,14 +52,11 @@
     <Instance id="DecodingPictureBuffer">
         <Class name="devel.org.sc29.wg11.mpegh.part2.inter.DecodingPictureBuffer"/>
         <Parameter name="READ_INPUT_PARAL">
-            <Expr kind="Literal" literal-kind="Boolean" value="false"/>
+            <Expr kind="Literal" literal-kind="Boolean" value="true"/>
         </Parameter>
     </Instance>
     <Instance id="InterPrediction">
         <Class name="devel.org.sc29.wg11.mpegh.part2.inter.InterPredictionBase"/>
-    </Instance>
-    <Instance id="LCU_reord2">
-        <Class name="devel.org.sc29.wg11.mpegh.part2.inter.FrameDelayBorder"/>
     </Instance>
     <Connection dst="xIT" dst-port="Size" src="Algo_Parser" src-port="TUSize"/>
     <Connection dst="xIT" dst-port="Coeff" src="Algo_Parser" src-port="Coeff"/>
@@ -143,8 +140,6 @@
         src="feeder" src-port="OUT"/>
     <Connection dst="IntraPrediction" dst-port="Sample" src="SelectCU" src-port="Sample"/>
     <Connection dst="DecodingPictureBuffer" dst-port="Sample"
-        src="LCU_reord2" src-port="Block_out"/>
-    <Connection dst="" dst-port="VID" src="LCU_reord2" src-port="Block_out"/>
-    <Connection dst="LCU_reord2" dst-port="PictSize" src="Algo_Parser" src-port="PictSize"/>
-    <Connection dst="LCU_reord2" dst-port="Block_in" src="SelectCU" src-port="IntraRefSample"/>
+        src="SelectCU" src-port="IntraRefSample"/>
+    <Connection dst="" dst-port="VID" src="SelectCU" src-port="IntraRefSample"/>
 </XDF>
