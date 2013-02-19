@@ -61,7 +61,7 @@ package devel.org.sc29.wg11.mpegh.part2.inter;
 import std.util.Math.*;
 import devel.org.sc29.wg11.mpegh.part2.inter.NaluType.*;
 
-actor DecodingPictureBuffer ()
+actor DecodingPictureBuffer (bool READ_INPUT_PARAL)
 	uint(size=2)  IsBiPredOrLx,
 	uint(size=1)  IsReadOrNewSlc,
 	int (size=16) Mv,
@@ -74,6 +74,8 @@ actor DecodingPictureBuffer ()
 		==>
 	uint(size=8)  RefSample
 		:
+
+	// /!\ if READ_INPUT_PARAL is activated, this actor become time-dependant.
 
 	/* /!\ : Check the size of the border. */
 	uint(size=6)  BORDER_SIZE = 128;
@@ -143,6 +145,9 @@ actor DecodingPictureBuffer ()
 				currIdx := i;
 			end
 		end
+		if(READ_INPUT_PARAL) then
+			lastIdx := currIdx;
+		end
 		isRef[currIdx]  := true;
 		pocRef[currIdx] := poc;
 		nbList          := 0;
@@ -153,7 +158,9 @@ actor DecodingPictureBuffer ()
 	// This action (called once) avoid the actor to be time dependant.
 	resetReadInPict.launch: action ==>
 	do
-		readInPict := false;
+		if(not READ_INPUT_PARAL) then
+			readInPict := false;
+		end
 	end
 
 	/** We get all the references from the 5 lists of the Rps
@@ -313,7 +320,7 @@ actor DecodingPictureBuffer ()
 
 	getReadAddr: action IsReadOrNewSlc:[isRead], IsBiPredOrLx:[isBiPredOrLx] ==>
 	guard
-		not readInPict,
+		not readInPict || READ_INPUT_PARAL,
 		isRead = 1
 	do
 		isBiPred := isBiPredOrLx = BI_PRED;
