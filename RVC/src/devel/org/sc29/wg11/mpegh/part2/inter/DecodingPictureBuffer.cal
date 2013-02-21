@@ -241,9 +241,9 @@ actor DecodingPictureBuffer (bool READ_INPUT_PARAL)
 		yPixIdx := (BORDER_SIZE + yIdx*64)>>1;
 		foreach uint component in 1 .. 2
 		do
-			foreach uint y in 0 .. 32
+			foreach uint y in 0 .. 31
 			do
-				foreach uint x in 0 .. 32
+				foreach uint x in 0 .. 31
 				do
 					pictureBuffer[inputPicIdx][component][xPixIdx+x][yPixIdx+y] :=
 						samp[x+y*32 + tokenOffset];
