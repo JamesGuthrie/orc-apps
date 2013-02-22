@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<layout>
+	<vertices>
+		<vertex id="Source" x="57" y="92"/>
+		<vertex id="Algo_Parser" x="206" y="51"/>
+		<vertex id="ParserSink" x="472" y="48"/>
+	</vertices>
+</layout>
