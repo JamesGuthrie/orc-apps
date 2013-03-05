@@ -32,7 +32,7 @@
         <Class name="devel.org.sc29.wg11.mpegh.part2.synParser.Algo_Parser"/>
     </Instance>
     <Instance id="xIT">
-        <Class name="devel.org.sc29.wg11.mpegh.part2.xIT.xIT"/>
+        <Class name="xIT.xIT"/>
     </Instance>
     <Instance id="IntraPrediction">
         <Class name="devel.org.sc29.wg11.mpegh.part2.intra.IntraPrediction"/>
