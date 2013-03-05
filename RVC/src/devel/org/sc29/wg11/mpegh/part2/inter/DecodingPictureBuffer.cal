@@ -96,6 +96,8 @@ actor DecodingPictureBuffer (bool READ_INPUT_PARAL)
 
 	uint(size=6)  xIdx;
 	uint(size=6)  yIdx;
+	uint(size=7)  lineIdx := 0;
+	uint(size=2)  cIdx    := 1;
 
 	bool          isBiPred;
 	int (size=16) lastMvRef[2];
@@ -213,44 +215,56 @@ actor DecodingPictureBuffer (bool READ_INPUT_PARAL)
 	/* We get the whole Cu decoded (luma and chroma components) and we save
 	 * it in the Dpb (pictureBuffer).
 	 */
-	getCuPix.launch.luma: action Sample:[samp] repeat 64*64 ==>
+	getCuPix.launch.luma: action Sample:[samp] repeat 64 ==>
 	guard
-		readInPict && yIdx < picSizeInCu[1]
+		readInPict && yIdx < picSizeInCu[1]  && lineIdx < 64
 	var
 		uint(size=16) xPixIdx,
 		uint(size=16) yPixIdx
 	do
 		xPixIdx := BORDER_SIZE + xIdx*64;
 		yPixIdx := BORDER_SIZE + yIdx*64;
-		foreach uint y in 0 .. 63
+		foreach uint x in 0 .. 63
 		do
-			foreach uint x in 0 .. 63
-			do
-				pictureBuffer[inputPicIdx][0][xPixIdx+x][yPixIdx+y] := samp[x+y*64];
-			end
+			pictureBuffer[inputPicIdx][0][xPixIdx+x][yPixIdx+lineIdx] := samp[x];
 		end
+		lineIdx := lineIdx + 1;
 	end
 
-	getCuPix.launch.chroma: action Sample:[samp] repeat 32*32*2==>
+	getCuPix.launch.lumaDone: action ==>
+	guard
+		readInPict && yIdx < picSizeInCu[1] && lineIdx = 64
+	do
+		lineIdx := 0;
+	end
+
+	getCuPix.launch.chroma: action Sample:[samp] repeat 32 ==>
+	guard
+		cIdx < 3
 	var
 		uint(size=16) xPixIdx,
-		uint(size=16) yPixIdx,
-		uint tokenOffset := 0
+		uint(size=16) yPixIdx
 	do
 		xPixIdx := (BORDER_SIZE + xIdx*64)>>1;
 		yPixIdx := (BORDER_SIZE + yIdx*64)>>1;
-		foreach uint component in 1 .. 2
+		foreach uint x in 0 .. 31
 		do
-			foreach uint y in 0 .. 31
-			do
-				foreach uint x in 0 .. 31
-				do
-					pictureBuffer[inputPicIdx][component][xPixIdx+x][yPixIdx+y] :=
-						samp[x+y*32 + tokenOffset];
-				end
-			end
-			tokenOffset:= 32*32;
+			pictureBuffer[inputPicIdx][cIdx][xPixIdx+x][yPixIdx+lineIdx] :=
+				samp[x];
 		end
+		lineIdx := lineIdx + 1;
+		if(lineIdx = 32) then
+			lineIdx := 0;
+			cIdx    := cIdx + 1;
+		end
+	end
+
+
+	getCuPix.launch.chrDone: action ==>
+	guard
+		cIdx = 3
+	do
+		cIdx := 1;
 
 		xIdx := xIdx + 1;
 		if(xIdx = picSizeInCu[0]) then
@@ -258,7 +272,6 @@ actor DecodingPictureBuffer (bool READ_INPUT_PARAL)
 			yIdx := yIdx + 1;
 		end
 	end
-
 	/* When we get the picture we add the border (in order to be able to give a
 	 * reference pixels which can be outside of the picture).
 	 */
@@ -468,7 +481,7 @@ actor DecodingPictureBuffer (bool READ_INPUT_PARAL)
 		IsNewSlice (isNewPict            )--> GetRps;
 		IsNewSlice (isNewSlice           )--> GetRps;
 		IsNewSlice (getReadAddr          )--> GetMvInfo;
-		IsNewSlice (getCuPix.launch.luma )--> GetCuPixChroma;
+		IsNewSlice (getCuPix.launch.luma )--> GetCuPixLuma;
 		IsNewSlice (getCuPix.done        )--> IsNewSlice;
 
 		/* Get the rps info. */
@@ -479,9 +492,20 @@ actor DecodingPictureBuffer (bool READ_INPUT_PARAL)
 		GetRpsPoc (getRpsPoc.done   )--> GetRps;
 
 		/* Getting the decoded picture */
-		GetCuPixChroma  (getCuPix.launch.chroma  )--> IsNewSlice;
-		GetCuPixChroma2 (getCuPix.launch.chroma )--> SendCuLuma;
-		GetCuPixChroma3 (getCuPix.launch.chroma )--> SendCuChroma;
+		GetCuPixLuma    (getCuPix.launch.luma     )--> GetCuPixLuma;
+		GetCuPixLuma    (getCuPix.launch.lumaDone )--> GetCuPixChroma;
+		GetCuPixChroma  (getCuPix.launch.chroma   )--> GetCuPixChroma;
+		GetCuPixChroma  (getCuPix.launch.chrDone  )--> IsNewSlice;
+
+		GetCuPixLuma2   (getCuPix.launch.luma     )--> GetCuPixLuma2;
+		GetCuPixLuma2   (getCuPix.launch.lumaDone )--> GetCuPixChroma2;
+		GetCuPixChroma2 (getCuPix.launch.chroma   )--> GetCuPixChroma2;
+		GetCuPixChroma2 (getCuPix.launch.chrDone  )--> SendCuLuma;
+
+		GetCuPixLuma3   (getCuPix.launch.luma     )--> GetCuPixLuma3;
+		GetCuPixLuma3   (getCuPix.launch.lumaDone )--> GetCuPixChroma3;
+		GetCuPixChroma3 (getCuPix.launch.chroma   )--> GetCuPixChroma3;
+		GetCuPixChroma3 (getCuPix.launch.chrDone  )--> SendCuChroma;
 
 		/* Send pixels needed for inter-prediction */
 		GetMvInfo (getMvInfo.launch )--> SendCuLuma;
@@ -491,11 +515,11 @@ actor DecodingPictureBuffer (bool READ_INPUT_PARAL)
 		/* getCuPix might be launched when the actor is configured as a time-dependant one.
 		 * It avoids deadlock when fifo's size is limited.
 		 */
-		SendCuLuma (getCuPix.launch.luma )--> GetCuPixChroma2;
+		SendCuLuma (getCuPix.launch.luma )--> GetCuPixLuma2;
 		SendCuLuma (sendCu.luma.launch   )--> SendCuLuma;
 		SendCuLuma (sendCu.luma.done     )--> SendCuChroma;
 
-		SendCuChroma (getCuPix.launch.luma )--> GetCuPixChroma3;
+		SendCuChroma (getCuPix.launch.luma )--> GetCuPixLuma3;
 		SendCuChroma (sendCu.chroma.launch )--> SendCuChroma;
 		SendCuChroma (sendCu.chroma.done   )--> GetMvInfo;
 	end
