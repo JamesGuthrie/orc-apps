@@ -6,7 +6,7 @@
 		<vertex id="DispCoord" x="401" y="178"/>
 		<vertex id="VID" x="724" y="296"/>
 		<vertex id="Algo_Parser" x="171" y="595"/>
-		<vertex id="xIT" x="401" y="479"/>
+		<vertex id="xIT" x="415" y="485"/>
 		<vertex id="IntraPrediction" x="1430" y="1000"/>
 		<vertex id="SelectCU" x="1213" y="919"/>
 		<vertex id="LCU_reord" x="1430" y="333"/>
