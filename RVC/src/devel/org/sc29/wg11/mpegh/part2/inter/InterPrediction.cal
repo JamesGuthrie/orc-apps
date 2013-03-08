@@ -134,7 +134,8 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 	int           weightCuTab[8][8][3][2];
 	int           offsetCuTab[8][8][3][2];
 
-	int (size=16) predSamples[2][3][64+7][64+7];
+	int (size=16) predSampLuma[2][64+7][64+7];
+	int (size=16) predSampChr[2][2][32+3][32+3];
 
 /* Coefficients used for the 8-tap filter (luma component) and 4-tap filter
  * (chroma component).
@@ -249,7 +250,7 @@ int(size=8) interPredCoeff[3][8][8] =
 	/* 8-tap filter or 4-tap filter (it depends on idxMax). */
 	procedure predictionFiltering(bool isHoriz, int rdCoord[2], int wrCoord[2],
 		int(size=8) coeffIdx, int finalOffset, int finalShift,
-		uint(size=2) component)
+		uint(size=2) cIdx)
 	var
 		int pixVal := finalOffset,
 		int xRd = rdCoord[0],
@@ -260,44 +261,43 @@ int(size=8) interPredCoeff[3][8][8] =
 		 * depend on the movement vector (if it's equal to a 8th, 4th or half
 		 * of pixel).
 		 */
-		if((DECODE_COMP = LUMA_COMP) || ((DECODE_COMP & LUMA_COMP) != 0 && component = 0)) then
+		if((DECODE_COMP = LUMA_COMP) || ((DECODE_COMP & LUMA_COMP) != 0 && cIdx = 0)) then
 			if(isHoriz) then
 				foreach int idx in 0 .. 7
 				do
 					pixVal := pixVal +  interPredCoeff[0][coeffIdx][idx] *
-						predSamples[listIdx][0][xRd+idx][yRd];
+						predSampLuma[listIdx][xRd+idx][yRd];
 				end
 			else
 				foreach int idx in 0 .. 7
 				do
 					pixVal := pixVal +  interPredCoeff[0][coeffIdx][idx] *
-						predSamples[listIdx][0][xRd][yRd+idx];
+						predSampLuma[listIdx][xRd][yRd+idx];
 				end
 			end
+			predSampLuma[listIdx][wrCoord[0]][wrCoord[1]] :=
+				pixVal >> finalShift;
 		else
 			if(isHoriz) then
 				foreach int idx in 0 .. 3
 				do
 					pixVal := pixVal +  interPredCoeff[1][coeffIdx][idx] *
-						predSamples[listIdx][component][xRd+idx][yRd];
+						predSampChr[listIdx][cIdx-1][xRd+idx][yRd];
 				end
 			else
 				foreach int idx in 0 .. 3
 				do
 					pixVal := pixVal +  interPredCoeff[1][coeffIdx][idx] *
-						predSamples[listIdx][component][xRd][yRd+idx];
+						predSampChr[listIdx][cIdx-1][xRd][yRd+idx];
 				end
 			end
+			predSampChr[listIdx][cIdx-1][wrCoord[0]][wrCoord[1]] :=
+				pixVal >> finalShift;
 		end
-		predSamples[listIdx][component][wrCoord[0]][wrCoord[1]] :=
-			pixVal >> finalShift;
 	end
 
-	procedure interpolOneSample(int x, int y, int mvQuartPix[2],
-		uint(size=4) numCoeff, uint(size=2) component
-	)
+	procedure interpolOneSampleLuma(int x, int y, int mvQuartPix[2])
 	var
-		uint(size=2) idxOff[3] = [3,1,1],
 		int (size=32) coord[2],
 		int(size=32) pixValue
 	begin
@@ -305,32 +305,63 @@ int(size=8) interPredCoeff[3][8][8] =
 			/* When we mvQuartPix is equal to [0,0], we multiply by 1^shift1,
 			 * because after this procedure we will have the weighted prediction.
 			 */
-			predSamples[listIdx][component][x][y] := predSamples[listIdx][component][x+idxOff[component]]
-				[y+idxOff[component]]<<shift1;
+			predSampLuma[listIdx][x][y] := predSampLuma[listIdx][x+3]
+				[y+3]<<shift1;
 		else if(mvQuartPix[1]=0) then /* Horizontal interpolation */
-			coord := [x, y+idxOff[component]];
-			predictionFiltering(true, coord, [x, y], mvQuartPix[0], 0, 0,
-				component);		
+			coord := [x, y+3];
+			predictionFiltering(true, coord, [x, y], mvQuartPix[0], 0, 0, 0);		
 		else if(mvQuartPix[0]=0) then /* Vertical interpolation */
-			coord := [x+idxOff[component], y];
-			predictionFiltering(false, coord, [x, y], mvQuartPix[1], 0, 0,
-				component);
+			coord := [x+3, y];
+			predictionFiltering(false, coord, [x, y], mvQuartPix[1], 0, 0, 0);
 		else
 			pixValue := 524288;
 			/* Then we do the vertical interpolation with the result from the
 			 * previous part.
 			 */
-			foreach int idx in 0 .. numCoeff-1
+			foreach int idx in 0 .. 7
 			do
-				pixValue := pixValue +  interPredCoeff[component][mvQuartPix[1]]
-					[idx] * predSamples[listIdx][component][x][y+idx];
+				pixValue := pixValue +  interPredCoeff[0][mvQuartPix[1]][idx]
+					* predSampLuma[listIdx][x][y+idx];
 			end
-			predSamples[listIdx][component][x][y] := pixValue >> 6;
+			predSampLuma[listIdx][x][y] := pixValue >> 6;
+		end end end
+	end
+
+	procedure interpolOneSampleChr(int x, int y, int mvQuartPix[2],
+		uint(size=2) cIdx)
+	var
+		int (size=32) coord[2],
+		int(size=32) pixValue
+	begin
+		if(mvQuartPix[0]=0 && mvQuartPix[1]=0) then
+			/* When we mvQuartPix is equal to [0,0], we multiply by 1^shift1,
+			 * because after this procedure we will have the weighted prediction.
+			 */
+			predSampChr[listIdx][cIdx-1][x][y] := predSampChr[listIdx][cIdx-1][x+1]
+				[y+1]<<shift1;
+		else if(mvQuartPix[1]=0) then /* Horizontal interpolation */
+			coord := [x, y+1];
+			predictionFiltering(true, coord, [x, y], mvQuartPix[0], 0, 0, cIdx);		
+		else if(mvQuartPix[0]=0) then /* Vertical interpolation */
+			coord := [x+1, y];
+			predictionFiltering(false, coord, [x, y], mvQuartPix[1], 0, 0, cIdx);
+		else
+			pixValue := 524288;
+			/* Then we do the vertical interpolation with the result from the
+			 * previous part.
+			 */
+			foreach int idx in 0 .. 3
+			do
+				pixValue := pixValue +  interPredCoeff[cIdx][mvQuartPix[1]]
+					[idx] * predSampChr[listIdx][cIdx-1][x][y+idx];
+			end
+			predSampChr[listIdx][cIdx-1][x][y] := pixValue >> 6;
 		end end end
 	end
 
 	/* Computing the weighted prediction of the current pixel */
-	procedure weightedPred(uint(size=2) component, uint x, uint y)
+	/* CLEAN ME */
+	procedure weightedPred(uint(size=2) cIdx, uint x, uint y)
 	var
 		int wX,
 		int oX,
@@ -340,69 +371,112 @@ int(size=8) interPredCoeff[3][8][8] =
 		int o0,
 		int o1
 	begin
-		/* If we have a mono-prediction */
-		if(numList = 1) then
-			if(wpIdc = 0) then
-				/* When we don't have a weighted prediction, we do the
-				 * average.
-				 */
-				predSamples[0][component][x][y] := (predSamples[0][component][x][y] + (1 <<(shift1-1)))>>shift1;
-			else
-				/* If we had a bi-prediction both pictures used and movement
-				 * vectors where identical
-				 */
-				if(isBiPredOrLx != BI_PRED) then
-					/* We use the bi-prediction way */
-					wX := weightCu[component][listIdx];
-					oX := offsetCu[component][listIdx];
-					locLogWD := logWD[component];
-					predSamples[0][component][x][y] :=
-						if(locLogWD >= 1) then
-							((predSamples[0][component][x][y]*wX + (1<<(locLogWD-1))) >> locLogWD)+oX
-						else
-							predSamples[0][component][x][y]*wX +oX
-						end;
+		if(cIdx = 0) then
+			/* If we have a mono-prediction */
+			if(numList = 1) then
+				if(wpIdc = 0) then
+					/* When we don't have a weighted prediction, we do the
+					 * average.
+					 */
+					predSampLuma[0][x][y] := (predSampLuma[0][x][y] + (1 <<(shift1-1)))>>shift1;
 				else
-					/* Weighted prediction for mono-prediction. */
-					wX := weightCu[component][0] + weightCu[component][1];
-					oX := offsetCu[component][0] + offsetCu[component][1] +1;
-					locLogWD := logWD[component] +1;
-					predSamples[0][component][x][y] := ((predSamples[0][component][x][y]*wX + (oX<<(locLogWD-1))) >>locLogWD);
+					/* If we had a bi-prediction both pictures used and movement
+					 * vectors where identical
+					 */
+					if(isBiPredOrLx != BI_PRED) then
+						/* We use the bi-prediction way */
+						wX := weightCu[cIdx][listIdx];
+						oX := offsetCu[cIdx][listIdx];
+						locLogWD := logWD[cIdx];
+						predSampLuma[0][x][y] :=
+							if(locLogWD >= 1) then
+								((predSampLuma[0][x][y]*wX + (1<<(locLogWD-1))) >> locLogWD)+oX
+							else
+								predSampLuma[0][x][y]*wX +oX
+							end;
+					else
+						/* Weighted prediction for mono-prediction. */
+						wX := weightCu[cIdx][0] + weightCu[cIdx][1];
+						oX := offsetCu[cIdx][0] + offsetCu[cIdx][1] +1;
+						locLogWD := logWD[cIdx] +1;
+						predSampLuma[0][x][y] := ((predSampLuma[0][x][y]*wX + (oX<<(locLogWD-1))) >>locLogWD);
+					end
 				end
-			end
-			/* We apply a threashold according to bitDepth
-			 * (which is equal to 8, 10 or 12 bits).
-			 */
-			predSamples[0][component][x][y] := clip_i32(predSamples[0][component][x][y], 0 , maxPixVal);
-		/* If we have a bi-prediction */
-		else
-			if(wpIdc = 0) then
-				/* When we don't have a weighted prediction, we do the average
-				 * of both pixels.
-				 */
-				predSamples[0][component][x][y] := (predSamples[0][component][x][y] + predSamples[1][component][x][y] + 64)
-					>> 7;
-				/* We apply a threshold according to bitDepth
-				 * (which is equal to 8, 10 or 12 bits).
-				 */
-				predSamples[0][component][x][y] := clip_i32(predSamples[0][component][x][y], 0 ,
-					maxPixVal);
-			else /* When we have weighted prediction for bi-prediction */
-				/* Then we realize the weighted prediction with the pixel
-				 * values and the coefficients.
-				 */
-				w0 := weightCu[component][0];
-				w1 := weightCu[component][1];
-				o0 := offsetCu[component][0];
-				o1 := offsetCu[component][1];
-				locLogWD := logWD[component];
-				predSamples[0][component][x][y] := (predSamples[0][component][x][y]*w0 + predSamples[1][component][x][y]*w1 +
-					((o0+o1+1)<<locLogWD))>>(locLogWD+1);
 				/* We apply a threashold according to bitDepth
 				 * (which is equal to 8, 10 or 12 bits).
 				 */
-				predSamples[0][component][x][y] := clip_i32(predSamples[0][component][x][y], 0 ,
-					maxPixVal);
+				predSampLuma[0][x][y] := clip_i32(predSampLuma[0][x][y], 0 , maxPixVal);
+			/* If we have a bi-prediction */
+			else
+				if(wpIdc = 0) then
+					/* When we don't have a weighted prediction, we do the average
+					 * of both pixels.
+					 */
+					predSampLuma[0][x][y] := (predSampLuma[0][x][y] + predSampLuma[1][x][y] + 64)
+						>> 7;
+					/* We apply a threshold according to bitDepth
+					 * (which is equal to 8, 10 or 12 bits).
+					 */
+					predSampLuma[0][x][y] := clip_i32(predSampLuma[0][x][y], 0 ,
+						maxPixVal);
+				else /* When we have weighted prediction for bi-prediction */
+					/* Then we realize the weighted prediction with the pixel
+					 * values and the coefficients.
+					 */
+					w0 := weightCu[cIdx][0];
+					w1 := weightCu[cIdx][1];
+					o0 := offsetCu[cIdx][0];
+					o1 := offsetCu[cIdx][1];
+					locLogWD := logWD[cIdx];
+					predSampLuma[0][x][y] := (predSampLuma[0][x][y]*w0 + predSampLuma[1][x][y]*w1 +
+						((o0+o1+1)<<locLogWD))>>(locLogWD+1);
+					/* We apply a threashold according to bitDepth
+					 * (which is equal to 8, 10 or 12 bits).
+					 */
+					predSampLuma[0][x][y] := clip_i32(predSampLuma[0][x][y], 0 ,
+						maxPixVal);
+				end
+			end
+		else
+			if(numList = 1) then
+				if(wpIdc = 0) then
+					predSampChr[0][cIdx-1][x][y] := (predSampChr[0][cIdx-1][x][y] + (1 <<(shift1-1)))>>shift1;
+				else
+					if(isBiPredOrLx != BI_PRED) then
+						wX := weightCu[cIdx][listIdx];
+						oX := offsetCu[cIdx][listIdx];
+						locLogWD := logWD[cIdx];
+						predSampChr[0][cIdx-1][x][y] :=
+							if(locLogWD >= 1) then
+								((predSampChr[0][cIdx-1][x][y]*wX + (1<<(locLogWD-1))) >> locLogWD)+oX
+							else
+								predSampChr[0][cIdx-1][x][y]*wX +oX
+							end;
+					else
+						wX := weightCu[cIdx][0] + weightCu[cIdx][1];
+						oX := offsetCu[cIdx][0] + offsetCu[cIdx][1] +1;
+						locLogWD := logWD[cIdx] +1;
+						predSampChr[0][cIdx-1][x][y] := ((predSampChr[0][cIdx-1][x][y]*wX + (oX<<(locLogWD-1))) >>locLogWD);
+					end
+				end
+				predSampChr[0][cIdx-1][x][y] := clip_i32(predSampChr[0][cIdx-1][x][y], 0 , maxPixVal);
+			else
+				if(wpIdc = 0) then
+					predSampChr[0][cIdx-1][x][y] := (predSampChr[0][cIdx-1][x][y] + predSampChr[1][cIdx-1][x][y] + 64)
+						>> 7;
+					predSampChr[0][cIdx-1][x][y] := clip_i32(predSampChr[0][cIdx-1][x][y], 0 ,
+						maxPixVal);
+				else
+					w0 := weightCu[cIdx][0];
+					w1 := weightCu[cIdx][1];
+					o0 := offsetCu[cIdx][0];
+					o1 := offsetCu[cIdx][1];
+					locLogWD := logWD[cIdx];
+					predSampChr[0][cIdx-1][x][y] := (predSampChr[0][cIdx-1][x][y]*w0 + predSampChr[1][cIdx-1][x][y]*w1 +
+						((o0+o1+1)<<locLogWD))>>(locLogWD+1);
+					predSampChr[0][cIdx-1][x][y] := clip_i32(predSampChr[0][cIdx-1][x][y], 0 ,
+						maxPixVal);
+				end
 			end
 		end
 	end
@@ -738,10 +812,10 @@ int(size=8) interPredCoeff[3][8][8] =
 		jLoop < cuSize[1]+7
 	do
 		if(LOG2_NUM_SUB_BLK[0] = 0 && LOG2_NUM_SUB_BLK[1] = 0) then
-			predSamples[listIdx][0][iLoop][jLoop] := sample;
+			predSampLuma[listIdx][iLoop][jLoop] := sample;
 		else if(iLoop >= subPuIdxMin[0][0] && jLoop >= subPuIdxMin[0][1] &&
 			    iLoop <  subPuIdxMax[0][0]+7 && jLoop <  subPuIdxMax[0][1]+7) then
-			predSamples[listIdx][0][iLoop - subPuIdxMin[0][0]][jLoop - subPuIdxMin[0][1]] := sample;
+			predSampLuma[listIdx][iLoop - subPuIdxMin[0][0]][jLoop - subPuIdxMin[0][1]] := sample;
 		end end
 
 		iLoop := iLoop + 1;
@@ -765,10 +839,10 @@ int(size=8) interPredCoeff[3][8][8] =
 		compIdx < 3
 	do
 		if(LOG2_NUM_SUB_BLK[0] = 0 && LOG2_NUM_SUB_BLK[1] = 0) then
-			predSamples[listIdx][compIdx][iLoop][jLoop] := sample;
+			predSampChr[listIdx][compIdx-1][iLoop][jLoop] := sample;
 		else if(iLoop >= subPuIdxMin[1][0] && jLoop >= subPuIdxMin[1][1] &&
 			    iLoop < subPuIdxMax[1][0]+3 && jLoop < subPuIdxMax[1][1]+3) then
-			predSamples[listIdx][compIdx][iLoop-subPuIdxMin[1][0]][jLoop-subPuIdxMin[1][1]] := sample;
+			predSampChr[listIdx][compIdx-1][iLoop-subPuIdxMin[1][0]][jLoop-subPuIdxMin[1][1]] := sample;
 		end end
 
 		iLoop := iLoop + 1;
@@ -851,11 +925,9 @@ int(size=8) interPredCoeff[3][8][8] =
 					foreach int y in 0 .. puIdxMax[1]-1
 					do
 						if(component=0) then
-							interpolOneSample(x, y, mvQuartPix, 8,
-								component);
+							interpolOneSampleLuma(x, y, mvQuartPix);
 						else
-							interpolOneSample(x, y, mvQuartPix, 4,
-								component);
+							interpolOneSampleChr(x, y, mvQuartPix, component);
 						end
 					end
 				end
@@ -931,7 +1003,7 @@ int(size=8) interPredCoeff[3][8][8] =
 		do
 			foreach uint x in 0 .. 3
 			do
-				pix[y*4+x] := predSamples[0][0][iLoop+x-subPuIdxMin[0][0]][jLoop+y-subPuIdxMin[0][1]];
+				pix[y*4+x] := predSampLuma[0][iLoop+x-subPuIdxMin[0][0]][jLoop+y-subPuIdxMin[0][1]];
 			end
 		end
 		off := 16;
@@ -941,7 +1013,7 @@ int(size=8) interPredCoeff[3][8][8] =
 			do
 				foreach uint x in 0 .. 1
 				do
-					pix[y*2+x+off] := predSamples[0][component][iLoop/2+x-subPuIdxMin[1][0]][jLoop/2+y-subPuIdxMin[1][1]];
+					pix[y*2+x+off] := predSampChr[0][component-1][iLoop/2+x-subPuIdxMin[1][0]][jLoop/2+y-subPuIdxMin[1][1]];
 				end
 			end
 			off := off + 4;
@@ -964,7 +1036,7 @@ int(size=8) interPredCoeff[3][8][8] =
 		do
 			foreach uint x in 0 .. 3
 			do
-				pix[y*4+x] := predSamples[0][0][iLoop+x-subPuIdxMin[0][0]][jLoop+y-subPuIdxMin[0][1]];
+				pix[y*4+x] := predSampLuma[0][iLoop+x-subPuIdxMin[0][0]][jLoop+y-subPuIdxMin[0][1]];
 			end
 		end
 		iLoop := iLoop + 4;
@@ -988,7 +1060,7 @@ int(size=8) interPredCoeff[3][8][8] =
 			do
 				foreach uint x in 0 .. 1
 				do
-					pix[y*2+x+off] := predSamples[0][component][iLoop/2+x-subPuIdxMin[1][0]][jLoop/2+y-subPuIdxMin[1][1]];
+					pix[y*2+x+off] := predSampChr[0][component-1][iLoop/2+x-subPuIdxMin[1][0]][jLoop/2+y-subPuIdxMin[1][1]];
 				end
 			end
 			off := off + 4;
@@ -1026,7 +1098,7 @@ int(size=8) interPredCoeff[3][8][8] =
 	var
 		int(size=16) sampVal
 	do
-		sampVal := predSamples[listIdx-1][0][iLoop][jLoop];
+		sampVal := predSampLuma[listIdx-1][iLoop][jLoop];
 		iLoop := iLoop + 1;
 		if(iLoop = cuSize[0]+7) then
 			iLoop := 0;
@@ -1050,7 +1122,7 @@ int(size=8) interPredCoeff[3][8][8] =
 	var
 		int(size=16) sampVal
 	do
-		sampVal := predSamples[listIdx-1][compIdx][iLoop][jLoop];
+		sampVal := predSampChr[listIdx-1][compIdx-1][iLoop][jLoop];
 		iLoop := iLoop + 1;
 		if(iLoop = puSizeChr[0]+3) then
 			iLoop := 0;
