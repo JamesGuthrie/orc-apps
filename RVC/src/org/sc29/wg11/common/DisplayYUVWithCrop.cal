@@ -210,7 +210,7 @@ actor DisplayYUVWithCrop(uint(size=8) BLK_SIDE)
 	guard
 		nbBlockGot >= pictureSizeInMb
 	do
-		println("Picture "+numPict+" displayed");
+		//println("Picture "+numPict+" displayed");
 		numPict := numPict + 1;
 		fpsPrintNewPicDecoded();
 		if((displayYUV_getFlags() & DISP_ENABLE) != 0) then
@@ -219,12 +219,12 @@ actor DisplayYUVWithCrop(uint(size=8) BLK_SIDE)
 		compareYUV_comparePicture(pictureBufferY, pictureBufferU, pictureBufferV, cropPicWthLuma, cropPicHghtLuma);
 	end
 	
-	/*displayClose: action ==>
+	displayClose: action ==>
 	guard
 		source_isMaxLoopsReached()
 	do
 		source_exit(0);
-	end*/
+	end
 	
 	schedule fsm GetPictureSize:
 		GetPictureSize  (getPictureSize            )--> GetLumaBlock;
@@ -233,11 +233,11 @@ actor DisplayYUVWithCrop(uint(size=8) BLK_SIDE)
 		GetChroma2Block (getPixValue.launch.Chroma )--> GetLumaBlock;
 		
 		GetLumaBlock    (displayPicture            )--> GetPictureSize;
-		//GetLumaBlock    (displayClose              )--> GetPictureSize;
+		GetLumaBlock    (displayClose              )--> GetPictureSize;
 	end
 
 	priority
-		getPixValue > displayPicture;// > displayClose;
+		getPixValue > displayPicture > displayClose;
 	end
 
 end

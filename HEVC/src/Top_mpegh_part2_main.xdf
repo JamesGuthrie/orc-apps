@@ -10,7 +10,7 @@
         </Parameter>
     </Instance>
     <Instance id="HevcDecoder">
-        <Class name="HEVCDecoderInter"/>
+        <Class name="HEVCDecoderInterNoFifoSize"/>
     </Instance>
     <Connection dst="HevcDecoder" dst-port="BYTE" src="Source" src-port="O"/>
     <Connection dst="display" dst-port="Byte" src="HevcDecoder" src-port="VID"/>

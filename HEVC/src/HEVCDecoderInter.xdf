@@ -44,7 +44,7 @@
         <Class name="devel.org.sc29.wg11.mpegh.part2.SelectCu"/>
     </Instance>
     <Instance id="GenerateInterInfo">
-        <Class name="devel.org.sc29.wg11.mpegh.part2.inter.GenerateInterInformation"/>
+        <Class name="interPrediction.GenerateInterInformation"/>
     </Instance>
     <Instance id="feeder">
         <Class name="devel.org.sc29.wg11.mpegh.part2.common.feed_i16"/>
