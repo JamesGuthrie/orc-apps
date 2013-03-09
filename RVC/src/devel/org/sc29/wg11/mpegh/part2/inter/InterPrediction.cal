@@ -885,7 +885,7 @@ int(size=8) interPredCoeff[3][8][8] =
 			if(component = 1) then
 				puIdxMax := 
 					if(LOG2_NUM_SUB_BLK[0] = 0 && LOG2_NUM_SUB_BLK[1] = 0) then
-						[cuSize[i]: for int i in 0 .. 1]
+						[cuSize[i]>>1: for int i in 0 .. 1]
 					else
 						[subPuSize[1][0], subPuSize[1][1]]
 					end;

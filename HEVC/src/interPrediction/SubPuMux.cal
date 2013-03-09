@@ -29,7 +29,7 @@
  
 package interPrediction;
 
-import devel.org.sc29.wg11.mpegh.part2.inter.NaluType.*;
+import devel.org.sc29.wg11.mpegh.part2.common.CommonConstantHEVC.*;
 
 actor SubPuMux(uint(size=3) LOG2_NUM_SUB_BLK[2])
 	uint(size=16) PuInfo,
