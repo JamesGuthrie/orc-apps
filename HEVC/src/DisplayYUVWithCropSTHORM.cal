@@ -24,13 +24,26 @@ actor DisplayYUVWithCropSTHORM(uint(size=8) BLK_SIDE)
 	uint(size=14) yMin;
 	uint(size=14) yMax;
 
-		
 	int count := 0;
 	
 	int counter;
 	
-	getPictureSize: action DispCoord:[dispCoord] repeat 4, PicSizeInMb:[picWidth,
-		picHeight] ==>
+	int current_idx := 0;
+	int ongoing_transfer := 0;
+	
+	@native
+	procedure notify_full(int buffer_idx) end
+
+	@native
+	procedure wait_empty(int buffer_idx) end
+
+	@native
+	procedure dma_wait_on_display() end
+
+	@native
+	procedure memcpy_loc2ext(uint(size=1) line[64], int w, int h, int pos_x, int pos_y, int comp, int idx) end	
+	
+	getPictureSize: action DispCoord:[dispCoord] repeat 4, PicSizeInMb:[picWidth, picHeight] ==>
 	guard
 		(DISP_READY) != 0
 	do
@@ -53,15 +66,21 @@ actor DisplayYUVWithCropSTHORM(uint(size=8) BLK_SIDE)
 		counter := 0;
 	end
 
-	getPixValue.launch.Luma.read: action Byte :[Bytes] repeat 256 ==>
+	getPixValue.launch.Luma.read: action Byte :[bytes] repeat 64 ==>
 	guard
-		nbBlockGot < pictureSizeInMb, BLK_SIDE = 64, counter < 16
+		nbBlockGot < pictureSizeInMb, counter < 64
 	do
+		if ongoing_transfer = 1 then
+				dma_wait_on_display();
+		end
+		memcpy_loc2ext(bytes, picWidth, picHeight, nbBlockGot / picWidth, );
+		
+		ongoing_transfer := 1;
 		counter := counter + 1;
 	end
 	
 	getPixValue.launch.Luma.done: action ==>
-	guard counter = 16
+	guard counter = 64
 	do
 		nbBlockGot := nbBlockGot + 1;
 		xIdxLuma := xIdxLuma + 64;
@@ -69,9 +88,9 @@ actor DisplayYUVWithCropSTHORM(uint(size=8) BLK_SIDE)
 		counter := 0;
 	end
 	
-	getPixValue.launch.Chroma.read: action Byte :[Bytes] repeat 256 ==>
+	getPixValue.launch.Chroma.read: action Byte :[Bytes] repeat 32 ==>
 	guard
-		BLK_SIDE = 64, counter < 4
+		counter < 32
 	do
 		counter := counter + 1;
 	end
@@ -95,6 +114,8 @@ actor DisplayYUVWithCropSTHORM(uint(size=8) BLK_SIDE)
 	displayPicture: action ==>
 	guard
 		nbBlockGot >= pictureSizeInMb
+	do
+		current_idx := current_idx ^ 1;
 	end
 	
 	
