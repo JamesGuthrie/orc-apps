@@ -73,7 +73,6 @@ actor DisplayYUVWithCropSTHORM(uint(size=8) BLK_SIDE)
 		if ongoing_transfer = 1 then
 				dma_wait_on_display();
 		end
-		memcpy_loc2ext(bytes, picWidth, picHeight, nbBlockGot / picWidth, );
 		
 		ongoing_transfer := 1;
 		counter := counter + 1;
