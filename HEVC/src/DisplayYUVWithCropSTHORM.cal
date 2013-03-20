@@ -28,8 +28,8 @@ actor DisplayYUVWithCropSTHORM(uint(size=8) BLK_SIDE)
 	
 	int counter;
 	
-	int current_idx := 0;
-	int ongoing_transfer := 0;
+	int current_idx;
+	int ongoing_transfer;
 	
 	@native
 	procedure notify_full(int buffer_idx) end
@@ -41,8 +41,9 @@ actor DisplayYUVWithCropSTHORM(uint(size=8) BLK_SIDE)
 	procedure dma_wait_on_display() end
 
 	@native
-	procedure memcpy_loc2ext(uint(size=1) line[64], int w, int h, int pos_x, int pos_y, int comp, int idx) end	
+	procedure memcpy_loc2ext(uint(size=8) base[64], int ext_offset, int comp, int idx) end	
 	
+	@trace
 	getPictureSize: action DispCoord:[dispCoord] repeat 4, PicSizeInMb:[picWidth, picHeight] ==>
 	guard
 		(DISP_READY) != 0
@@ -70,11 +71,12 @@ actor DisplayYUVWithCropSTHORM(uint(size=8) BLK_SIDE)
 	guard
 		nbBlockGot < pictureSizeInMb, counter < 64
 	do
-		if ongoing_transfer = 1 then
-				dma_wait_on_display();
+		if ongoing_transfer = 1 then 
+			dma_wait_on_display();
 		end
-		
+		memcpy_loc2ext(bytes, xIdxLuma + pictureWidthLuma * (yIdxLuma + counter), 0, current_idx);
 		ongoing_transfer := 1;
+
 		counter := counter + 1;
 	end
 	
@@ -84,18 +86,24 @@ actor DisplayYUVWithCropSTHORM(uint(size=8) BLK_SIDE)
 		nbBlockGot := nbBlockGot + 1;
 		xIdxLuma := xIdxLuma + 64;
 		chromaComponent := 0;
-		counter := 0;
+		counter := 0;		
 	end
 	
-	getPixValue.launch.Chroma.read: action Byte :[Bytes] repeat 32 ==>
+	getPixValue.launch.Chroma.read: action Byte :[bytes] repeat 32 ==>
 	guard
 		counter < 32
 	do
+		if ongoing_transfer = 1 then 
+			dma_wait_on_display();
+		end
+		memcpy_loc2ext(bytes, xIdxChroma + pictureWidthLuma/2 * (yIdxChroma + counter), 1 + chromaComponent, current_idx);
+		ongoing_transfer := 1;
+	
 		counter := counter + 1;
 	end
 
 	getPixValue.launch.Chroma.done: action ==>
-	guard counter = 4
+	guard counter = 32
 	do
 	if chromaComponent != 0 then
 			xIdxChroma := xIdxChroma + 32;
@@ -114,6 +122,8 @@ actor DisplayYUVWithCropSTHORM(uint(size=8) BLK_SIDE)
 	guard
 		nbBlockGot >= pictureSizeInMb
 	do
+		notify_full(current_idx);
+		wait_empty(current_idx ^ 1);
 		current_idx := current_idx ^ 1;
 	end
 	
