@@ -261,7 +261,7 @@ int(size=8) interPredCoeff[3][8][8] =
 		 * depend on the movement vector (if it's equal to a 8th, 4th or half
 		 * of pixel).
 		 */
-		if((DECODE_COMP = LUMA_COMP) || ((DECODE_COMP & LUMA_COMP) != 0 && cIdx = 0)) then
+		if(cIdx = 0) then
 			if(isHoriz) then
 				foreach int idx in 0 .. 7
 				do
