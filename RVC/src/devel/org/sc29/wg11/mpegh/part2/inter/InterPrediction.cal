@@ -263,38 +263,119 @@ int(size=8) interPredCoeff[3][8][8] =
 		 */
 		if(cIdx = 0) then
 			if(isHoriz) then
-				foreach int idx in 0 .. 7
+				pixVal := pixVal +
+					if(coeffIdx = 1) then
+						-    predSampLuma[listIdx][xRd  ][yRd] +  4*predSampLuma[listIdx][xRd+1][yRd]
+						- 10*predSampLuma[listIdx][xRd+2][yRd] + 58*predSampLuma[listIdx][xRd+3][yRd]
+						+ 17*predSampLuma[listIdx][xRd+4][yRd] -  5*predSampLuma[listIdx][xRd+5][yRd]
+						+    predSampLuma[listIdx][xRd+6][yRd]
+					else if(coeffIdx = 2) then
+						-    predSampLuma[listIdx][xRd][yRd]   +  4*predSampLuma[listIdx][xRd+1][yRd]
+						- 11*predSampLuma[listIdx][xRd+2][yRd] + 40*predSampLuma[listIdx][xRd+3][yRd]
+						+ 40*predSampLuma[listIdx][xRd+4][yRd] - 11*predSampLuma[listIdx][xRd+5][yRd]
+						+  4*predSampLuma[listIdx][xRd+6][yRd] -    predSampLuma[listIdx][xRd+7][yRd]
+					else
+						      predSampLuma[listIdx][xRd+1][yRd] - 5*predSampLuma[listIdx][xRd+2][yRd]
+						 + 17*predSampLuma[listIdx][xRd+3][yRd] + 58*predSampLuma[listIdx][xRd+4][yRd]
+						 - 10*predSampLuma[listIdx][xRd+5][yRd] + 4*predSampLuma[listIdx][xRd+6][yRd]
+						 -    predSampLuma[listIdx][xRd+7][yRd]
+					end end;
+				/*foreach int idx in 0 .. 7
 				do
 					pixVal := pixVal +  interPredCoeff[0][coeffIdx][idx] *
 						predSampLuma[listIdx][xRd+idx][yRd];
-				end
+				end*/
 			else
-				foreach int idx in 0 .. 7
+				pixVal := pixVal +
+					if(coeffIdx = 1) then
+						-    predSampLuma[listIdx][xRd][yRd]   +  4*predSampLuma[listIdx][xRd][yRd+1]
+						- 10*predSampLuma[listIdx][xRd][yRd+2] + 58*predSampLuma[listIdx][xRd][yRd+3]
+						+ 17*predSampLuma[listIdx][xRd][yRd+4] -  5*predSampLuma[listIdx][xRd][yRd+5]
+						+    predSampLuma[listIdx][xRd][yRd+6]
+					else if(coeffIdx = 2) then
+						-    predSampLuma[listIdx][xRd][yRd]   +  4*predSampLuma[listIdx][xRd][yRd+1]
+						- 11*predSampLuma[listIdx][xRd][yRd+2] + 40*predSampLuma[listIdx][xRd][yRd+3]
+						+ 40*predSampLuma[listIdx][xRd][yRd+4] - 11*predSampLuma[listIdx][xRd][yRd+5]
+						+  4*predSampLuma[listIdx][xRd][yRd+6] -    predSampLuma[listIdx][xRd][yRd+7]
+					else
+						      predSampLuma[listIdx][xRd][yRd+1] -  5*predSampLuma[listIdx][xRd][yRd+2]
+						 + 17*predSampLuma[listIdx][xRd][yRd+3] + 58*predSampLuma[listIdx][xRd][yRd+4]
+						 - 10*predSampLuma[listIdx][xRd][yRd+5] +  4*predSampLuma[listIdx][xRd][yRd+6]
+						 -    predSampLuma[listIdx][xRd][yRd+7]
+					end end;
+				/*foreach int idx in 0 .. 7
 				do
 					pixVal := pixVal +  interPredCoeff[0][coeffIdx][idx] *
 						predSampLuma[listIdx][xRd][yRd+idx];
-				end
+				end*/
 			end
 			predSampLuma[listIdx][wrCoord[0]][wrCoord[1]] :=
 				pixVal >> finalShift;
 		else
 			if(isHoriz) then
-				foreach int idx in 0 .. 3
+				pixVal := pixVal	+ 
+					if(coeffIdx = 1) then
+						-  2*predSampChr[listIdx][cIdx-1][xRd]  [yRd] + 58*predSampChr[listIdx][cIdx-1][xRd+1][yRd]
+						+ 10*predSampChr[listIdx][cIdx-1][xRd+2][yRd] -  2*predSampChr[listIdx][cIdx-1][xRd+3][yRd]
+					else if(coeffIdx = 2) then
+						-  4*predSampChr[listIdx][cIdx-1][xRd]  [yRd] + 54*predSampChr[listIdx][cIdx-1][xRd+1][yRd]
+						+ 16*predSampChr[listIdx][cIdx-1][xRd+2][yRd] -  2*predSampChr[listIdx][cIdx-1][xRd+3][yRd]
+					else if(coeffIdx = 3) then
+						-  6*predSampChr[listIdx][cIdx-1][xRd]  [yRd] + 46*predSampChr[listIdx][cIdx-1][xRd+1][yRd]
+						+ 28*predSampChr[listIdx][cIdx-1][xRd+2][yRd] -  4*predSampChr[listIdx][cIdx-1][xRd+3][yRd]
+					else if(coeffIdx = 4) then
+						-  4*predSampChr[listIdx][cIdx-1][xRd]  [yRd] + 36*predSampChr[listIdx][cIdx-1][xRd+1][yRd]
+						+ 36*predSampChr[listIdx][cIdx-1][xRd+2][yRd] -  4*predSampChr[listIdx][cIdx-1][xRd+3][yRd]
+					else if(coeffIdx = 5) then
+						-  4*predSampChr[listIdx][cIdx-1][xRd]  [yRd] + 28*predSampChr[listIdx][cIdx-1][xRd+1][yRd]
+						+ 46*predSampChr[listIdx][cIdx-1][xRd+2][yRd] -  6*predSampChr[listIdx][cIdx-1][xRd+3][yRd]
+					else if(coeffIdx = 6) then
+						-  2*predSampChr[listIdx][cIdx-1][xRd]  [yRd] + 16*predSampChr[listIdx][cIdx-1][xRd+1][yRd]
+						+ 54*predSampChr[listIdx][cIdx-1][xRd+2][yRd] -  4*predSampChr[listIdx][cIdx-1][xRd+3][yRd]
+					else
+						-  2*predSampChr[listIdx][cIdx-1][xRd]  [yRd] + 10*predSampChr[listIdx][cIdx-1][xRd+1][yRd]
+						+ 58*predSampChr[listIdx][cIdx-1][xRd+2][yRd] -  2*predSampChr[listIdx][cIdx-1][xRd+3][yRd]
+					end end end end end end;
+				/*foreach int idx in 0 .. 3
 				do
 					pixVal := pixVal +  interPredCoeff[1][coeffIdx][idx] *
 						predSampChr[listIdx][cIdx-1][xRd+idx][yRd];
-				end
+				end*/
 			else
-				foreach int idx in 0 .. 3
+				pixVal := pixVal	+ 
+					if(coeffIdx = 1) then
+						-  2*predSampChr[listIdx][cIdx-1][xRd][yRd]   + 58*predSampChr[listIdx][cIdx-1][xRd][yRd+1]
+						+ 10*predSampChr[listIdx][cIdx-1][xRd][yRd+2] -  2*predSampChr[listIdx][cIdx-1][xRd][yRd+3]
+					else if(coeffIdx = 2) then
+						-  4*predSampChr[listIdx][cIdx-1][xRd][yRd]   + 54*predSampChr[listIdx][cIdx-1][xRd][yRd+1]
+						+ 16*predSampChr[listIdx][cIdx-1][xRd][yRd+2] -  2*predSampChr[listIdx][cIdx-1][xRd][yRd+3]
+					else if(coeffIdx = 3) then
+						-  6*predSampChr[listIdx][cIdx-1][xRd][yRd]   + 46*predSampChr[listIdx][cIdx-1][xRd][yRd+1]
+						+ 28*predSampChr[listIdx][cIdx-1][xRd][yRd+2] -  4*predSampChr[listIdx][cIdx-1][xRd][yRd+3]
+					else if(coeffIdx = 4) then
+						-  4*predSampChr[listIdx][cIdx-1][xRd][yRd]   + 36*predSampChr[listIdx][cIdx-1][xRd][yRd+1]
+						+ 36*predSampChr[listIdx][cIdx-1][xRd][yRd+2] -  4*predSampChr[listIdx][cIdx-1][xRd][yRd+3]
+					else if(coeffIdx = 5) then
+						-  4*predSampChr[listIdx][cIdx-1][xRd][yRd]   + 28*predSampChr[listIdx][cIdx-1][xRd][yRd+1]
+						+ 46*predSampChr[listIdx][cIdx-1][xRd][yRd+2] -  6*predSampChr[listIdx][cIdx-1][xRd][yRd+3]
+					else if(coeffIdx = 6) then
+						-  2*predSampChr[listIdx][cIdx-1][xRd][yRd]   + 16*predSampChr[listIdx][cIdx-1][xRd][yRd+1]
+						+ 54*predSampChr[listIdx][cIdx-1][xRd][yRd+2] -  4*predSampChr[listIdx][cIdx-1][xRd][yRd+3]
+					else
+						-  2*predSampChr[listIdx][cIdx-1][xRd][yRd]   + 10*predSampChr[listIdx][cIdx-1][xRd][yRd+1]
+						+ 58*predSampChr[listIdx][cIdx-1][xRd][yRd+2] -  2*predSampChr[listIdx][cIdx-1][xRd][yRd+3]
+					end end end end end end;
+				/*foreach int idx in 0 .. 3
 				do
 					pixVal := pixVal +  interPredCoeff[1][coeffIdx][idx] *
 						predSampChr[listIdx][cIdx-1][xRd][yRd+idx];
-				end
+				end*/
 			end
 			predSampChr[listIdx][cIdx-1][wrCoord[0]][wrCoord[1]] :=
 				pixVal >> finalShift;
 		end
 	end
+
 
 	procedure interpolOneSampleLuma(int x, int y, int mvQuartPix[2])
 	var
@@ -318,11 +399,28 @@ int(size=8) interPredCoeff[3][8][8] =
 			/* Then we do the vertical interpolation with the result from the
 			 * previous part.
 			 */
-			foreach int idx in 0 .. 7
+			pixValue := pixValue +
+				if(mvQuartPix[1] = 1) then
+					-    predSampLuma[listIdx][x][y  ] +  4*predSampLuma[listIdx][x][y+1]
+					- 10*predSampLuma[listIdx][x][y+2] + 58*predSampLuma[listIdx][x][y+3]
+					+ 17*predSampLuma[listIdx][x][y+4] -  5*predSampLuma[listIdx][x][y+5]
+					+    predSampLuma[listIdx][x][y+6]
+				else if(mvQuartPix[1] = 2) then
+					-    predSampLuma[listIdx][x][y]   +  4*predSampLuma[listIdx][x][y+1]
+					- 11*predSampLuma[listIdx][x][y+2] + 40*predSampLuma[listIdx][x][y+3]
+					+ 40*predSampLuma[listIdx][x][y+4] - 11*predSampLuma[listIdx][x][y+5]
+					+  4*predSampLuma[listIdx][x][y+6] -    predSampLuma[listIdx][x][y+7]
+				else
+					     predSampLuma[listIdx][x][y+1] -  5*predSampLuma[listIdx][x][y+2]
+					+ 17*predSampLuma[listIdx][x][y+3] + 58*predSampLuma[listIdx][x][y+4]
+					- 10*predSampLuma[listIdx][x][y+5] +  4*predSampLuma[listIdx][x][y+6]
+					-    predSampLuma[listIdx][x][y+7]
+				end end;
+			/*foreach int idx in 0 .. 7
 			do
 				pixValue := pixValue +  interPredCoeff[0][mvQuartPix[1]][idx]
 					* predSampLuma[listIdx][x][y+idx];
-			end
+			end*/
 			predSampLuma[listIdx][x][y] := pixValue >> 6;
 		end end end
 	end
