@@ -1,0 +1,352 @@
+/*
+ * Copyright (c) 2012, EPFL
+ * All rights reserved.
+ * 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ * 
+ *   * Redistributions of source code must retain the above copyright notice,
+ *     this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *   * Neither the name of the EPFL nor the names of its
+ *     contributors may be used to endorse or promote products derived from this
+ *     software without specific prior written permission.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+ * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY
+ * WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
+package devel.org.sc29.wg11.mpegh.part2.inter;
+
+import std.util.Math.*;
+import devel.org.sc29.wg11.mpegh.part2.common.CommonConstantHEVC.*;
+import devel.org.sc29.wg11.mpegh.part2.inter.NaluType.*;
+
+unit Interpolation:
+
+	int shift1 = 6;
+
+	/* Coefficients used for the 8-tap filter (luma component) and 4-tap filter
+	 * (chroma component).
+	 */
+	int(size=8) interPredCoeff[3][8][8] = 
+	[
+		[//LumaCoeff
+		[ 0, 0,   0,  0,  0,   0, 0,  0],
+		[-1, 4, -10, 58, 17,  -5, 1,  0],
+		[-1, 4, -11, 40, 40, -11, 4, -1],
+		[ 0, 1,  -5, 17, 58, -10, 4, -1]],
+		[//ChromaCoeff
+		[ 0,  0,  0,  0],
+		[-2, 58, 10, -2],
+		[-4, 54, 16, -2],
+		[-6, 46, 28, -4],
+		[-4, 36, 36, -4],
+		[-4, 28, 46, -6],
+		[-2, 16, 54, -4],
+		[-2, 10, 58, -2]],
+		[//ChromaCoeff
+		[ 0,  0,  0,  0],
+		[-2, 58, 10, -2],
+		[-4, 54, 16, -2],
+		[-6, 46, 28, -4],
+		[-4, 36, 36, -4],
+		[-4, 28, 46, -6],
+		[-2, 16, 54, -4],
+		[-2, 10, 58, -2]]
+	];
+
+	/* 8-tap filter or 4-tap filter (it depends on idxMax). */
+	procedure predictionFiltering(bool isHoriz, int rdCoord[2], int wrCoord[2],
+		int(size=8) coeffIdx, int finalOffset, int finalShift,
+		uint(size=2) cIdx, int (size=16) predSampLuma[2][64+7][64+7],
+		int (size=16) predSampChr[2][2][32+3][32+3], uint(size=2)  listIdx)
+	var
+		int pixVal := finalOffset,
+		int xRd = rdCoord[0],
+		int yRd = rdCoord[1]
+	begin
+		/* We get the 4 or 8 pixels needed for the filter and
+		 * we multiply these values with some coefficients. These coefficients
+		 * depend on the movement vector (if it's equal to a 8th, 4th or half
+		 * of pixel).
+		 */
+		if(cIdx = 0) then
+			if(isHoriz) then
+				pixVal := pixVal +
+					if(coeffIdx = 1) then
+						-    predSampLuma[listIdx][xRd  ][yRd] +  4*predSampLuma[listIdx][xRd+1][yRd]
+						- 10*predSampLuma[listIdx][xRd+2][yRd] + 58*predSampLuma[listIdx][xRd+3][yRd]
+						+ 17*predSampLuma[listIdx][xRd+4][yRd] -  5*predSampLuma[listIdx][xRd+5][yRd]
+						+    predSampLuma[listIdx][xRd+6][yRd]
+					else if(coeffIdx = 2) then
+						-    predSampLuma[listIdx][xRd][yRd]   +  4*predSampLuma[listIdx][xRd+1][yRd]
+						- 11*predSampLuma[listIdx][xRd+2][yRd] + 40*predSampLuma[listIdx][xRd+3][yRd]
+						+ 40*predSampLuma[listIdx][xRd+4][yRd] - 11*predSampLuma[listIdx][xRd+5][yRd]
+						+  4*predSampLuma[listIdx][xRd+6][yRd] -    predSampLuma[listIdx][xRd+7][yRd]
+					else
+						      predSampLuma[listIdx][xRd+1][yRd] - 5*predSampLuma[listIdx][xRd+2][yRd]
+						 + 17*predSampLuma[listIdx][xRd+3][yRd] + 58*predSampLuma[listIdx][xRd+4][yRd]
+						 - 10*predSampLuma[listIdx][xRd+5][yRd] + 4*predSampLuma[listIdx][xRd+6][yRd]
+						 -    predSampLuma[listIdx][xRd+7][yRd]
+					end end;
+				/*foreach int idx in 0 .. 7
+				do
+					pixVal := pixVal +  interPredCoeff[0][coeffIdx][idx] *
+						predSampLuma[listIdx][xRd+idx][yRd];
+				end*/
+			else
+				pixVal := pixVal +
+					if(coeffIdx = 1) then
+						-    predSampLuma[listIdx][xRd][yRd]   +  4*predSampLuma[listIdx][xRd][yRd+1]
+						- 10*predSampLuma[listIdx][xRd][yRd+2] + 58*predSampLuma[listIdx][xRd][yRd+3]
+						+ 17*predSampLuma[listIdx][xRd][yRd+4] -  5*predSampLuma[listIdx][xRd][yRd+5]
+						+    predSampLuma[listIdx][xRd][yRd+6]
+					else if(coeffIdx = 2) then
+						-    predSampLuma[listIdx][xRd][yRd]   +  4*predSampLuma[listIdx][xRd][yRd+1]
+						- 11*predSampLuma[listIdx][xRd][yRd+2] + 40*predSampLuma[listIdx][xRd][yRd+3]
+						+ 40*predSampLuma[listIdx][xRd][yRd+4] - 11*predSampLuma[listIdx][xRd][yRd+5]
+						+  4*predSampLuma[listIdx][xRd][yRd+6] -    predSampLuma[listIdx][xRd][yRd+7]
+					else
+						      predSampLuma[listIdx][xRd][yRd+1] -  5*predSampLuma[listIdx][xRd][yRd+2]
+						 + 17*predSampLuma[listIdx][xRd][yRd+3] + 58*predSampLuma[listIdx][xRd][yRd+4]
+						 - 10*predSampLuma[listIdx][xRd][yRd+5] +  4*predSampLuma[listIdx][xRd][yRd+6]
+						 -    predSampLuma[listIdx][xRd][yRd+7]
+					end end;
+				/*foreach int idx in 0 .. 7
+				do
+					pixVal := pixVal +  interPredCoeff[0][coeffIdx][idx] *
+						predSampLuma[listIdx][xRd][yRd+idx];
+				end*/
+			end
+			predSampLuma[listIdx][wrCoord[0]][wrCoord[1]] :=
+				pixVal >> finalShift;
+		else
+			if(isHoriz) then
+				pixVal := pixVal	+ 
+					if(coeffIdx = 1) then
+						-  2*predSampChr[listIdx][cIdx-1][xRd]  [yRd] + 58*predSampChr[listIdx][cIdx-1][xRd+1][yRd]
+						+ 10*predSampChr[listIdx][cIdx-1][xRd+2][yRd] -  2*predSampChr[listIdx][cIdx-1][xRd+3][yRd]
+					else if(coeffIdx = 2) then
+						-  4*predSampChr[listIdx][cIdx-1][xRd]  [yRd] + 54*predSampChr[listIdx][cIdx-1][xRd+1][yRd]
+						+ 16*predSampChr[listIdx][cIdx-1][xRd+2][yRd] -  2*predSampChr[listIdx][cIdx-1][xRd+3][yRd]
+					else if(coeffIdx = 3) then
+						-  6*predSampChr[listIdx][cIdx-1][xRd]  [yRd] + 46*predSampChr[listIdx][cIdx-1][xRd+1][yRd]
+						+ 28*predSampChr[listIdx][cIdx-1][xRd+2][yRd] -  4*predSampChr[listIdx][cIdx-1][xRd+3][yRd]
+					else if(coeffIdx = 4) then
+						-  4*predSampChr[listIdx][cIdx-1][xRd]  [yRd] + 36*predSampChr[listIdx][cIdx-1][xRd+1][yRd]
+						+ 36*predSampChr[listIdx][cIdx-1][xRd+2][yRd] -  4*predSampChr[listIdx][cIdx-1][xRd+3][yRd]
+					else if(coeffIdx = 5) then
+						-  4*predSampChr[listIdx][cIdx-1][xRd]  [yRd] + 28*predSampChr[listIdx][cIdx-1][xRd+1][yRd]
+						+ 46*predSampChr[listIdx][cIdx-1][xRd+2][yRd] -  6*predSampChr[listIdx][cIdx-1][xRd+3][yRd]
+					else if(coeffIdx = 6) then
+						-  2*predSampChr[listIdx][cIdx-1][xRd]  [yRd] + 16*predSampChr[listIdx][cIdx-1][xRd+1][yRd]
+						+ 54*predSampChr[listIdx][cIdx-1][xRd+2][yRd] -  4*predSampChr[listIdx][cIdx-1][xRd+3][yRd]
+					else
+						-  2*predSampChr[listIdx][cIdx-1][xRd]  [yRd] + 10*predSampChr[listIdx][cIdx-1][xRd+1][yRd]
+						+ 58*predSampChr[listIdx][cIdx-1][xRd+2][yRd] -  2*predSampChr[listIdx][cIdx-1][xRd+3][yRd]
+					end end end end end end;
+				/*foreach int idx in 0 .. 3
+				do
+					pixVal := pixVal +  interPredCoeff[1][coeffIdx][idx] *
+						predSampChr[listIdx][cIdx-1][xRd+idx][yRd];
+				end*/
+			else
+				pixVal := pixVal	+ 
+					if(coeffIdx = 1) then
+						-  2*predSampChr[listIdx][cIdx-1][xRd][yRd]   + 58*predSampChr[listIdx][cIdx-1][xRd][yRd+1]
+						+ 10*predSampChr[listIdx][cIdx-1][xRd][yRd+2] -  2*predSampChr[listIdx][cIdx-1][xRd][yRd+3]
+					else if(coeffIdx = 2) then
+						-  4*predSampChr[listIdx][cIdx-1][xRd][yRd]   + 54*predSampChr[listIdx][cIdx-1][xRd][yRd+1]
+						+ 16*predSampChr[listIdx][cIdx-1][xRd][yRd+2] -  2*predSampChr[listIdx][cIdx-1][xRd][yRd+3]
+					else if(coeffIdx = 3) then
+						-  6*predSampChr[listIdx][cIdx-1][xRd][yRd]   + 46*predSampChr[listIdx][cIdx-1][xRd][yRd+1]
+						+ 28*predSampChr[listIdx][cIdx-1][xRd][yRd+2] -  4*predSampChr[listIdx][cIdx-1][xRd][yRd+3]
+					else if(coeffIdx = 4) then
+						-  4*predSampChr[listIdx][cIdx-1][xRd][yRd]   + 36*predSampChr[listIdx][cIdx-1][xRd][yRd+1]
+						+ 36*predSampChr[listIdx][cIdx-1][xRd][yRd+2] -  4*predSampChr[listIdx][cIdx-1][xRd][yRd+3]
+					else if(coeffIdx = 5) then
+						-  4*predSampChr[listIdx][cIdx-1][xRd][yRd]   + 28*predSampChr[listIdx][cIdx-1][xRd][yRd+1]
+						+ 46*predSampChr[listIdx][cIdx-1][xRd][yRd+2] -  6*predSampChr[listIdx][cIdx-1][xRd][yRd+3]
+					else if(coeffIdx = 6) then
+						-  2*predSampChr[listIdx][cIdx-1][xRd][yRd]   + 16*predSampChr[listIdx][cIdx-1][xRd][yRd+1]
+						+ 54*predSampChr[listIdx][cIdx-1][xRd][yRd+2] -  4*predSampChr[listIdx][cIdx-1][xRd][yRd+3]
+					else
+						-  2*predSampChr[listIdx][cIdx-1][xRd][yRd]   + 10*predSampChr[listIdx][cIdx-1][xRd][yRd+1]
+						+ 58*predSampChr[listIdx][cIdx-1][xRd][yRd+2] -  2*predSampChr[listIdx][cIdx-1][xRd][yRd+3]
+					end end end end end end;
+				/*foreach int idx in 0 .. 3
+				do
+					pixVal := pixVal +  interPredCoeff[1][coeffIdx][idx] *
+						predSampChr[listIdx][cIdx-1][xRd][yRd+idx];
+				end*/
+			end
+			predSampChr[listIdx][cIdx-1][wrCoord[0]][wrCoord[1]] :=
+				pixVal >> finalShift;
+		end
+	end
+
+	procedure interpolLuma2ndPart(int mvQuartPix[2], uint(size=7) puIdxMax[2], int (size=16) predSampLuma[2][64+7][64+7],
+		int (size=16) predSampChr[2][2][32+3][32+3], uint(size=2)  listIdx)
+	var
+		int(size=32) coord[2],
+		int(size=32) pixValue
+	begin
+		if(mvQuartPix[0] = 0 && mvQuartPix[1] = 0) then
+			foreach int x in 0 .. puIdxMax[0]-1
+			do
+				foreach int y in 0 .. puIdxMax[1]-1
+				do
+					/* When we mvQuartPix is equal to [0,0], we multiply by 1^shift1,
+					 * because after this procedure we will have the weighted prediction.
+					 */
+					predSampLuma[listIdx][x][y] := predSampLuma[listIdx][x+3]
+						[y+3]<<shift1;
+				end
+			end
+		else if(mvQuartPix[0] != 0 && mvQuartPix[1] != 0) then
+			foreach int x in 0 .. puIdxMax[0]-1
+			do
+				foreach int y in 0 .. puIdxMax[1]-1
+				do
+					pixValue := 524288;
+					/* Then we do the vertical interpolation with the result from the
+					 * previous part.
+					 */
+					pixValue := pixValue +
+						if(mvQuartPix[1] = 1) then
+							-    predSampLuma[listIdx][x][y  ] +  4*predSampLuma[listIdx][x][y+1]
+							- 10*predSampLuma[listIdx][x][y+2] + 58*predSampLuma[listIdx][x][y+3]
+							+ 17*predSampLuma[listIdx][x][y+4] -  5*predSampLuma[listIdx][x][y+5]
+							+    predSampLuma[listIdx][x][y+6]
+						else if(mvQuartPix[1] = 2) then
+							-    predSampLuma[listIdx][x][y]   +  4*predSampLuma[listIdx][x][y+1]
+							- 11*predSampLuma[listIdx][x][y+2] + 40*predSampLuma[listIdx][x][y+3]
+							+ 40*predSampLuma[listIdx][x][y+4] - 11*predSampLuma[listIdx][x][y+5]
+							+  4*predSampLuma[listIdx][x][y+6] -    predSampLuma[listIdx][x][y+7]
+						else
+							     predSampLuma[listIdx][x][y+1] -  5*predSampLuma[listIdx][x][y+2]
+							+ 17*predSampLuma[listIdx][x][y+3] + 58*predSampLuma[listIdx][x][y+4]
+							- 10*predSampLuma[listIdx][x][y+5] +  4*predSampLuma[listIdx][x][y+6]
+							-    predSampLuma[listIdx][x][y+7]
+						end end;
+					/*foreach int idx in 0 .. 7
+					do
+						pixValue := pixValue +  interPredCoeff[0][mvQuartPix[1]][idx]
+							* predSampLuma[listIdx][x][y+idx];
+					end*/
+					predSampLuma[listIdx][x][y] := pixValue >> 6;
+				end
+			end
+		else if(mvQuartPix[1]=0) then
+			foreach int x in 0 .. puIdxMax[0]-1
+			do
+				foreach int y in 0 .. puIdxMax[1]-1
+				do
+					/* Horizontal interpolation */
+					coord := [x, y+3];
+					@inline
+					predictionFiltering(true, coord, [x, y], mvQuartPix[0], 0, 0, 0,
+						predSampLuma, predSampChr, listIdx);
+				end
+			end	
+		else
+			foreach int x in 0 .. puIdxMax[0]-1
+			do
+				foreach int y in 0 .. puIdxMax[1]-1
+				do
+					/* Vertical interpolation */
+					coord := [x+3, y];
+					@inline
+					predictionFiltering(false, coord, [x, y], mvQuartPix[1], 0, 0, 0,
+						predSampLuma, predSampChr, listIdx);
+				end
+			end
+		end end end
+	end
+
+	procedure interpolChr2ndPart(int mvQuartPix[2], uint(size=7) puIdxMax[2], int (size=16) predSampLuma[2][64+7][64+7],
+		int (size=16) predSampChr[2][2][32+3][32+3], uint(size=2)  listIdx, uint(size=2) cIdx)
+	var
+		int(size=32) coord[2],
+		int(size=32) pixValue
+	begin
+		if(mvQuartPix[0] = 0 && mvQuartPix[1] = 0) then
+			foreach int x in 0 .. puIdxMax[0]-1
+			do
+				foreach int y in 0 .. puIdxMax[1]-1
+				do
+					/* When we mvQuartPix is equal to [0,0], we multiply by 1^shift1,
+					 * because after this procedure we will have the weighted prediction.
+					 */
+					predSampChr[listIdx][cIdx-1][x][y] := predSampChr[listIdx][cIdx-1][x+1]
+						[y+1]<<shift1;
+				end
+			end
+		else if(mvQuartPix[1]=0) then /* Horizontal interpolation */
+			foreach int x in 0 .. puIdxMax[0]-1
+			do
+				foreach int y in 0 .. puIdxMax[1]-1
+				do
+					coord := [x, y+1];
+					@inline
+					predictionFiltering(true, coord, [x, y], mvQuartPix[0], 0, 0, cIdx,
+						predSampLuma, predSampChr, listIdx);
+				end
+			end	
+		else if(mvQuartPix[0]=0) then /* Vertical interpolation */
+			foreach int x in 0 .. puIdxMax[0]-1
+			do
+				foreach int y in 0 .. puIdxMax[1]-1
+				do
+					coord := [x+1, y];
+					@inline
+					predictionFiltering(false, coord, [x, y], mvQuartPix[1], 0, 0, cIdx,
+						predSampLuma, predSampChr, listIdx);
+				end
+			end
+		else
+			foreach int x in 0 .. puIdxMax[0]-1
+			do
+				foreach int y in 0 .. puIdxMax[1]-1
+				do
+
+					pixValue := 524288;
+					/* Then we do the vertical interpolation with the result from the
+					 * previous part.
+					 */
+					foreach int idx in 0 .. 3
+					do
+						pixValue := pixValue +  interPredCoeff[cIdx][mvQuartPix[1]]
+							[idx] * predSampChr[listIdx][cIdx-1][x][y+idx];
+					end
+					predSampChr[listIdx][cIdx-1][x][y] := pixValue >> 6;
+				end
+			end
+		end end end
+	end
+
+	procedure interpol2ndPart(int mvQuartPix[2], uint(size=7) puIdxMax[2], int (size=16) predSampLuma[2][64+7][64+7],
+		int (size=16) predSampChr[2][2][32+3][32+3], uint(size=2)  listIdx, uint(size=2) cIdx)
+	begin
+		if(cIdx = 0) then	
+			interpolLuma2ndPart(mvQuartPix, puIdxMax, predSampLuma,
+				predSampChr, listIdx);
+		else
+			interpolChr2ndPart(mvQuartPix, puIdxMax, predSampLuma,
+				predSampChr, listIdx, cIdx);
+		end
+	end
+
+end
