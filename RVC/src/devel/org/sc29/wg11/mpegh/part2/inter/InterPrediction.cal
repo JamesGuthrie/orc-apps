@@ -376,87 +376,6 @@ int(size=8) interPredCoeff[3][8][8] =
 		end
 	end
 
-
-	procedure interpolOneSampleLuma(int x, int y, int mvQuartPix[2])
-	var
-		int (size=32) coord[2],
-		int(size=32) pixValue
-	begin
-		if(mvQuartPix[0]=0 && mvQuartPix[1]=0) then
-			/* When we mvQuartPix is equal to [0,0], we multiply by 1^shift1,
-			 * because after this procedure we will have the weighted prediction.
-			 */
-			predSampLuma[listIdx][x][y] := predSampLuma[listIdx][x+3]
-				[y+3]<<shift1;
-		else if(mvQuartPix[1]=0) then /* Horizontal interpolation */
-			coord := [x, y+3];
-			predictionFiltering(true, coord, [x, y], mvQuartPix[0], 0, 0, 0);		
-		else if(mvQuartPix[0]=0) then /* Vertical interpolation */
-			coord := [x+3, y];
-			predictionFiltering(false, coord, [x, y], mvQuartPix[1], 0, 0, 0);
-		else
-			pixValue := 524288;
-			/* Then we do the vertical interpolation with the result from the
-			 * previous part.
-			 */
-			pixValue := pixValue +
-				if(mvQuartPix[1] = 1) then
-					-    predSampLuma[listIdx][x][y  ] +  4*predSampLuma[listIdx][x][y+1]
-					- 10*predSampLuma[listIdx][x][y+2] + 58*predSampLuma[listIdx][x][y+3]
-					+ 17*predSampLuma[listIdx][x][y+4] -  5*predSampLuma[listIdx][x][y+5]
-					+    predSampLuma[listIdx][x][y+6]
-				else if(mvQuartPix[1] = 2) then
-					-    predSampLuma[listIdx][x][y]   +  4*predSampLuma[listIdx][x][y+1]
-					- 11*predSampLuma[listIdx][x][y+2] + 40*predSampLuma[listIdx][x][y+3]
-					+ 40*predSampLuma[listIdx][x][y+4] - 11*predSampLuma[listIdx][x][y+5]
-					+  4*predSampLuma[listIdx][x][y+6] -    predSampLuma[listIdx][x][y+7]
-				else
-					     predSampLuma[listIdx][x][y+1] -  5*predSampLuma[listIdx][x][y+2]
-					+ 17*predSampLuma[listIdx][x][y+3] + 58*predSampLuma[listIdx][x][y+4]
-					- 10*predSampLuma[listIdx][x][y+5] +  4*predSampLuma[listIdx][x][y+6]
-					-    predSampLuma[listIdx][x][y+7]
-				end end;
-			/*foreach int idx in 0 .. 7
-			do
-				pixValue := pixValue +  interPredCoeff[0][mvQuartPix[1]][idx]
-					* predSampLuma[listIdx][x][y+idx];
-			end*/
-			predSampLuma[listIdx][x][y] := pixValue >> 6;
-		end end end
-	end
-
-	procedure interpolOneSampleChr(int x, int y, int mvQuartPix[2],
-		uint(size=2) cIdx)
-	var
-		int (size=32) coord[2],
-		int(size=32) pixValue
-	begin
-		if(mvQuartPix[0]=0 && mvQuartPix[1]=0) then
-			/* When we mvQuartPix is equal to [0,0], we multiply by 1^shift1,
-			 * because after this procedure we will have the weighted prediction.
-			 */
-			predSampChr[listIdx][cIdx-1][x][y] := predSampChr[listIdx][cIdx-1][x+1]
-				[y+1]<<shift1;
-		else if(mvQuartPix[1]=0) then /* Horizontal interpolation */
-			coord := [x, y+1];
-			predictionFiltering(true, coord, [x, y], mvQuartPix[0], 0, 0, cIdx);		
-		else if(mvQuartPix[0]=0) then /* Vertical interpolation */
-			coord := [x+1, y];
-			predictionFiltering(false, coord, [x, y], mvQuartPix[1], 0, 0, cIdx);
-		else
-			pixValue := 524288;
-			/* Then we do the vertical interpolation with the result from the
-			 * previous part.
-			 */
-			foreach int idx in 0 .. 3
-			do
-				pixValue := pixValue +  interPredCoeff[cIdx][mvQuartPix[1]]
-					[idx] * predSampChr[listIdx][cIdx-1][x][y+idx];
-			end
-			predSampChr[listIdx][cIdx-1][x][y] := pixValue >> 6;
-		end end end
-	end
-
 	/* Computing the weighted prediction of the current pixel */
 	/* CLEAN ME */
 	procedure weightedPred(uint(size=2) cIdx, uint x, uint y)
@@ -968,7 +887,9 @@ int(size=8) interPredCoeff[3][8][8] =
 		uint(size=2) COMP_MIN = if((DECODE_COMP & LUMA_COMP) = 0) then 1 else 0 end,
 		uint(size=2) COMP_MAX = if((DECODE_COMP & CHROMA_COMP) != 0) then 2 else 1 end,
 		uint(size=7) puIdxMax[2],
-		uint(size=7) fullPuIdxMax[2]
+		uint(size=7) fullPuIdxMax[2],
+		int (size=32) coord[2],
+		int(size=32) pixValue
 	do
 		puIdxMax := 
 			if(LOG2_NUM_SUB_BLK[0] = 0 && LOG2_NUM_SUB_BLK[1] = 0) then
@@ -1018,16 +939,124 @@ int(size=8) interPredCoeff[3][8][8] =
 			 * for all pixel of the Cu.
 			 */
 			if((PROCESS_MODE_HALF_PIX & HALF_PIX_2ND_PART) != 0) then
-				foreach int x in 0 .. puIdxMax[0]-1
-				do
-					foreach int y in 0 .. puIdxMax[1]-1
-					do
-						if(component=0) then
-							interpolOneSampleLuma(x, y, mvQuartPix);
-						else
-							interpolOneSampleChr(x, y, mvQuartPix, component);
+				if(component = 0) then
+					if(mvQuartPix[0] = 0 && mvQuartPix[1] = 0) then
+						foreach int x in 0 .. puIdxMax[0]-1
+						do
+							foreach int y in 0 .. puIdxMax[1]-1
+							do
+								/* When we mvQuartPix is equal to [0,0], we multiply by 1^shift1,
+								 * because after this procedure we will have the weighted prediction.
+								 */
+								predSampLuma[listIdx][x][y] := predSampLuma[listIdx][x+3]
+									[y+3]<<shift1;
+							end
 						end
-					end
+					else if(mvQuartPix[0] != 0 && mvQuartPix[1] != 0) then
+						foreach int x in 0 .. puIdxMax[0]-1
+						do
+							foreach int y in 0 .. puIdxMax[1]-1
+							do
+								pixValue := 524288;
+								/* Then we do the vertical interpolation with the result from the
+								 * previous part.
+								 */
+								pixValue := pixValue +
+									if(mvQuartPix[1] = 1) then
+										-    predSampLuma[listIdx][x][y  ] +  4*predSampLuma[listIdx][x][y+1]
+										- 10*predSampLuma[listIdx][x][y+2] + 58*predSampLuma[listIdx][x][y+3]
+										+ 17*predSampLuma[listIdx][x][y+4] -  5*predSampLuma[listIdx][x][y+5]
+										+    predSampLuma[listIdx][x][y+6]
+									else if(mvQuartPix[1] = 2) then
+										-    predSampLuma[listIdx][x][y]   +  4*predSampLuma[listIdx][x][y+1]
+										- 11*predSampLuma[listIdx][x][y+2] + 40*predSampLuma[listIdx][x][y+3]
+										+ 40*predSampLuma[listIdx][x][y+4] - 11*predSampLuma[listIdx][x][y+5]
+										+  4*predSampLuma[listIdx][x][y+6] -    predSampLuma[listIdx][x][y+7]
+									else
+										     predSampLuma[listIdx][x][y+1] -  5*predSampLuma[listIdx][x][y+2]
+										+ 17*predSampLuma[listIdx][x][y+3] + 58*predSampLuma[listIdx][x][y+4]
+										- 10*predSampLuma[listIdx][x][y+5] +  4*predSampLuma[listIdx][x][y+6]
+										-    predSampLuma[listIdx][x][y+7]
+									end end;
+								/*foreach int idx in 0 .. 7
+								do
+									pixValue := pixValue +  interPredCoeff[0][mvQuartPix[1]][idx]
+										* predSampLuma[listIdx][x][y+idx];
+								end*/
+								predSampLuma[listIdx][x][y] := pixValue >> 6;
+							end
+						end
+					else if(mvQuartPix[1]=0) then
+						foreach int x in 0 .. puIdxMax[0]-1
+						do
+							foreach int y in 0 .. puIdxMax[1]-1
+							do
+								/* Horizontal interpolation */
+								coord := [x, y+3];
+								predictionFiltering(true, coord, [x, y], mvQuartPix[0], 0, 0, 0);
+							end
+						end	
+					else
+						foreach int x in 0 .. puIdxMax[0]-1
+						do
+							foreach int y in 0 .. puIdxMax[1]-1
+							do
+								/* Vertical interpolation */
+								coord := [x+3, y];
+								predictionFiltering(false, coord, [x, y], mvQuartPix[1], 0, 0, 0);
+							end
+						end
+					end end end
+				else
+					if(mvQuartPix[0] = 0 && mvQuartPix[1] = 0) then
+						foreach int x in 0 .. puIdxMax[0]-1
+						do
+							foreach int y in 0 .. puIdxMax[1]-1
+							do
+								/* When we mvQuartPix is equal to [0,0], we multiply by 1^shift1,
+								 * because after this procedure we will have the weighted prediction.
+								 */
+								predSampChr[listIdx][component-1][x][y] := predSampChr[listIdx][component-1][x+1]
+									[y+1]<<shift1;
+							end
+						end
+					else if(mvQuartPix[1]=0) then /* Horizontal interpolation */
+						foreach int x in 0 .. puIdxMax[0]-1
+						do
+							foreach int y in 0 .. puIdxMax[1]-1
+							do
+								coord := [x, y+1];
+								predictionFiltering(true, coord, [x, y], mvQuartPix[0], 0, 0, component);
+							end
+						end	
+					else if(mvQuartPix[0]=0) then /* Vertical interpolation */
+						foreach int x in 0 .. puIdxMax[0]-1
+						do
+							foreach int y in 0 .. puIdxMax[1]-1
+							do
+								coord := [x+1, y];
+								predictionFiltering(false, coord, [x, y], mvQuartPix[1], 0, 0, component);
+							end
+						end
+					else
+						foreach int x in 0 .. puIdxMax[0]-1
+						do
+							foreach int y in 0 .. puIdxMax[1]-1
+							do
+		
+								pixValue := 524288;
+								/* Then we do the vertical interpolation with the result from the
+								 * previous part.
+								 */
+								foreach int idx in 0 .. 3
+								do
+									pixValue := pixValue +  interPredCoeff[component][mvQuartPix[1]]
+										[idx] * predSampChr[listIdx][component-1][x][y+idx];
+								end
+								predSampChr[listIdx][component-1][x][y] := pixValue >> 6;
+							end
+						end
+					end end end
 				end
 			end
 		end
