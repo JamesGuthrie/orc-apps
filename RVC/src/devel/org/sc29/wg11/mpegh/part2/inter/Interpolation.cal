@@ -251,37 +251,85 @@ unit Interpolation:
 				end
 			end end
 		else
-			foreach int y in 0 .. fullPuIdxMax[1]-1 + numCoeff[1]-1
-			do
-				foreach int x in 0 .. fullPuIdxMax[0]-1
+			if(mvQuartPix[0] = 1) then
+				foreach int y in 0 .. fullPuIdxMax[1]-1 + numCoeff[1]-1
 				do
-					pixVal := -8192;
-					pixVal := pixVal	+ 
-						if(mvQuartPix[0] = 1) then
-							-  2*predSampChr[listIdx][cIdx-1][x]  [y] + 58*predSampChr[listIdx][cIdx-1][x+1][y]
-							+ 10*predSampChr[listIdx][cIdx-1][x+2][y] -  2*predSampChr[listIdx][cIdx-1][x+3][y]
-						else if(mvQuartPix[0] = 2) then
-							-  4*predSampChr[listIdx][cIdx-1][x]  [y] + 54*predSampChr[listIdx][cIdx-1][x+1][y]
-							+ 16*predSampChr[listIdx][cIdx-1][x+2][y] -  2*predSampChr[listIdx][cIdx-1][x+3][y]
-						else if(mvQuartPix[0] = 3) then
-							-  6*predSampChr[listIdx][cIdx-1][x]  [y] + 46*predSampChr[listIdx][cIdx-1][x+1][y]
-							+ 28*predSampChr[listIdx][cIdx-1][x+2][y] -  4*predSampChr[listIdx][cIdx-1][x+3][y]
-						else if(mvQuartPix[0] = 4) then
-							-  4*predSampChr[listIdx][cIdx-1][x]  [y] + 36*predSampChr[listIdx][cIdx-1][x+1][y]
-							+ 36*predSampChr[listIdx][cIdx-1][x+2][y] -  4*predSampChr[listIdx][cIdx-1][x+3][y]
-						else if(mvQuartPix[0] = 5) then
-							-  4*predSampChr[listIdx][cIdx-1][x]  [y] + 28*predSampChr[listIdx][cIdx-1][x+1][y]
-							+ 46*predSampChr[listIdx][cIdx-1][x+2][y] -  6*predSampChr[listIdx][cIdx-1][x+3][y]
-						else if(mvQuartPix[0] = 6) then
-							-  2*predSampChr[listIdx][cIdx-1][x]  [y] + 16*predSampChr[listIdx][cIdx-1][x+1][y]
-							+ 54*predSampChr[listIdx][cIdx-1][x+2][y] -  4*predSampChr[listIdx][cIdx-1][x+3][y]
-						else
-							-  2*predSampChr[listIdx][cIdx-1][x]  [y] + 10*predSampChr[listIdx][cIdx-1][x+1][y]
-							+ 58*predSampChr[listIdx][cIdx-1][x+2][y] -  2*predSampChr[listIdx][cIdx-1][x+3][y]
-						end end end end end end;
-					predSampChr[listIdx][cIdx-1][x][y] := pixVal;
+					foreach int x in 0 .. fullPuIdxMax[0]-1
+					do
+						pixVal := -8192	+ 
+								-  2*predSampChr[listIdx][cIdx-1][x]  [y] + 58*predSampChr[listIdx][cIdx-1][x+1][y]
+								+ 10*predSampChr[listIdx][cIdx-1][x+2][y] -  2*predSampChr[listIdx][cIdx-1][x+3][y];
+						predSampChr[listIdx][cIdx-1][x][y] := pixVal;
+					end
 				end
-			end
+			else if(mvQuartPix[0] = 2) then
+				foreach int y in 0 .. fullPuIdxMax[1]-1 + numCoeff[1]-1
+				do
+					foreach int x in 0 .. fullPuIdxMax[0]-1
+					do
+						pixVal := -8192;
+						pixVal := pixVal	+ 
+								-  4*predSampChr[listIdx][cIdx-1][x]  [y] + 54*predSampChr[listIdx][cIdx-1][x+1][y]
+								+ 16*predSampChr[listIdx][cIdx-1][x+2][y] -  2*predSampChr[listIdx][cIdx-1][x+3][y];
+						predSampChr[listIdx][cIdx-1][x][y] := pixVal;
+					end
+				end
+			else if(mvQuartPix[0] = 3) then
+				foreach int y in 0 .. fullPuIdxMax[1]-1 + numCoeff[1]-1
+				do
+					foreach int x in 0 .. fullPuIdxMax[0]-1
+					do
+						pixVal := -8192	+ 
+								-  6*predSampChr[listIdx][cIdx-1][x]  [y] + 46*predSampChr[listIdx][cIdx-1][x+1][y]
+								+ 28*predSampChr[listIdx][cIdx-1][x+2][y] -  4*predSampChr[listIdx][cIdx-1][x+3][y];
+						predSampChr[listIdx][cIdx-1][x][y] := pixVal;
+					end
+				end
+			else if(mvQuartPix[0] = 4) then
+				foreach int y in 0 .. fullPuIdxMax[1]-1 + numCoeff[1]-1
+				do
+					foreach int x in 0 .. fullPuIdxMax[0]-1
+					do
+						pixVal := -8192	+ 
+								-  4*predSampChr[listIdx][cIdx-1][x]  [y] + 36*predSampChr[listIdx][cIdx-1][x+1][y]
+								+ 36*predSampChr[listIdx][cIdx-1][x+2][y] -  4*predSampChr[listIdx][cIdx-1][x+3][y];
+						predSampChr[listIdx][cIdx-1][x][y] := pixVal;
+					end
+				end
+			else if(mvQuartPix[0] = 5) then
+				foreach int y in 0 .. fullPuIdxMax[1]-1 + numCoeff[1]-1
+				do
+					foreach int x in 0 .. fullPuIdxMax[0]-1
+					do
+						pixVal := -8192	+ 
+								-  4*predSampChr[listIdx][cIdx-1][x]  [y] + 28*predSampChr[listIdx][cIdx-1][x+1][y]
+								+ 46*predSampChr[listIdx][cIdx-1][x+2][y] -  6*predSampChr[listIdx][cIdx-1][x+3][y];
+						predSampChr[listIdx][cIdx-1][x][y] := pixVal;
+					end
+				end
+			else if(mvQuartPix[0] = 6) then
+				foreach int y in 0 .. fullPuIdxMax[1]-1 + numCoeff[1]-1
+				do
+					foreach int x in 0 .. fullPuIdxMax[0]-1
+					do
+						pixVal := -8192	+ 
+								-  2*predSampChr[listIdx][cIdx-1][x]  [y] + 16*predSampChr[listIdx][cIdx-1][x+1][y]
+								+ 54*predSampChr[listIdx][cIdx-1][x+2][y] -  4*predSampChr[listIdx][cIdx-1][x+3][y];
+						predSampChr[listIdx][cIdx-1][x][y] := pixVal;
+					end
+				end
+			else
+				foreach int y in 0 .. fullPuIdxMax[1]-1 + numCoeff[1]-1
+				do
+					foreach int x in 0 .. fullPuIdxMax[0]-1
+					do
+						pixVal := -8192	+ 
+								-  2*predSampChr[listIdx][cIdx-1][x]  [y] + 10*predSampChr[listIdx][cIdx-1][x+1][y]
+								+ 58*predSampChr[listIdx][cIdx-1][x+2][y] -  2*predSampChr[listIdx][cIdx-1][x+3][y];
+						predSampChr[listIdx][cIdx-1][x][y] := pixVal;
+					end
+				end
+			end end end end end end
 		end
 	end
 
