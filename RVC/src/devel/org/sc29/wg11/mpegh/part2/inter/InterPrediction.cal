@@ -722,7 +722,6 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 	interpolateSamples: action ==>
 	var
 		uint maskMv[3] = [3, 7, 7],
-		uint(size=4) numCoeff[3] = [8, 4, 4],
 		int mvQuartPix[2],
 		uint(size=2) COMP_MIN = if((DECODE_COMP & LUMA_COMP) = 0) then 1 else 0 end,
 		uint(size=2) COMP_MAX = if((DECODE_COMP & CHROMA_COMP) != 0) then 2 else 1 end,
@@ -763,14 +762,8 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 			 */
 			if(((PROCESS_MODE_HALF_PIX & HALF_PIX_1ST_PART) != 0) &&
 				mvQuartPix[0]!=0 && mvQuartPix[1]!=0) then
-				foreach int y in 0 .. fullPuIdxMax[1]-1 + numCoeff[component]-1
-				do
-					foreach int x in 0 .. fullPuIdxMax[0]-1
-					do
-						predictionFiltering(true, [x, y], [x, y],  mvQuartPix[0],
-							-8192, 0, component, predSampLuma, predSampChr, listIdx);
-					end
-				end
+				interpol1stPart(fullPuIdxMax, mvQuartPix, component,
+					predSampLuma, predSampChr, listIdx);
 			end
 
 			/* We realize the interpolation then the weighted prediction

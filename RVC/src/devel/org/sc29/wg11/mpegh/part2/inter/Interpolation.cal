@@ -197,6 +197,94 @@ unit Interpolation:
 		end
 	end
 
+	procedure interpol1stPart(uint(size=7) fullPuIdxMax[2], int mvQuartPix[2],
+		uint(size=2) cIdx, int (size=16) predSampLuma[2][64+7][64+7],
+		int (size=16) predSampChr[2][2][32+3][32+3], uint(size=2)  listIdx)
+	var
+		int pixVal,
+		uint(size=4) numCoeff[3] = [8, 4, 4]
+	begin
+		/* We get the 4 or 8 pixels needed for the filter and
+		 * we multiply these values with some coefficients. These coefficients
+		 * depend on the movement vector (if it's equal to a 8th, 4th or half
+		 * of pixel).
+		 */
+		if(cIdx = 0) then
+			if(mvQuartPix[0] = 1) then
+				foreach int y in 0 .. fullPuIdxMax[1]-1 + numCoeff[0]-1
+				do
+					foreach int x in 0 .. fullPuIdxMax[0]-1
+					do
+						pixVal := -8192 +
+								-    predSampLuma[listIdx][x  ][y] +  4*predSampLuma[listIdx][x+1][y]
+								- 10*predSampLuma[listIdx][x+2][y] + 58*predSampLuma[listIdx][x+3][y]
+								+ 17*predSampLuma[listIdx][x+4][y] -  5*predSampLuma[listIdx][x+5][y]
+								+    predSampLuma[listIdx][x+6][y];
+						predSampLuma[listIdx][x][y] := pixVal;
+					end
+				end
+			else if(mvQuartPix[0] = 2) then
+				foreach int y in 0 .. fullPuIdxMax[1]-1 + numCoeff[0]-1
+				do
+					foreach int x in 0 .. fullPuIdxMax[0]-1
+					do
+						pixVal := -8192 +
+								-    predSampLuma[listIdx][x  ][y] +  4*predSampLuma[listIdx][x+1][y]
+								- 11*predSampLuma[listIdx][x+2][y] + 40*predSampLuma[listIdx][x+3][y]
+								+ 40*predSampLuma[listIdx][x+4][y] - 11*predSampLuma[listIdx][x+5][y]
+								+  4*predSampLuma[listIdx][x+6][y] -    predSampLuma[listIdx][x+7][y];
+						predSampLuma[listIdx][x][y] := pixVal;
+					end
+				end
+			else
+				foreach int y in 0 .. fullPuIdxMax[1]-1 + numCoeff[0]-1
+				do
+					foreach int x in 0 .. fullPuIdxMax[0]-1
+					do
+						pixVal := -8192 +
+								      predSampLuma[listIdx][x+1][y] -  5*predSampLuma[listIdx][x+2][y]
+								 + 17*predSampLuma[listIdx][x+3][y] + 58*predSampLuma[listIdx][x+4][y]
+								 - 10*predSampLuma[listIdx][x+5][y] +  4*predSampLuma[listIdx][x+6][y]
+								 -    predSampLuma[listIdx][x+7][y];
+						predSampLuma[listIdx][x][y] := pixVal;
+					end
+				end
+			end end
+		else
+			foreach int y in 0 .. fullPuIdxMax[1]-1 + numCoeff[1]-1
+			do
+				foreach int x in 0 .. fullPuIdxMax[0]-1
+				do
+					pixVal := -8192;
+					pixVal := pixVal	+ 
+						if(mvQuartPix[0] = 1) then
+							-  2*predSampChr[listIdx][cIdx-1][x]  [y] + 58*predSampChr[listIdx][cIdx-1][x+1][y]
+							+ 10*predSampChr[listIdx][cIdx-1][x+2][y] -  2*predSampChr[listIdx][cIdx-1][x+3][y]
+						else if(mvQuartPix[0] = 2) then
+							-  4*predSampChr[listIdx][cIdx-1][x]  [y] + 54*predSampChr[listIdx][cIdx-1][x+1][y]
+							+ 16*predSampChr[listIdx][cIdx-1][x+2][y] -  2*predSampChr[listIdx][cIdx-1][x+3][y]
+						else if(mvQuartPix[0] = 3) then
+							-  6*predSampChr[listIdx][cIdx-1][x]  [y] + 46*predSampChr[listIdx][cIdx-1][x+1][y]
+							+ 28*predSampChr[listIdx][cIdx-1][x+2][y] -  4*predSampChr[listIdx][cIdx-1][x+3][y]
+						else if(mvQuartPix[0] = 4) then
+							-  4*predSampChr[listIdx][cIdx-1][x]  [y] + 36*predSampChr[listIdx][cIdx-1][x+1][y]
+							+ 36*predSampChr[listIdx][cIdx-1][x+2][y] -  4*predSampChr[listIdx][cIdx-1][x+3][y]
+						else if(mvQuartPix[0] = 5) then
+							-  4*predSampChr[listIdx][cIdx-1][x]  [y] + 28*predSampChr[listIdx][cIdx-1][x+1][y]
+							+ 46*predSampChr[listIdx][cIdx-1][x+2][y] -  6*predSampChr[listIdx][cIdx-1][x+3][y]
+						else if(mvQuartPix[0] = 6) then
+							-  2*predSampChr[listIdx][cIdx-1][x]  [y] + 16*predSampChr[listIdx][cIdx-1][x+1][y]
+							+ 54*predSampChr[listIdx][cIdx-1][x+2][y] -  4*predSampChr[listIdx][cIdx-1][x+3][y]
+						else
+							-  2*predSampChr[listIdx][cIdx-1][x]  [y] + 10*predSampChr[listIdx][cIdx-1][x+1][y]
+							+ 58*predSampChr[listIdx][cIdx-1][x+2][y] -  2*predSampChr[listIdx][cIdx-1][x+3][y]
+						end end end end end end;
+					predSampChr[listIdx][cIdx-1][x][y] := pixVal;
+				end
+			end
+		end
+	end
+
 	procedure interpolLuma2ndPart(int mvQuartPix[2], uint(size=7) puIdxMax[2], int (size=16) predSampLuma[2][64+7][64+7],
 		int (size=16) predSampChr[2][2][32+3][32+3], uint(size=2)  listIdx)
 	var
