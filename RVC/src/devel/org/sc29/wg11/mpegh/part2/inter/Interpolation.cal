@@ -503,19 +503,29 @@ unit Interpolation:
 		int o0,
 		int o1
 	begin
-		foreach int y in 0 .. puIdxMax[1]-1
-		do
-			foreach int x in 0 .. puIdxMax[0]-1
-			do
-				if(cIdx = 0) then
-					/* If we have a mono-prediction */
-					if(numList = 1) then
-						if(wpIdc = 0) then
+		if(cIdx = 0) then
+			/* If we have a mono-prediction */
+			if(numList = 1) then
+				if(wpIdc = 0) then
+					foreach int y in 0 .. puIdxMax[1]-1
+					do
+						foreach int x in 0 .. puIdxMax[0]-1
+						do
 							/* When we don't have a weighted prediction, we do the
 							 * average.
 							 */
 							predSampLuma[0][x][y] := (predSampLuma[0][x][y] + (1 <<(shift1-1)))>>shift1;
-						else
+							/* We apply a threashold according to bitDepth
+							 * (which is equal to 8, 10 or 12 bits).
+							 */
+							predSampLuma[0][x][y] := clip_i32(predSampLuma[0][x][y], 0 , maxPixVal);
+						end
+					end
+				else
+					foreach int y in 0 .. puIdxMax[1]-1
+					do
+						foreach int x in 0 .. puIdxMax[0]-1
+						do
 							/* If we had a bi-prediction both pictures used and movement
 							 * vectors where identical
 							 */
@@ -537,14 +547,20 @@ unit Interpolation:
 								locLogWD := logWD[cIdx] +1;
 								predSampLuma[0][x][y] := ((predSampLuma[0][x][y]*wX + (oX<<(locLogWD-1))) >>locLogWD);
 							end
+							/* We apply a threashold according to bitDepth
+							 * (which is equal to 8, 10 or 12 bits).
+							 */
+							predSampLuma[0][x][y] := clip_i32(predSampLuma[0][x][y], 0 , maxPixVal);
 						end
-						/* We apply a threashold according to bitDepth
-						 * (which is equal to 8, 10 or 12 bits).
-						 */
-						predSampLuma[0][x][y] := clip_i32(predSampLuma[0][x][y], 0 , maxPixVal);
-					/* If we have a bi-prediction */
-					else
-						if(wpIdc = 0) then
+					end
+				end
+			/* If we have a bi-prediction */
+			else
+				if(wpIdc = 0) then
+					foreach int y in 0 .. puIdxMax[1]-1
+					do
+						foreach int x in 0 .. puIdxMax[0]-1
+						do
 							/* When we don't have a weighted prediction, we do the average
 							 * of both pixels.
 							 */
@@ -555,7 +571,13 @@ unit Interpolation:
 							 */
 							predSampLuma[0][x][y] := clip_i32(predSampLuma[0][x][y], 0 ,
 								maxPixVal);
-						else /* When we have weighted prediction for bi-prediction */
+						end
+					end
+				else /* When we have weighted prediction for bi-prediction */
+					foreach int y in 0 .. puIdxMax[1]-1
+					do
+						foreach int x in 0 .. puIdxMax[0]-1
+						do
 							/* Then we realize the weighted prediction with the pixel
 							 * values and the coefficients.
 							 */
@@ -573,7 +595,13 @@ unit Interpolation:
 								maxPixVal);
 						end
 					end
-				else
+				end
+			end
+		else
+			foreach int y in 0 .. puIdxMax[1]-1
+			do
+				foreach int x in 0 .. puIdxMax[0]-1
+				do
 					if(numList = 1) then
 						if(wpIdc = 0) then
 							predSampChr[0][cIdx-1][x][y] := (predSampChr[0][cIdx-1][x][y] + (1 <<(shift1-1)))>>shift1;
