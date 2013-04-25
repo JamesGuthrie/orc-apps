@@ -95,6 +95,9 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 
 	uint(size=7)  iLoop;
 	uint(size=7)  jLoop;
+	
+	uint(size=13)  numPixToGet;
+	uint(size=13)  pixIdx;
 
 	uint(size=2)  compIdx;
 	int (size=16) refListX[2][6];
@@ -172,8 +175,7 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 
 	/* 8-tap filter. */
 	procedure predictionFilteringLuma(bool isHoriz, int rdCoord[2], int wrCoord[2],
-		int(size=8) coeffIdx, int finalOffset, int finalShift,
-		uint(size=2)  listIdx)
+		int(size=8) coeffIdx, int finalOffset, int finalShift)
 	var
 		int pixVal := finalOffset,
 		int xRd = rdCoord[0],
@@ -237,9 +239,7 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 
 	/* 4-tap filter. */
 	procedure predictionFilteringChr(bool isHoriz, int rdCoord[2], int wrCoord[2],
-		int(size=8) coeffIdx, int finalOffset, int finalShift,
-		uint(size=2) cIdx, int (size=16) predSampChr[2][2][32+3][32+3],
-		uint(size=2) listIdx)
+		int(size=8) coeffIdx, int finalOffset, int finalShift, uint(size=2) cIdx)
 	var
 		int pixVal := finalOffset,
 		int xRd = rdCoord[0],
@@ -314,7 +314,7 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 	end
 
 	procedure interpol1stPart(uint(size=7) fullPuIdxMax[2], int mvQuartPix[2],
-		uint(size=2) cIdx, uint(size=2)  listIdx)
+		uint(size=2) cIdx)
 	var
 		int pixVal,
 		uint(size=4) numCoeff[3] = [8, 4, 4]
@@ -448,7 +448,7 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 		end
 	end
 
-	procedure interpolLuma2ndPart(int mvQuartPix[2], uint(size=7) puIdxMax[2], uint(size=2)  listIdx)
+	procedure interpolLuma2ndPart(int mvQuartPix[2], uint(size=7) puIdxMax[2])
 	var
 		int(size=32) coord[2],
 		int(size=32) pixValue
@@ -507,8 +507,7 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 					/* Horizontal interpolation */
 					coord := [x, y+3];
 					@inline
-					predictionFilteringLuma(true, coord, [x, y], mvQuartPix[0], 0, 0,
-						listIdx);
+					predictionFilteringLuma(true, coord, [x, y], mvQuartPix[0], 0, 0);
 				end
 			end	
 		else
@@ -519,15 +518,14 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 					/* Vertical interpolation */
 					coord := [x+3, y];
 					@inline
-					predictionFilteringLuma(false, coord, [x, y], mvQuartPix[1], 0, 0,
-						listIdx);
+					predictionFilteringLuma(false, coord, [x, y], mvQuartPix[1], 0, 0);
 				end
 			end
 		end end end
 	end
 
 	procedure interpolChr2ndPart(int mvQuartPix[2], uint(size=7) puIdxMax[2],
-		uint(size=2)  listIdx, uint(size=2) cIdx)
+		uint(size=2) cIdx)
 	var
 		int(size=32) coord[2],
 		int(size=32) pixValue
@@ -551,8 +549,7 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 				do
 					coord := [x, y+1];
 					@inline
-					predictionFilteringChr(true, coord, [x, y], mvQuartPix[0], 0, 0, cIdx,
-						predSampChr, listIdx);
+					predictionFilteringChr(true, coord, [x, y], mvQuartPix[0], 0, 0, cIdx);
 				end
 			end	
 		else if(mvQuartPix[0]=0) then /* Vertical interpolation */
@@ -562,8 +559,7 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 				do
 					coord := [x+1, y];
 					@inline
-					predictionFilteringChr(false, coord, [x, y], mvQuartPix[1], 0, 0, cIdx,
-						predSampChr, listIdx);
+					predictionFilteringChr(false, coord, [x, y], mvQuartPix[1], 0, 0, cIdx);
 				end
 			end
 		else
@@ -587,18 +583,17 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 		end end end
 	end
 
-	procedure interpol2ndPart(int mvQuartPix[2], uint(size=7) puIdxMax[2],
-		uint(size=2)  listIdx, uint(size=2) cIdx)
+	procedure interpol2ndPart(int mvQuartPix[2], uint(size=7) puIdxMax[2], uint(size=2) cIdx)
 	begin
 		if(cIdx = 0) then	
-			interpolLuma2ndPart(mvQuartPix, puIdxMax, listIdx);
+			interpolLuma2ndPart(mvQuartPix, puIdxMax);
 		else
-			interpolChr2ndPart(mvQuartPix, puIdxMax, listIdx, cIdx);
+			interpolChr2ndPart(mvQuartPix, puIdxMax, cIdx);
 		end
 	end
 	/* Computing the weighted prediction of the current pixel */
 	/* CLEAN ME */
-	procedure weightedPred(uint(size=2) cIdx, uint(size=7) puIdxMax[2], uint(size=2)  numList, uint(size=2)  listIdx,
+	procedure weightedPred(uint(size=2) cIdx, uint(size=7) puIdxMax[2], uint(size=2)  numList,
 		uint(size=2) isBiPredOrLx, uint(size=2)  wpIdc, int weightCu[3][2], int offsetCu[3][2], int logWD[3])
 	var
 		int wX,
@@ -1031,6 +1026,8 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 		cuMode := cuInfo[0];
 		cuSize    := [cuInfo[i] : for int i in 3 .. 4];
 		puSizeChr := [cuInfo[i]>>1 : for int i in 3 .. 4];
+		numPixToGet := (cuSize[0]+7) * (cuSize[1]+7);
+		pixIdx := 0;
 		numPartDecoded := numPartDecoded + 1;
 	end
 
@@ -1160,7 +1157,7 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 	getSamples.luma.launch: action Sample:[sample] ==>
 	guard
 		listIdx < numList,
-		jLoop < cuSize[1]+7
+		pixIdx  < numPixToGet
 	do
 		if(LOG2_NUM_SUB_BLK[0] = 0 && LOG2_NUM_SUB_BLK[1] = 0) then
 			predSampLuma[listIdx][iLoop][jLoop] := sample;
@@ -1169,6 +1166,7 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 			predSampLuma[listIdx][iLoop - subPuIdxMin[0][0]][jLoop - subPuIdxMin[0][1]] := sample;
 		end end
 
+		pixIdx := pixIdx + 1;
 		iLoop := iLoop + 1;
 		if(iLoop = cuSize[0]+7) then
 			iLoop := 0;
@@ -1178,8 +1176,9 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 
 	getSamples.luma.done: action ==>
 	guard
-		jLoop = cuSize[1]+7
+		pixIdx = numPixToGet
 	do
+		pixIdx := 0;
 		compIdx := 1;
 		iLoop   := 0;
 		jLoop   := 0;
@@ -1256,14 +1255,14 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 			 */
 			if(((PROCESS_MODE_HALF_PIX & HALF_PIX_1ST_PART) != 0) &&
 				mvQuartPix[0]!=0 && mvQuartPix[1]!=0) then
-				interpol1stPart(fullPuIdxMax, mvQuartPix, component, listIdx);
+				interpol1stPart(fullPuIdxMax, mvQuartPix, component);
 			end
 
 			/* We realize the interpolation then the weighted prediction
 			 * for all pixel of the Cu.
 			 */
 			if((PROCESS_MODE_HALF_PIX & HALF_PIX_2ND_PART) != 0) then
-				interpol2ndPart(mvQuartPix, puIdxMax, listIdx, component);
+				interpol2ndPart(mvQuartPix, puIdxMax, component);
 			end
 		end
 
@@ -1292,7 +1291,7 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 				if(component=1) then
 					puIdxMax := [puIdxMax[i]>>1 : for int i in 0 .. 1];
 				end
-				weightedPred(component, puIdxMax, numList, listIdx, isBiPredOrLx,
+				weightedPred(component, puIdxMax, numList, isBiPredOrLx,
 					wpIdc, weightCu,offsetCu, logWD);
 			end
 		end
