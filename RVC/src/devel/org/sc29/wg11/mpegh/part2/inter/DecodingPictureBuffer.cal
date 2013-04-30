@@ -497,20 +497,21 @@ actor DecodingPictureBuffer (bool READ_INPUT_PARAL)
 		RstReadInPict (resetReadInPict )--> GetFirstRps;
 
 		GetFirstRps (getRps.launch )--> GetRpsFirstPoc;
-		GetFirstRps (getRps.done   )--> IsNewSlice;
+		GetFirstRps (getRps.done   )--> IsNewMvOrLCU;
 
 		GetRpsFirstPoc (getRpsPoc.launch )--> GetRpsFirstPoc;
 		GetRpsFirstPoc (getRpsPoc.done   )--> GetFirstRps;
 
 		IsNewSlice (isNewPict            )--> GetRps;
 		IsNewSlice (isNewSlice           )--> GetRps;
-		IsNewSlice (getReadAddr          )--> GetMvInfo;
-		IsNewSlice (getCuPix.launch.firstLuma )--> GetCuPixLuma;
-		IsNewSlice (getCuPix.done        )--> IsNewSlice;
+
+		IsNewMvOrLCU (getReadAddr          )--> GetMvInfo;
+		IsNewMvOrLCU (getCuPix.launch.firstLuma )--> GetCuPixLuma;
+		IsNewMvOrLCU (getCuPix.done        )--> IsNewSlice;
 
 		/* Get the rps info. */
 		GetRps (getRps.launch )--> GetRpsPoc;
-		GetRps (getRps.done   )--> IsNewSlice;
+		GetRps (getRps.done   )--> IsNewMvOrLCU;
 
 		GetRpsPoc (getRpsPoc.launch )--> GetRpsPoc;
 		GetRpsPoc (getRpsPoc.done   )--> GetRps;
@@ -519,12 +520,12 @@ actor DecodingPictureBuffer (bool READ_INPUT_PARAL)
 		GetCuPixLuma    (getCuPix.launch.otherLuma )--> GetCuPixLuma;
 		GetCuPixLuma    (getCuPix.launch.lumaDone  )--> GetCuPixChroma;
 		GetCuPixChroma  (getCuPix.launch.chroma    )--> GetCuPixChroma;
-		GetCuPixChroma  (getCuPix.launch.chrDone   )--> IsNewSlice;
+		GetCuPixChroma  (getCuPix.launch.chrDone   )--> IsNewMvOrLCU;
 
 		/* Send pixels needed for inter-prediction */
 		GetMvInfo (getMvInfo.launch )--> SendCuLuma;
-		GetMvInfo (getMvInfo.skip   )--> IsNewSlice;
-		GetMvInfo (getMvInfo.done   )--> IsNewSlice;
+		GetMvInfo (getMvInfo.skip   )--> IsNewMvOrLCU;
+		GetMvInfo (getMvInfo.done   )--> IsNewMvOrLCU;
 
 		SendCuLuma (sendCu.luma.launch   )--> SendCuLuma;
 		SendCuLuma (sendCu.luma.done     )--> SendCuChroma;
