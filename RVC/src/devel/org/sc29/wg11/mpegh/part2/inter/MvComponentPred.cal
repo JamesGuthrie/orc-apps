@@ -91,6 +91,7 @@ actor MvComponentPred(bool FIX_TMVP_REFIDX0)
 	uint(size=2)  IsBiPredOrLx,
 	uint(size=1)  IsReadOrNewSlice,
 	int (size=16) Mv,
+	bool          NewMvOrLCU,
 	int (size=16) PocRef,
 	uint(size=7)  PredCuSize,
 	uint(size=3)  RefIdx
@@ -137,6 +138,7 @@ actor MvComponentPred(bool FIX_TMVP_REFIDX0)
 	int (size=16) maxPoc;
 	int           picSizeInPart[2];
 	bool          useLN;
+	bool          isNewPict;
 	bool          isBSlice;
 	int           partAddr[2];
 	int           cuAddr[2];
@@ -655,7 +657,7 @@ actor MvComponentPred(bool FIX_TMVP_REFIDX0)
 	/* Getting information from new Slice, finding some place for the refence
 	 * tables, and initializing the reference tables
 	 */
-	isNewSlice: action PartMode:[partMode], ColocInfo:[colFromLX,
+	isNewPicOrSlice: action PartMode:[partMode], ColocInfo:[colFromLX,
 		colRefIdxVal], PicSize:[picSize] repeat 2, Poc:[poc],
 		SliceType:[sliceType] ==> IsReadOrNewSlice:[0]
 	guard
@@ -677,6 +679,7 @@ actor MvComponentPred(bool FIX_TMVP_REFIDX0)
 			println("sliceType = "+sliceType);
 		end
 
+		isNewPict := partMode = PART_MODE_PICT;
 		isBSlice := sliceType = B_SLICE;
 		colRefIdx := colRefIdxVal & 15;
 		if(isBSlice)then
@@ -714,6 +717,16 @@ actor MvComponentPred(bool FIX_TMVP_REFIDX0)
 		nbList := 0;
 	end
 
+	newPicture.isTrue: action ==> NewMvOrLCU:[false]
+	guard
+		isNewPict
+	end
+
+	newPicture.isFalse: action ==>
+	guard
+		not isNewPict
+	end
+
 	getPartMode: action PartMode:[partMode] ==>
 	guard
 		partMode != PART_MODE_SLICE && partMode != PART_MODE_PICT
@@ -743,6 +756,18 @@ actor MvComponentPred(bool FIX_TMVP_REFIDX0)
 		if DEBUG_CUInfo then
 			println("CUInfo = "+cuInfo[0] + " " + cuInfo[1] + " "+ cuInfo[2] + " " + cuInfo[3] + " " + cuInfo[4]);
 		end
+	end
+
+	isNewLcu.isTrue: action  ==> NewMvOrLCU:[false]
+	guard
+		(cuAddr[0] & 63) = 0,
+		(cuAddr[1] & 63) = 0
+	end
+
+	isNewLcu.isFalse: action  ==>
+	guard
+		(cuAddr[0] & 63) != 0 ||
+		(cuAddr[1] & 63) != 0
 	end
 
 	getCuInfo.done: action ==>
@@ -935,8 +960,8 @@ actor MvComponentPred(bool FIX_TMVP_REFIDX0)
 	end
 
 	getMvd: action SyntaxElem:[mvd] repeat 4 ==> IsBiPredOrLx:[isBiPredOrLx],
-		IsReadOrNewSlice:[1], Mv:[mvToSend] repeat 2, RefIdx:[refIdxToSend],
-		PocRef:[pocToSend], PredCuSize:[puSize] repeat 2
+		IsReadOrNewSlice:[1], Mv:[mvToSend] repeat 2, NewMvOrLCU:[true],
+		RefIdx:[refIdxToSend], PocRef:[pocToSend], PredCuSize:[puSize] repeat 2
 	var
 		int idxMvInfo,
 		int mv[2][2],
@@ -1095,7 +1120,7 @@ actor MvComponentPred(bool FIX_TMVP_REFIDX0)
 	end
 
 	send2ndMv.launch: action ==> PocRef:[pocToSend], RefIdx:[refIdxToSend],
-		Mv:[mvToSend] repeat 2, PredCuSize:[puSize] repeat 2
+		Mv:[mvToSend] repeat 2, NewMvOrLCU:[true], PredCuSize:[puSize] repeat 2
 	guard
 		isBiPredOrLx = BI_PRED
 	var
@@ -1118,8 +1143,10 @@ actor MvComponentPred(bool FIX_TMVP_REFIDX0)
 	end
 
 	schedule fsm GetPartMode:
-		GetPartMode (isNewSlice       )--> GetRps;
+		GetPartMode (isNewPicOrSlice  )--> CheckNewPict;
 		GetPartMode (getPartMode      )--> GetCuInfo;
+
+		CheckNewPict (newPicture )--> GetRps;
 
 		GetRps (getRps.launch )--> GetRpsPoc;
 		GetRps (getRps.done   )--> GetSizeRefList;
@@ -1133,8 +1160,10 @@ actor MvComponentPred(bool FIX_TMVP_REFIDX0)
 		GetRefList (getRefList.launch )--> GetRefList;
 		GetRefList (getRefList.done   )--> GetSizeRefList;
 
-		GetCuInfo   (getCuInfo.launch )--> GetCuMode;
+		GetCuInfo   (getCuInfo.launch )--> CheckNewLcu;
 		GetCuInfo   (getCuInfo.done   )--> GetPartMode;
+
+		CheckNewLcu (isNewLcu )--> GetCuMode;
 
 		GetCuMode (getCuMode.isNotInter )--> GetCuInfo;
 		GetCuMode (getCuMode.isInter    )--> CheckMergeIdx;

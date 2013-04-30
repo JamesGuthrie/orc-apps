@@ -152,4 +152,6 @@
     <Connection dst="" dst-port="VID" src="LCU_reord2" src-port="Block_out"/>
     <Connection dst="LCU_reord2" dst-port="PictSize" src="Algo_Parser" src-port="PictSize"/>
     <Connection dst="LCU_reord2" dst-port="Block_in" src="LCU_reord" src-port="Block_out"/>
+    <Connection dst="DecodingPictureBuffer" dst-port="NewMvOrLCU"
+        src="GenerateInterInfo" src-port="NewMvOrLCU"/>
 </XDF>
