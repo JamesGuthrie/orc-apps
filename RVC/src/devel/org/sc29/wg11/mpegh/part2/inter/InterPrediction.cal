@@ -1156,7 +1156,6 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 
 	getSamples.luma.launch: action Sample:[sample] ==>
 	guard
-		listIdx < numList,
 		pixIdx  < numPixToGet
 	do
 		if(LOG2_NUM_SUB_BLK[0] = 0 && LOG2_NUM_SUB_BLK[1] = 0) then
@@ -1527,5 +1526,6 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 	priority
 		getWeightLX.launch > getWeightLX.skip >getWeightLX.done;
 		sendPu.skip > sendPu.launch > sendPu.done;
+		getSamples.done > getSamples.luma;
 	end
 end

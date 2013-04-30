@@ -85,6 +85,8 @@ actor DecodingPictureBuffer (bool READ_INPUT_PARAL)
 	bool          isRef[7];
 	bool          isStillRef[7];
 
+	uint(size=16) picSize[2];
+
 	uint(size=7)  puSize[2];
 	uint(size=7)  puSizeChr[2];
 
@@ -92,11 +94,8 @@ actor DecodingPictureBuffer (bool READ_INPUT_PARAL)
 	int (size=4)  currIdx := -1;
 	int (size=4)  inputPicIdx := -1;
 
-	uint(size=6)  picSizeInCu[2];
-	uint(size=16) picSize[2];
-
-	uint(size=6)  xIdx;
-	uint(size=6)  yIdx;
+	uint(size=16) xIdx;
+	uint(size=16) yIdx;
 	uint(size=7)  lineIdx := 0;
 	uint(size=2)  cIdx    := 1;
 
@@ -132,8 +131,6 @@ actor DecodingPictureBuffer (bool READ_INPUT_PARAL)
 	guard
 		not(currIdx != -1 and poc = pocRef[currIdx&7])
 	do
-		picSizeInCu[0] := (picWidthInPix+63)/64;
-		picSizeInCu[1] := (picHeightInPix+63)/64;
 		picSize[0] := picWidthInPix;
 		picSize[1] := picHeightInPix;
 		xIdx := 0;
@@ -154,7 +151,6 @@ actor DecodingPictureBuffer (bool READ_INPUT_PARAL)
 		isStillRef := [false: for int i in 0 .. 6];
 	end
 
-	// This action (called once) avoid the actor to be time dependant.
 	resetReadInPict.launch: action NewMvOrLCU:[newMv] repeat 2 ==>
 	end
 
@@ -221,13 +217,13 @@ actor DecodingPictureBuffer (bool READ_INPUT_PARAL)
 
 	getCuPix.launch.firstLuma: action Sample:[samp] repeat 64 ==>
 	guard
-		yIdx < picSizeInCu[1]
+		yIdx < picSize[1]
 	var
 		uint(size=16) xPixIdx,
 		uint(size=16) yPixIdx
 	do
-		xPixIdx := BORDER_SIZE + xIdx*64;
-		yPixIdx := BORDER_SIZE + yIdx*64;
+		xPixIdx := BORDER_SIZE + xIdx;
+		yPixIdx := BORDER_SIZE + yIdx;
 		foreach uint x in 0 .. 63
 		do
 			pictureBuffer[inputPicIdx][0][xPixIdx+x][yPixIdx] := samp[x];
@@ -242,8 +238,8 @@ actor DecodingPictureBuffer (bool READ_INPUT_PARAL)
 		uint(size=16) xPixIdx,
 		uint(size=16) yPixIdx
 	do
-		xPixIdx := BORDER_SIZE + xIdx*64;
-		yPixIdx := BORDER_SIZE + yIdx*64;
+		xPixIdx := BORDER_SIZE + xIdx;
+		yPixIdx := BORDER_SIZE + yIdx;
 		foreach uint x in 0 .. 63
 		do
 			pictureBuffer[inputPicIdx][0][xPixIdx+x][yPixIdx+lineIdx] := samp[x];
@@ -265,8 +261,8 @@ actor DecodingPictureBuffer (bool READ_INPUT_PARAL)
 		uint(size=16) xPixIdx,
 		uint(size=16) yPixIdx
 	do
-		xPixIdx := (BORDER_SIZE + xIdx*64)>>1;
-		yPixIdx := (BORDER_SIZE + yIdx*64)>>1;
+		xPixIdx := (BORDER_SIZE + xIdx)>>1;
+		yPixIdx := (BORDER_SIZE + yIdx)>>1;
 		foreach uint x in 0 .. 31
 		do
 			pictureBuffer[inputPicIdx][cIdx][xPixIdx+x][yPixIdx+lineIdx] :=
@@ -286,10 +282,10 @@ actor DecodingPictureBuffer (bool READ_INPUT_PARAL)
 	do
 		cIdx := 1;
 
-		xIdx := xIdx + 1;
-		if(xIdx = picSizeInCu[0]) then
+		xIdx := xIdx + 64;
+		if(xIdx >= picSize[0]) then
 			xIdx := 0;
-			yIdx := yIdx + 1;
+			yIdx := yIdx + 64;
 		end
 	end
 
@@ -298,10 +294,10 @@ actor DecodingPictureBuffer (bool READ_INPUT_PARAL)
 	 */
 	getCuPix.done: action ==>
 	guard
-		yIdx = picSizeInCu[1]
+		yIdx >= picSize[1]
 	var
-		uint xSize := picSize[0],
-		uint ySize := picSize[1]
+		uint xSize = picSize[0],
+		uint ySize = picSize[1]
 	do
 		/* Fill in luma border */
 		foreach uint x in BORDER_SIZE .. xSize-1 + BORDER_SIZE
@@ -497,13 +493,13 @@ actor DecodingPictureBuffer (bool READ_INPUT_PARAL)
 		GetRpsFirstPoc (getRpsPoc.launch )--> GetRpsFirstPoc;
 		GetRpsFirstPoc (getRpsPoc.done   )--> GetFirstRps;
 
-		IsNewSlice (isNewPict            )--> GetRps;
-		IsNewSlice (isNewSlice           )--> GetRps;
+		IsNewSlice (isNewPict  )--> GetRps;
+		IsNewSlice (isNewSlice )--> GetRps;
 
 		IsNewMvOrLCU (checkNewMv.isMv  )--> GetReadAddr;
 		IsNewMvOrLCU (checkNewMv.isLcu )--> ReadLcu;
 
-		GetReadAddr (getReadAddr          )--> GetMvInfo;
+		GetReadAddr (getReadAddr )--> GetMvInfo;
 
 		ReadLcu (getCuPix.launch.firstLuma )--> GetCuPixLuma;
 		ReadLcu (getCuPix.done             )--> IsNewSlice;
