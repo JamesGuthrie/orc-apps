@@ -65,6 +65,7 @@ actor DecodingPictureBuffer (bool READ_INPUT_PARAL)
 	uint(size=2)  IsBiPredOrLx,
 	uint(size=1)  IsReadOrNewSlc,
 	int (size=16) Mv,
+	bool          NewMvOrLCU,
 	uint(size=16) PicSize,
 	uint(size=16) Poc,
 	int (size=16) PocRef,
@@ -116,6 +117,7 @@ actor DecodingPictureBuffer (bool READ_INPUT_PARAL)
 	uint(size=3)  nbList;
 	uint(size=3)  sizeOfList;
 
+
 	/** Getting informations from new slice/picture. Updating these informations **/
 	isNewSlice: action IsReadOrNewSlc:[isRead], PicSize:[picWidthInPix,
 		picHeightInPix], Poc:[poc] ==>
@@ -127,8 +129,8 @@ actor DecodingPictureBuffer (bool READ_INPUT_PARAL)
 		isStillRef := [false: for int i in 0 .. 6];
 	end
 
-	isNewPict: action IsReadOrNewSlc:[isRead], PicSize:[picWidthInPix,
-		picHeightInPix], Poc:[poc] ==>
+	isNewPict: action IsReadOrNewSlc:[isRead],  NewMvOrLCU:[newMv],
+		PicSize:[picWidthInPix, picHeightInPix], Poc:[poc] ==>
 	guard
 		not readInPict,
 		isRead = 0 and not(currIdx != -1 and poc = pocRef[currIdx&7])
@@ -157,7 +159,7 @@ actor DecodingPictureBuffer (bool READ_INPUT_PARAL)
 	end
 
 	// This action (called once) avoid the actor to be time dependant.
-	resetReadInPict.launch: action ==>
+	resetReadInPict.launch: action NewMvOrLCU:[newMv] ==>
 	do
 		if(not READ_INPUT_PARAL) then
 			readInPict := false;
@@ -214,9 +216,26 @@ actor DecodingPictureBuffer (bool READ_INPUT_PARAL)
 	/* We get the whole Cu decoded (luma and chroma components) and we save
 	 * it in the Dpb (pictureBuffer).
 	 */
+
+	getCuPix.launch.luma.isFirst: action NewMvOrLCU:[newMv], Sample:[samp] repeat 64 ==>
+	guard
+		readInPict && yIdx < picSizeInCu[1]  && lineIdx = 0
+	var
+		uint(size=16) xPixIdx,
+		uint(size=16) yPixIdx
+	do
+		xPixIdx := BORDER_SIZE + xIdx*64;
+		yPixIdx := BORDER_SIZE + yIdx*64;
+		foreach uint x in 0 .. 63
+		do
+			pictureBuffer[inputPicIdx][0][xPixIdx+x][yPixIdx+lineIdx] := samp[x];
+		end
+		lineIdx := lineIdx + 1;
+	end
+
 	getCuPix.launch.luma: action Sample:[samp] repeat 64 ==>
 	guard
-		readInPict && yIdx < picSizeInCu[1]  && lineIdx < 64
+		readInPict && yIdx < picSizeInCu[1]  && lineIdx != 0 && lineIdx < 64
 	var
 		uint(size=16) xPixIdx,
 		uint(size=16) yPixIdx
@@ -348,7 +367,7 @@ actor DecodingPictureBuffer (bool READ_INPUT_PARAL)
 	 * these samples in RefCu, it will be sent with the actions sendCu.isYxY
 	 */
 	getMvInfo.launch: action PocRef:[poc], PredCuSize:[predUnitSize] repeat 2,
-		Mv:[mvX, mvY] ==>
+		Mv:[mvX, mvY], NewMvOrLCU:[newMv] ==>
 	guard
 		numPocRef != 0,
 		not(isBiPred && numPocRef = 1 && lastPocRef = poc && lastMvRef[0] = mvX && lastMvRef[1] = mvY)
@@ -404,7 +423,7 @@ actor DecodingPictureBuffer (bool READ_INPUT_PARAL)
 
 
 	getMvInfo.skip: action PocRef:[poc], PredCuSize:[predUnitSize] repeat 2,
-		Mv:[mvX, mvY] ==>
+		Mv:[mvX, mvY], NewMvOrLCU:[newMv] ==>
 	guard
 		isBiPred && numPocRef = 1 && lastPocRef = poc && lastMvRef[0] = mvX && lastMvRef[1] = mvY
 	end

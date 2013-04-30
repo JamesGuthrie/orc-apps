@@ -112,6 +112,9 @@
             </Entry>
         </Type>
     </Port>
+    <Port kind="Output" name="NewMvOrLCU">
+        <Type name="bool"/>
+    </Port>
     <Port kind="Output" name="RefList">
         <Type name="int">
             <Entry kind="Expr" name="size">
@@ -148,4 +151,5 @@
     <Connection dst="" dst-port="PredCuSize" src="MvComponentPred" src-port="PredCuSize"/>
     <Connection dst="" dst-port="RefIdx" src="MvComponentPred" src-port="RefIdx"/>
     <Connection dst="" dst-port="RefList" src="GenerateRefList" src-port="RefList"/>
+    <Connection dst="" dst-port="NewMvOrLCU" src="MvComponentPred" src-port="NewMvOrLCU"/>
 </XDF>
