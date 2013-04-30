@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <layout>
 	<vertices>
-		<vertex id="BYTE" x="57" y="793"/>
-		<vertex id="SIZE" x="401" y="81"/>
-		<vertex id="DispCoord" x="401" y="178"/>
-		<vertex id="VID" x="1296" y="565"/>
-		<vertex id="Algo_Parser" x="171" y="595"/>
-		<vertex id="xIT" x="401" y="479"/>
-		<vertex id="IntraPrediction" x="1430" y="1000"/>
-		<vertex id="SelectCU" x="1213" y="919"/>
-		<vertex id="GenerateInterInfo" x="401" y="683"/>
-		<vertex id="feeder" x="724" y="500"/>
-		<vertex id="DecodingPictureBuffer" x="724" y="619"/>
-		<vertex id="InterPrediction" x="957" y="767"/>
+		<vertex id="BYTE" x="57" y="662"/>
+		<vertex id="SIZE" x="401" y="84"/>
+		<vertex id="DispCoord" x="401" y="181"/>
+		<vertex id="VID" x="1252" y="863"/>
+		<vertex id="Algo_Parser" x="171" y="464"/>
+		<vertex id="xIT" x="401" y="861"/>
+		<vertex id="IntraPrediction" x="1252" y="960"/>
+		<vertex id="SelectCU" x="980" y="837"/>
+		<vertex id="GenerateInterInfo" x="401" y="278"/>
+		<vertex id="feeder" x="401" y="721"/>
+		<vertex id="DecodingPictureBuffer" x="1252" y="320"/>
+		<vertex id="InterPrediction" x="724" y="531"/>
 	</vertices>
 </layout>

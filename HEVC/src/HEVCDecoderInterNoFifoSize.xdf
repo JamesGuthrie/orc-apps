@@ -142,4 +142,6 @@
     <Connection dst="DecodingPictureBuffer" dst-port="Sample"
         src="SelectCU" src-port="IntraRefSample"/>
     <Connection dst="" dst-port="VID" src="SelectCU" src-port="IntraRefSample"/>
+    <Connection dst="DecodingPictureBuffer" dst-port="NewMvOrLCU"
+        src="GenerateInterInfo" src-port="NewMvOrLCU"/>
 </XDF>
