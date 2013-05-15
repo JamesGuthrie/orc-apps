@@ -25,7 +25,7 @@ actor DisplayYUVWithCropSTHORM(uint(size=8) BLK_SIDE)
 	uint(size=14) yMax;
 
 	int count := 0;
-	
+
 	int counter;
 	
 	int current_idx;
@@ -45,8 +45,6 @@ actor DisplayYUVWithCropSTHORM(uint(size=8) BLK_SIDE)
 	
 	@trace
 	getPictureSize: action DispCoord:[dispCoord] repeat 4, PicSizeInMb:[picWidth, picHeight] ==>
-	guard
-		(DISP_READY) != 0
 	do
 
 		pictureWidthLuma  := picWidth * BLK_SIDE;
