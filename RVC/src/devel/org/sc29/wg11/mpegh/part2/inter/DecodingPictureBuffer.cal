@@ -126,8 +126,8 @@ actor DecodingPictureBuffer (bool READ_INPUT_PARAL)
 		isStillRef := [false: for int i in 0 .. 6];
 	end
 
-	isNewPict: action IsReadOrNewSlc:[isRead],
-		PicSize:[picWidthInPix, picHeightInPix], Poc:[poc] ==>
+	isNewPict: action IsReadOrNewSlc:[isRead], PicSize:[picWidthInPix,
+		picHeightInPix], Poc:[poc] ==>
 	guard
 		not(currIdx != -1 and poc = pocRef[currIdx&7])
 	do

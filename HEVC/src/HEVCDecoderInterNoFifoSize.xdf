@@ -143,5 +143,7 @@
         src="SelectCU" src-port="IntraRefSample"/>
     <Connection dst="" dst-port="VID" src="SelectCU" src-port="IntraRefSample"/>
     <Connection dst="DecodingPictureBuffer" dst-port="NewMvOrLCU"
-        src="GenerateInterInfo" src-port="NewMvOrLCU"/>
+        src="GenerateInterInfo" src-port="NewMvOrLcu"/>
+    <Connection dst="GenerateInterInfo" dst-port="DisableTMVP"
+        src="Algo_Parser" src-port="DisableTMVP"/>
 </XDF>

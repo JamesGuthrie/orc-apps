@@ -43,6 +43,9 @@ actor SaoFilter(bool DEBUG)
 		==>
 	uint(size=8)  FiltSample
 		:
+		
+	bool DEBUG_Trace = false;
+		
 	uint(size=4)  BIT_DEPTH = 8;
 
 
@@ -594,6 +597,15 @@ actor SaoFilter(bool DEBUG)
 	guard
 		isNewPicSlcLcu = NEW_PIC
 	do
+		
+		if (DEBUG_Trace) then
+			println("=== isNewPict ===");
+			println("IsPicSlcLcu = " + isNewPicSlcLcu);
+			println("LFAcrossSlc = " + lfAcrossSlc);
+			println("PicSize     = " + picWidthInPix + "x" + picHeightInPix);
+			println("SaoSe       = " + saoSe);
+		end
+
 		picSizeInCu := [(picWidthInPix+63)/64, (picHeightInPix+63)/64];
 		picSize     := [picWidthInPix   , picHeightInPix];
 		slcSaoCompEn[0] := (saoSe & 1) !=0;
@@ -610,6 +622,14 @@ actor SaoFilter(bool DEBUG)
 	guard
 		isNewPicSlcLcu = NEW_SLC
 	do
+		if (DEBUG_Trace) then
+			println("=== isNewSlice ===");
+			println("IsPicSlcLcu = " + isNewPicSlcLcu);
+			println("LFAcrossSlc = " + lfAcrossSlc);
+			println("PicSize     = " + picWidthInPix + "x" + picHeightInPix);
+			
+		end
+
 		endSlcAddr[0] := [xCu<<6, yCu<<6];
 		endSlcAddr[1] := [xCu<<5, yCu<<5];
 		endSlcAddr[2] := [xCu<<5, yCu<<5];
@@ -631,6 +651,39 @@ actor SaoFilter(bool DEBUG)
 		uint(size=16) xPic,
 		uint(size=16) yPic
 	do
+		if (DEBUG_Trace) then
+			println("=== getCuPix.launch ===");
+			println("IsPicSlcLcu = " + isNewLcu);
+			println("SampleIn    = [ ");
+			foreach int y in 0 .. 63 do
+				foreach int x in 0 .. 63 do
+					print(samp[x+y*64]+", ");
+				end
+				if y != 63 then
+					println("");
+				end 
+			end
+			println("][");
+			foreach int y in 0 .. 31 do
+				foreach int x in 0 .. 31 do
+					print(samp[64*64+x+y*32]+", ");
+				end
+				if y != 31 then
+					println("");
+				end 
+			end
+			println("][");
+			foreach int y in 0 .. 31 do
+				foreach int x in 0 .. 31 do
+					print(samp[64*64+32*32+x+y*32]+", ");
+				end
+				if y != 31 then
+					println("");
+				end 
+			end
+			println("]");
+		end
+
 		xPic := xCu<<6;
 		yPic := (yCu<<6)&(4*64-1);
 
@@ -671,6 +724,10 @@ actor SaoFilter(bool DEBUG)
 	guard
 		(slcSaoCompEn[0] || slcSaoCompEn[1]) and mergeInfo = SAO_NO_MERGE
 	do
+		if (DEBUG_Trace) then
+			println("=== getSaoMerge.noMerge ===");
+			println("SaoSe       = " + mergeInfo);
+		end
 	end
 
 	getSaoMerge.merge: action SaoSe:[mergeInfo] ==>
@@ -684,6 +741,11 @@ actor SaoFilter(bool DEBUG)
 		uint(size=16) yMerge =
 			if(mergeInfo = SAO_MERGE_UP)  then (yCu-1)&1 else yCu&1 end
 	do
+		if (DEBUG_Trace) then
+			println("=== getSaoMerge.Merge ===");
+			println("SaoSe       = " + mergeInfo);
+		end
+
 		foreach uint cIdx in 0 .. 2
 		do
 			saoTypeIdx[xCu][yCu&1][cIdx] := saoTypeIdx[xMerge][yMerge&1][cIdx];
@@ -736,6 +798,11 @@ actor SaoFilter(bool DEBUG)
 		uint(size=16) addrBeg[2],
 		uint(size=16) addrEnd[2]
 	do
+		if (DEBUG_Trace) then
+			println("=== getSaoTypeIdx.is0 ===");
+			println("SaoSe       = " + typeIdx);
+		end
+
 		addrBeg :=
 			if(cIdx=0) then
 				[xCu<<6, yCu<<6]
@@ -761,6 +828,15 @@ actor SaoFilter(bool DEBUG)
 		 */
 		if cIdx <3 then slcSaoCompEn[cIdx] && saoSe[0] != 0 else false end
 	do
+		if (DEBUG_Trace) then
+			println("=== getSaoTypeIdx.isNot0 ===");
+			print("SaoSe       = [");
+			foreach uint i in 0 .. 5 do
+				print(saoSe[i] + ", ");
+			end
+			println("]");
+		end
+
 		saoTypeIdx[xCu][yCu&1][cIdx] := saoSe[0];
 		foreach uint i in 1 .. 4
 		do
@@ -864,6 +940,38 @@ actor SaoFilter(bool DEBUG)
 		end
 
 		nextLcuAddress();
+		
+		if (DEBUG_Trace) then
+			println("=== sendSamples.launch ===");
+			println("FiltSample  = [ ");
+			foreach int y in 0 .. 63 do
+				foreach int x in 0 .. 63 do
+					print(filtSamp[x+y*64]+", ");
+				end
+				if y != 63 then
+					println("");
+				end 
+			end
+			println("][");
+			foreach int y in 0 .. 31 do
+				foreach int x in 0 .. 31 do
+					print(filtSamp[64*64+x+y*32]+", ");
+				end
+				if y != 31 then
+					println("");
+				end 
+			end
+			println("][");
+			foreach int y in 0 .. 31 do
+				foreach int x in 0 .. 31 do
+					print(filtSamp[64*64+32*32+x+y*32]+", ");
+				end
+				if y != 31 then
+					println("");
+				end 
+			end
+			println("]");
+		end
 	end
 
 	sendSamples.done: action ==>

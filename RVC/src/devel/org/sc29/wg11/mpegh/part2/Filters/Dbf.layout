@@ -1,21 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <layout>
 	<vertices>
-		<vertex id="CuInfo" x="132" y="91"/>
-		<vertex id="Cbf" x="149" y="135"/>
-		<vertex id="IsBiPredOrLx" x="116" y="175"/>
-		<vertex id="PicSize" x="444" y="211"/>
-		<vertex id="Mv" x="147" y="228"/>
-		<vertex id="Qp" x="453" y="263"/>
-		<vertex id="SplitTransf" x="124" y="265"/>
-		<vertex id="PartMode" x="125" y="308"/>
-		<vertex id="SampleIn" x="438" y="313"/>
-		<vertex id="RefPoc" x="132" y="353"/>
-		<vertex id="IsPicSlcLcu" x="432" y="373"/>
-		<vertex id="SlcAddr" x="129" y="396"/>
-		<vertex id="LFAcrossSlc" x="124" y="443"/>
-		<vertex id="FiltSample" x="739" y="181"/>
-		<vertex id="GenerateBS" x="296" y="141"/>
-		<vertex id="DeblockFilt" x="568" y="156"/>
+		<vertex id="CuInfo" x="81" y="48"/>
+		<vertex id="Cbf" x="172" y="67"/>
+		<vertex id="PicSize" x="215" y="326"/>
+		<vertex id="IsBiPredOrLx" x="53" y="89"/>
+		<vertex id="Qp" x="327" y="350"/>
+		<vertex id="Mv" x="175" y="114"/>
+		<vertex id="SampleIn" x="202" y="375"/>
+		<vertex id="SplitTransf" x="56" y="132"/>
+		<vertex id="IsPicSlcLcu" x="300" y="394"/>
+		<vertex id="PartMode" x="149" y="157"/>
+		<vertex id="RefPoc" x="58" y="178"/>
+		<vertex id="SlcAddr" x="149" y="200"/>
+		<vertex id="DBFDisable" x="188" y="418"/>
+		<vertex id="LFAcrossSlc" x="52" y="222"/>
+		<vertex id="FiltSample" x="632" y="304"/>
+		<vertex id="DeblockFilt" x="477" y="285"/>
+		<vertex id="GenerateBs" x="323" y="22"/>
 	</vertices>
 </layout>

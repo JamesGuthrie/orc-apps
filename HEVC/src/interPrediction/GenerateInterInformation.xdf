@@ -128,6 +128,17 @@
             <Expr kind="Literal" literal-kind="Boolean" value="true"/>
         </Parameter>
     </Instance>
+<<<<<<< HEAD
+=======
+    <Instance id="GenerateTrue">
+        <Class name="testBench.interPrediction.GenerateTrue"/>
+    </Instance>
+    <Connection dst="Rps" dst-port="NaluType" src="" src-port="NaluType"/>
+    <Connection dst="Rps" dst-port="NumStRps" src="" src-port="NumStRps"/>
+    <Connection dst="Rps" dst-port="Poc" src="" src-port="Poc"/>
+    <Connection dst="Rps" dst-port="MaxPocLsb" src="" src-port="MaxPocLsb"/>
+    <Connection dst="Rps" dst-port="SyntElem" src="" src-port="RpsSyntElem"/>
+>>>>>>> hevc_hm10
     <Connection dst="GenerateRefList" dst-port="NumRefIdxLXAct" src="" src-port="NumRefIdxLxAct"/>
     <Connection dst="GenerateRefList" dst-port="RefPicListModif" src="" src-port="RePicListModif"/>
     <Connection dst="GenerateRefList" dst-port="RefPoc" src="" src-port="RefPoc"/>
@@ -150,6 +161,14 @@
     <Connection dst="" dst-port="Mv" src="MvComponentPred" src-port="Mv"/>
     <Connection dst="" dst-port="PocRef" src="MvComponentPred" src-port="PocRef"/>
     <Connection dst="" dst-port="PredCuSize" src="MvComponentPred" src-port="PredCuSize"/>
+<<<<<<< HEAD
     <Connection dst="" dst-port="RefIdx" src="MvComponentPred" src-port="RefIdx"/>
     <Connection dst="" dst-port="RefList" src="GenerateRefList" src-port="RefList"/>
+=======
+    <Connection dst="MvComponentPred" dst-port="PicSize" src="" src-port="PictSize"/>
+    <Connection dst="MvComponentPred" dst-port="CUInfo" src="" src-port="CUInfo"/>
+    <Connection dst="GenerateRefList" dst-port="RefPoc" src="Rps" src-port="RefPoc"/>
+    <Connection dst="MvComponentPred" dst-port="disableTMVP"
+        src="GenerateTrue" src-port="Out"/>
+>>>>>>> hevc_hm10
 </XDF>
