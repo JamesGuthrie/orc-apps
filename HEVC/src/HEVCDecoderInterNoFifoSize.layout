@@ -3,7 +3,9 @@
 	<vertices>
 		<vertex id="BYTE" x="57" y="655"/>
 		<vertex id="SIZE" x="401" y="77"/>
+		<vertex id="PictSize" x="414" y="129"/>
 		<vertex id="DispCoord" x="401" y="174"/>
+		<vertex id="SEI_MD5" x="428" y="226"/>
 		<vertex id="VID" x="1252" y="856"/>
 		<vertex id="Algo_Parser" x="171" y="457"/>
 		<vertex id="xIT" x="401" y="854"/>
@@ -13,5 +15,11 @@
 		<vertex id="feeder" x="401" y="714"/>
 		<vertex id="DecodingPictureBuffer" x="1252" y="324"/>
 		<vertex id="InterPrediction" x="724" y="524"/>
+		<vertex id="BH1" x="510" y="1001"/>
+		<vertex id="BH2" x="515" y="1065"/>
+		<vertex id="BH3" x="502" y="1124"/>
+		<vertex id="BH4" x="565" y="1124"/>
+		<vertex id="BH5" x="567" y="1053"/>
+		<vertex id="BH6" x="628" y="993"/>
 	</vertices>
 </layout>

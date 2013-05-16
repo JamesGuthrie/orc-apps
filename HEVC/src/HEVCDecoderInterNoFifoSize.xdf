@@ -14,10 +14,24 @@
             </Entry>
         </Type>
     </Port>
+    <Port kind="Output" name="PictSize">
+        <Type name="int">
+            <Entry kind="Expr" name="size">
+                <Expr kind="Literal" literal-kind="Integer" value="32"/>
+            </Entry>
+        </Type>
+    </Port>
     <Port kind="Output" name="DispCoord">
         <Type name="int">
             <Entry kind="Expr" name="size">
                 <Expr kind="Literal" literal-kind="Integer" value="32"/>
+            </Entry>
+        </Type>
+    </Port>
+    <Port kind="Output" name="SEI_MD5">
+        <Type name="uint">
+            <Entry kind="Expr" name="size">
+                <Expr kind="Literal" literal-kind="Integer" value="8"/>
             </Entry>
         </Type>
     </Port>
@@ -57,6 +71,24 @@
     </Instance>
     <Instance id="InterPrediction">
         <Class name="devel.org.sc29.wg11.mpegh.part2.inter.InterPredictionBase"/>
+    </Instance>
+    <Instance id="BH1">
+        <Class name="testBench.common.BHu2"/>
+    </Instance>
+    <Instance id="BH2">
+        <Class name="testBench.common.BHBool"/>
+    </Instance>
+    <Instance id="BH3">
+        <Class name="testBench.common.BHi9"/>
+    </Instance>
+    <Instance id="BH4">
+        <Class name="testBench.common.BHBool"/>
+    </Instance>
+    <Instance id="BH5">
+        <Class name="testBench.common.BHBool"/>
+    </Instance>
+    <Instance id="BH6">
+        <Class name="testBench.common.BHi16"/>
     </Instance>
     <Connection dst="xIT" dst-port="Size" src="Algo_Parser" src-port="TUSize"/>
     <Connection dst="xIT" dst-port="Coeff" src="Algo_Parser" src-port="Coeff"/>
@@ -146,4 +178,12 @@
         src="GenerateInterInfo" src-port="NewMvOrLcu"/>
     <Connection dst="GenerateInterInfo" dst-port="DisableTMVP"
         src="Algo_Parser" src-port="DisableTMVP"/>
+    <Connection dst="" dst-port="SEI_MD5" src="Algo_Parser" src-port="SEI_MD5"/>
+    <Connection dst="" dst-port="PictSize" src="Algo_Parser" src-port="PictSize"/>
+    <Connection dst="BH1" dst-port="Byte" src="Algo_Parser" src-port="IsPicSlcLcu"/>
+    <Connection dst="BH2" dst-port="Byte" src="Algo_Parser" src-port="LFAcrossSlc"/>
+    <Connection dst="BH3" dst-port="Byte" src="Algo_Parser" src-port="SaoSe"/>
+    <Connection dst="BH4" dst-port="Byte" src="Algo_Parser" src-port="Cbf"/>
+    <Connection dst="BH5" dst-port="Byte" src="Algo_Parser" src-port="DBFDisable"/>
+    <Connection dst="BH6" dst-port="Byte" src="Algo_Parser" src-port="weightedPred"/>
 </XDF>
