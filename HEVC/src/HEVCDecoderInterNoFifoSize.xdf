@@ -7,6 +7,13 @@
             </Entry>
         </Type>
     </Port>
+    <Port kind="Output" name="VID">
+        <Type name="int">
+            <Entry kind="Expr" name="size">
+                <Expr kind="Literal" literal-kind="Integer" value="32"/>
+            </Entry>
+        </Type>
+    </Port>
     <Port kind="Output" name="SIZE">
         <Type name="int">
             <Entry kind="Expr" name="size">
@@ -35,13 +42,6 @@
             </Entry>
         </Type>
     </Port>
-    <Port kind="Output" name="VID">
-        <Type name="int">
-            <Entry kind="Expr" name="size">
-                <Expr kind="Literal" literal-kind="Integer" value="32"/>
-            </Entry>
-        </Type>
-    </Port>
     <Instance id="Algo_Parser">
         <Class name="devel.org.sc29.wg11.mpegh.part2.synParser.Algo_Parser"/>
     </Instance>
@@ -60,9 +60,6 @@
     <Instance id="GenerateInterInfo">
         <Class name="devel.org.sc29.wg11.mpegh.part2.inter.GenerateInterInformation"/>
     </Instance>
-    <Instance id="feeder">
-        <Class name="devel.org.sc29.wg11.mpegh.part2.common.feed_i16"/>
-    </Instance>
     <Instance id="DecodingPictureBuffer">
         <Class name="devel.org.sc29.wg11.mpegh.part2.inter.DecodingPictureBuffer"/>
         <Parameter name="READ_INPUT_PARAL">
@@ -72,17 +69,17 @@
     <Instance id="InterPrediction">
         <Class name="devel.org.sc29.wg11.mpegh.part2.inter.InterPredictionBase"/>
     </Instance>
-    <Instance id="BH3">
-        <Class name="testBench.common.BHi9"/>
-    </Instance>
-    <Instance id="BH6">
-        <Class name="testBench.common.BHi16"/>
-    </Instance>
     <Instance id="DBF">
         <Class name="devel.org.sc29.wg11.mpegh.part2.Filters.Dbf"/>
     </Instance>
     <Instance id="QpGen">
         <Class name="devel.org.sc29.wg11.mpegh.part2.Filters.QpGen"/>
+    </Instance>
+    <Instance id="SAO">
+        <Class name="devel.org.sc29.wg11.mpegh.part2.Filters.SaoFilter"/>
+        <Parameter name="DEBUG">
+            <Expr kind="Literal" literal-kind="Boolean" value="true"/>
+        </Parameter>
     </Instance>
     <Connection dst="xIT" dst-port="Size" src="Algo_Parser" src-port="TUSize"/>
     <Connection dst="xIT" dst-port="Coeff" src="Algo_Parser" src-port="Coeff"/>
@@ -162,8 +159,6 @@
         src="Algo_Parser" src-port="SliceType"/>
     <Connection dst="SelectCU" dst-port="InterSample"
         src="InterPrediction" src-port="PredSample"/>
-    <Connection dst="InterPrediction" dst-port="WeightedPredSe"
-        src="feeder" src-port="OUT"/>
     <Connection dst="IntraPrediction" dst-port="Sample" src="SelectCU" src-port="Sample"/>
     <Connection dst="DecodingPictureBuffer" dst-port="NewMvOrLCU"
         src="GenerateInterInfo" src-port="NewMvOrLcu"/>
@@ -171,8 +166,6 @@
         src="Algo_Parser" src-port="DisableTMVP"/>
     <Connection dst="" dst-port="SEI_MD5" src="Algo_Parser" src-port="SEI_MD5"/>
     <Connection dst="" dst-port="PictSize" src="Algo_Parser" src-port="PictSize"/>
-    <Connection dst="BH3" dst-port="Byte" src="Algo_Parser" src-port="SaoSe"/>
-    <Connection dst="BH6" dst-port="Byte" src="Algo_Parser" src-port="weightedPred"/>
     <Connection dst="DBF" dst-port="IsBiPredOrLx"
         src="GenerateInterInfo" src-port="IsBiPredOrLx"/>
     <Connection dst="DBF" dst-port="Mv" src="GenerateInterInfo" src-port="Mv"/>
@@ -183,13 +176,20 @@
     <Connection dst="DBF" dst-port="SlcAddr" src="Algo_Parser" src-port="SliceAddr"/>
     <Connection dst="DBF" dst-port="Cbf" src="Algo_Parser" src-port="Cbf"/>
     <Connection dst="DBF" dst-port="LFAcrossSlc" src="Algo_Parser" src-port="LFAcrossSlc"/>
-    <Connection dst="DecodingPictureBuffer" dst-port="Sample"
-        src="SelectCU" src-port="IntraRefSample"/>
     <Connection dst="DBF" dst-port="IsPicSlcLcu" src="Algo_Parser" src-port="IsPicSlcLcu"/>
     <Connection dst="DBF" dst-port="DBFDisable" src="Algo_Parser" src-port="DBFDisable"/>
     <Connection dst="QpGen" dst-port="TuSize" src="Algo_Parser" src-port="TUSize"/>
     <Connection dst="DBF" dst-port="Qp" src="QpGen" src-port="Qp"/>
     <Connection dst="DBF" dst-port="PicSize" src="Algo_Parser" src-port="PictSize"/>
     <Connection dst="DBF" dst-port="SampleIn" src="SelectCU" src-port="Sample"/>
-    <Connection dst="" dst-port="VID" src="DBF" src-port="FiltSample"/>
+    <Connection dst="SAO" dst-port="SaoSe" src="Algo_Parser" src-port="SaoSe"/>
+    <Connection dst="SAO" dst-port="LFAcrossSlc" src="Algo_Parser" src-port="LFAcrossSlc"/>
+    <Connection dst="SAO" dst-port="IsPicSlcLcu" src="Algo_Parser" src-port="IsPicSlcLcu"/>
+    <Connection dst="SAO" dst-port="PicSize" src="Algo_Parser" src-port="PictSize"/>
+    <Connection dst="SAO" dst-port="SampleIn" src="DBF" src-port="FiltSample"/>
+    <Connection dst="" dst-port="VID" src="SAO" src-port="FiltSample"/>
+    <Connection dst="DecodingPictureBuffer" dst-port="Sample"
+        src="SelectCU" src-port="IntraRefSample"/>
+    <Connection dst="InterPrediction" dst-port="WeightedPredSe"
+        src="Algo_Parser" src-port="weightedPred"/>
 </XDF>

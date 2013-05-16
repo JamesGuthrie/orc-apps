@@ -1,23 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <layout>
 	<vertices>
-		<vertex id="BYTE" x="57" y="655"/>
-		<vertex id="SIZE" x="401" y="77"/>
-		<vertex id="PictSize" x="414" y="129"/>
-		<vertex id="DispCoord" x="401" y="174"/>
-		<vertex id="SEI_MD5" x="428" y="226"/>
-		<vertex id="VID" x="1570" y="578"/>
-		<vertex id="Algo_Parser" x="171" y="457"/>
-		<vertex id="xIT" x="401" y="854"/>
-		<vertex id="IntraPrediction" x="1252" y="953"/>
-		<vertex id="SelectCU" x="980" y="830"/>
-		<vertex id="GenerateInterInfo" x="401" y="271"/>
-		<vertex id="feeder" x="401" y="714"/>
-		<vertex id="DecodingPictureBuffer" x="1425" y="287"/>
-		<vertex id="InterPrediction" x="724" y="524"/>
-		<vertex id="BH3" x="420" y="1032"/>
-		<vertex id="BH6" x="417" y="1086"/>
-		<vertex id="DBF" x="1352" y="556"/>
-		<vertex id="QpGen" x="462" y="656"/>
+		<vertex id="BYTE" x="7" y="497"/>
+		<vertex id="SIZE" x="385" y="1005"/>
+		<vertex id="PictSize" x="398" y="1057"/>
+		<vertex id="DispCoord" x="385" y="1102"/>
+		<vertex id="SEI_MD5" x="412" y="1154"/>
+		<vertex id="VID" x="1978" y="668"/>
+		<vertex id="Algo_Parser" x="95" y="401"/>
+		<vertex id="xIT" x="891" y="1028"/>
+		<vertex id="IntraPrediction" x="832" y="741"/>
+		<vertex id="SelectCU" x="1148" y="500"/>
+		<vertex id="GenerateInterInfo" x="461" y="103"/>
+		<vertex id="DecodingPictureBuffer" x="2033" y="179"/>
+		<vertex id="InterPrediction" x="838" y="278"/>
+		<vertex id="DBF" x="1470" y="496"/>
+		<vertex id="QpGen" x="1310" y="834"/>
+		<vertex id="SAO" x="1767" y="559"/>
 	</vertices>
 </layout>
