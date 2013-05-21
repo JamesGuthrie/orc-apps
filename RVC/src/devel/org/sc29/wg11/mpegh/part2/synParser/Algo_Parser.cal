@@ -1529,7 +1529,7 @@ actor Algo_Parser ()
 			end
 		end
 		//println("weighted_pred_flag                           = " + weighted_pred_flag); 
-		println("weightedSe = "+weighted_pred_flag);
+		//println("weightedSe = "+weighted_pred_flag);
 	end
 	/**************************************************************************
 	 * read_SliceHeader.se_idx_4
