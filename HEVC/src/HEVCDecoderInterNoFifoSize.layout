@@ -2,11 +2,11 @@
 <layout>
 	<vertices>
 		<vertex id="BYTE" x="7" y="497"/>
+		<vertex id="VID" x="2014" y="632"/>
 		<vertex id="SIZE" x="385" y="1005"/>
 		<vertex id="PictSize" x="398" y="1057"/>
 		<vertex id="DispCoord" x="385" y="1102"/>
 		<vertex id="SEI_MD5" x="412" y="1154"/>
-		<vertex id="VID" x="2014" y="632"/>
 		<vertex id="Algo_Parser" x="95" y="401"/>
 		<vertex id="xIT" x="891" y="1028"/>
 		<vertex id="IntraPrediction" x="832" y="741"/>
@@ -17,5 +17,6 @@
 		<vertex id="DBF" x="1470" y="496"/>
 		<vertex id="QpGen" x="1310" y="834"/>
 		<vertex id="SAO" x="1767" y="559"/>
+		<vertex id="BH1" x="1685" y="898"/>
 	</vertices>
 </layout>

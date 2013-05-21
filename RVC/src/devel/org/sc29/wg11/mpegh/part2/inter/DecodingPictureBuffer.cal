@@ -76,6 +76,7 @@ actor DecodingPictureBuffer ()
 	uint(size=8)  RefSample
 		:
 
+
 	/* /!\ : Check the size of the border. */
 	uint(size=6)  BORDER_SIZE = 128;
 	uint(size=8)  pictureBuffer[7][3][PICT_WIDTH+2*BORDER_SIZE][PICT_HEIGHT+2*BORDER_SIZE];
@@ -84,6 +85,9 @@ actor DecodingPictureBuffer ()
 	bool          isStillRef[7];
 
 	uint(size=16) picSize[2];
+	uint(size=16) lcuBufferSz;
+	uint(size=16) numLcuPerPict;
+	uint(size=16) idxLcu;
 	uint(size=16) numLcuRemain := 0;
 
 	uint(size=7)  puSize[2];
@@ -126,7 +130,7 @@ actor DecodingPictureBuffer ()
 	end
 
 	isNewPict: action IsReadOrNewSlc:[isRead], PicSize:[picWidthInPix,
-		picHeightInPix], Poc:[poc] ==>
+		picHeightInPix], Poc:[poc], NewMvOrLCU:[isMv] ==>
 	guard
 		not(currIdx != -1 and poc = pocRef[currIdx&7])
 	do
@@ -145,9 +149,12 @@ actor DecodingPictureBuffer ()
 		pocRef[currIdx] := poc;
 		nbList          := 0;
 		isStillRef := [false: for int i in 0 .. 6];
+		numLcuPerPict := ((picWidthInPix+63)/64) * ((picHeightInPix+63)/64);
+		lcuBufferSz := numLcuPerPict;
+		idxLcu := 0;
 	end
 
-	resetReadInPict.launch: action NewMvOrLCU:[newMv] repeat 2 ==>
+	resetReadInPict.launch: action NewMvOrLCU:[newMv] ==>
 	end
 
 	/** We get all the references from the 5 lists of the Rps
@@ -202,12 +209,18 @@ actor DecodingPictureBuffer ()
 		newMv
 	end
 
-	checkNewMv.isLcu: action NewMvOrLCU:[newMv] ==>
+	checkNewMv.isLcu.launch: action NewMvOrLCU:[newMv] ==>
 	guard
 		not newMv
 	do
 		numLcuRemain := numLcuRemain + 1;
-		println("numLcuRemain @checkNewMv.isLcu: " + numLcuRemain);
+	end
+
+	checkNewMv.isLcu.skip: action NewMvOrLCU:[newMv] ==>
+	guard
+		not newMv && numLcuRemain < lcuBufferSz - 1
+	do
+		numLcuRemain := numLcuRemain + 1;
 	end
 
 	/* We get the whole Cu decoded (luma and chroma components) and we save
@@ -286,12 +299,13 @@ actor DecodingPictureBuffer ()
 			xIdx := 0;
 			yIdx := yIdx + 64;
 		end
+		idxLcu := idxLcu + 1;
 		numLcuRemain := numLcuRemain - 1;
-		println("numLcuRemain @getCuPix.launch.chrDone: " + numLcuRemain);
-		if(numLcuRemain != 0) then
-			println("Bouh!");
-			while true do end
-		end
+	end
+
+	getCuPix.lastLineRemaining: action ==>
+	guard
+		numLcuRemain = lcuBufferSz && idxLcu >= numLcuPerPict - lcuBufferSz
 	end
 
 	/* When we get the picture we add the border (in order to be able to give a
@@ -299,7 +313,7 @@ actor DecodingPictureBuffer ()
 	 */
 	getCuPix.done: action ==>
 	guard
-		yIdx >= picSize[1]
+		numLcuRemain = 0
 	var
 		uint xSize = picSize[0],
 		uint ySize = picSize[1]
@@ -502,13 +516,17 @@ actor DecodingPictureBuffer ()
 		IsNewSlice (isNewPict  )--> GetRps;
 		IsNewSlice (isNewSlice )--> GetRps;
 
-		IsNewMvOrLCU (checkNewMv.isMv  )--> GetReadAddr;
-		IsNewMvOrLCU (checkNewMv.isLcu )--> ReadLcu;
+		IsNewMvOrLCU (checkNewMv.isMv         )--> GetReadAddr;
+		IsNewMvOrLCU (checkNewMv.isLcu.skip   )--> IsNewMvOrLCU;
+		IsNewMvOrLCU (checkNewMv.isLcu.launch )--> ReadLcu;
 
 		GetReadAddr (getReadAddr )--> GetMvInfo;
 
-		ReadLcu (getCuPix.launch.firstLuma )--> GetCuPixLuma;
-		ReadLcu (getCuPix.done             )--> IsNewSlice;
+		ReadLcu (getCuPix.launch.firstLuma  )--> GetCuPixLuma;
+		ReadLcu (getCuPix.lastLineRemaining )--> ReadLineLcu;
+
+		ReadLineLcu (getCuPix.launch.firstLuma )--> GetCuPixLuma2;
+		ReadLineLcu (getCuPix.done             )--> IsNewSlice;
 
 		/* Get the rps info. */
 		GetRps (getRps.launch )--> GetRpsPoc;
@@ -523,6 +541,12 @@ actor DecodingPictureBuffer ()
 		GetCuPixChroma  (getCuPix.launch.chroma    )--> GetCuPixChroma;
 		GetCuPixChroma  (getCuPix.launch.chrDone   )--> IsNewMvOrLCU;
 
+		/* Getting the decoded picture */
+		GetCuPixLuma2    (getCuPix.launch.otherLuma )--> GetCuPixLuma2;
+		GetCuPixLuma2    (getCuPix.launch.lumaDone  )--> GetCuPixChroma2;
+		GetCuPixChroma2  (getCuPix.launch.chroma    )--> GetCuPixChroma2;
+		GetCuPixChroma2  (getCuPix.launch.chrDone   )--> ReadLineLcu;
+
 		/* Send pixels needed for inter-prediction */
 		GetMvInfo (getMvInfo.launch )--> SendCuLuma;
 		GetMvInfo (getMvInfo.skip   )--> IsNewMvOrLCU;
@@ -533,5 +557,9 @@ actor DecodingPictureBuffer ()
 
 		SendCuChroma (sendCu.chroma.launch )--> SendCuChroma;
 		SendCuChroma (sendCu.chroma.done   )--> GetMvInfo;
+	end
+	priority
+		checkNewMv.isLcu.skip > checkNewMv.isLcu.launch;
+		getCuPix.lastLineRemaining > getCuPix.launch.firstLuma;
 	end
 end

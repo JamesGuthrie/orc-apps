@@ -367,14 +367,12 @@ actor DeblockingFilter(bool FILT_VERT_EDGES, bool FILT_HOR_EDGES, bool DEBUG)
 		isNewPicSlcLcu = NEW_SLC
 	do
 		FLAG := disableFlag;
-		println("isNewSlc");
 	end
 
 	isNewPict: action IsPicSlcLcu:[isNewPicSlcLcu], PicSize:[picWidthInPix, picHeightInPix], DBFDisable:[disableFlag] ==>
 	guard
 		isNewPicSlcLcu = NEW_PIC
 	do
-		println("isNewPict");
 		FLAG := disableFlag;
 		picSize[0] := picWidthInPix;
 		picSize[1] := picHeightInPix;

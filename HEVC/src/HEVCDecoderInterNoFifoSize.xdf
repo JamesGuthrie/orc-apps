@@ -78,6 +78,9 @@
             <Expr kind="Literal" literal-kind="Boolean" value="true"/>
         </Parameter>
     </Instance>
+    <Instance id="BH1">
+        <Class name="testBench.common.BHu8"/>
+    </Instance>
     <Connection dst="xIT" dst-port="Size" src="Algo_Parser" src-port="TUSize"/>
     <Connection dst="xIT" dst-port="Coeff" src="Algo_Parser" src-port="Coeff"/>
     <Connection dst="IntraPrediction" dst-port="CUInfo"
@@ -185,8 +188,8 @@
     <Connection dst="SAO" dst-port="PicSize" src="Algo_Parser" src-port="PictSize"/>
     <Connection dst="SAO" dst-port="SampleIn" src="DBF" src-port="FiltSample"/>
     <Connection dst="" dst-port="VID" src="SAO" src-port="FiltSample"/>
-    <Connection dst="DecodingPictureBuffer" dst-port="Sample"
-        src="SelectCU" src-port="IntraRefSample"/>
     <Connection dst="InterPrediction" dst-port="WeightedPredSe"
         src="Algo_Parser" src-port="weightedPred"/>
+    <Connection dst="BH1" dst-port="Byte" src="SelectCU" src-port="IntraRefSample"/>
+    <Connection dst="DecodingPictureBuffer" dst-port="Sample" src="SAO" src-port="FiltSample"/>
 </XDF>
