@@ -88,7 +88,6 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 	uint(size=2) CHROMA_COMP = 2;
 	uint(size=2) ALL_COMP    = 3;
 
-	bool refPicListComb = false; /* Fix me !! */
 
 	int(size=16)  currPoc;
 	uint(size=2)  listIdx;
@@ -917,19 +916,14 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 
 	getWeightLX.launch: action ==>
 	guard
-		listIdx = 0 && (not isBSlice || not refPicListComb) ||
+		listIdx = 0 && not isBSlice||
 		listIdx = 1 && isBSlice
 	do
 		iLoop := 0;
 		if(listIdx = 0) then
 			refIdxLxAct := numRefIdxLxAct[0];
 		else
-			if(not refPicListComb) then
-				refIdxLxAct := numRefIdxLxAct[1];
-			else
-				println(" Actor InterPrediction : we don't manage LC yet");
-				while(true) do end
-			end
+			refIdxLxAct := numRefIdxLxAct[1];
 		end
 	end
 
