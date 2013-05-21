@@ -149,7 +149,6 @@ actor MvComponentPred(bool FIX_TMVP_REFIDX0)
 	int(size=16)  pocRef[7];
 	int(size=16)  pocRefList[7][2][16];
 	int(size=4)   refIdxRef[7][PICT_WIDTH/4][PICT_HEIGHT/4][2];
-	uint(size=4)   modeRef[7][PICT_WIDTH/4][PICT_HEIGHT/4];
 	int(size=16)  mvRef[7][PICT_WIDTH/4][PICT_HEIGHT/4][2][2];
 	int           neighbLocation[2];
 	int           nPSH;
@@ -172,7 +171,8 @@ actor MvComponentPred(bool FIX_TMVP_REFIDX0)
 	function isInter(int xN, int yN) --> bool
 	:
 		if(xN>=0 && yN>=0 && xN<picSizeInPart[0] && yN<picSizeInPart[1])then
-			modeRef[currIdx][xN][yN] = INTER // and what about Skip ?
+			refIdxRef[currIdx][xN][yN][0] != -1 ||
+			refIdxRef[currIdx][xN][yN][1] != -1
 		else
 			false
 		end
@@ -242,7 +242,6 @@ actor MvComponentPred(bool FIX_TMVP_REFIDX0)
 			do
 				refIdxRef[currIdx][x][y] := [refIdxToSave[i]:
 					for int i in 0 .. 1];
-				modeRef[currIdx][x][y] := INTER;
 			end
 		end
 	end
@@ -714,8 +713,6 @@ actor MvComponentPred(bool FIX_TMVP_REFIDX0)
 		
 		refIdxRef[currIdx]:= [[[-1:for int i in 0 .. 1]:
 			for int j in 0 .. PICT_HEIGHT/4-1]:for int k in 0 .. PICT_WIDTH/4-1];
-		modeRef[currIdx]:= [[OTHER:for int j in 0 .. PICT_HEIGHT/4-1]:
-			for int k in 0 .. PICT_WIDTH/4-1];
 		isRef[currIdx] := true;
 		pocRef[currIdx] := poc;
 		nbList := 0;
@@ -787,7 +784,6 @@ actor MvComponentPred(bool FIX_TMVP_REFIDX0)
 		do
 			foreach int y in partAddr[1] .. partAddr[1] + nPSH - 1
 			do
-				modeRef[currIdx][x][y] := INTRA;
 				refIdxRef[currIdx][x][y][0] := -1;
 				refIdxRef[currIdx][x][y][1] := -1;
 			end
