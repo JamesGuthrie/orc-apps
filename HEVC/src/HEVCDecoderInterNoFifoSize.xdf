@@ -188,4 +188,6 @@
     <Connection dst="InterPrediction" dst-port="WeightedPredSe"
         src="Algo_Parser" src-port="weightedPred"/>
     <Connection dst="DecodingPictureBuffer" dst-port="Sample" src="SAO" src-port="FiltSample"/>
+    <Connection dst="GenerateInterInfo" dst-port="SliceAddr"
+        src="Algo_Parser" src-port="SliceAddr"/>
 </XDF>

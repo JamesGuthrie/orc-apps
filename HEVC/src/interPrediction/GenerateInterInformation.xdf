@@ -84,7 +84,14 @@
             </Entry>
         </Type>
     </Port>
+<<<<<<< HEAD
     <Port kind="Output" name="Mv">
+=======
+    <Port kind="Input" name="DisableTMVP">
+        <Type name="bool"/>
+    </Port>
+    <Port kind="Output" name="RefList">
+>>>>>>> hevc_hm10
         <Type name="int">
             <Entry kind="Expr" name="size">
                 <Expr kind="Literal" literal-kind="Integer" value="16"/>
@@ -129,10 +136,13 @@
         </Parameter>
     </Instance>
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
     <Instance id="GenerateTrue">
         <Class name="testBench.interPrediction.GenerateTrue"/>
     </Instance>
+=======
+>>>>>>> hevc_hm10
     <Connection dst="Rps" dst-port="NaluType" src="" src-port="NaluType"/>
     <Connection dst="Rps" dst-port="NumStRps" src="" src-port="NumStRps"/>
     <Connection dst="Rps" dst-port="Poc" src="" src-port="Poc"/>
@@ -168,7 +178,11 @@
     <Connection dst="MvComponentPred" dst-port="PicSize" src="" src-port="PictSize"/>
     <Connection dst="MvComponentPred" dst-port="CUInfo" src="" src-port="CUInfo"/>
     <Connection dst="GenerateRefList" dst-port="RefPoc" src="Rps" src-port="RefPoc"/>
+<<<<<<< HEAD
     <Connection dst="MvComponentPred" dst-port="disableTMVP"
         src="GenerateTrue" src-port="Out"/>
+>>>>>>> hevc_hm10
+=======
+    <Connection dst="MvComponentPred" dst-port="disableTMVP" src="" src-port="DisableTMVP"/>
 >>>>>>> hevc_hm10
 </XDF>

@@ -69,7 +69,7 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 
 	uint(size=16) CUInfo,
 	uint(size=2)  IsBiPredOrLx,
-	int (size=16) Mv,
+	int (size=32) Mv,
 	uint(size=4)  PartMode,
 	uint(size=16) Poc,
 	uint(size=3)  RefIdx,
@@ -83,6 +83,10 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 
 	uint(size=2) HALF_PIX_1ST_PART = 1;
 	uint(size=2) HALF_PIX_2ND_PART = 2;
+	int shift1 = 6;
+	/* Fix me !! */
+	uint(size=4) bitDepth = 8;
+	uint(size=10) maxPixVal = (1<<bitDepth)-1;
 
 	uint(size=2) LUMA_COMP   = 1;
 	uint(size=2) CHROMA_COMP = 2;
@@ -122,7 +126,7 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 	int           offsetCu[3][2];
 	uint(size=2)  isBiPredOrLx;
 	int (size=4)  refIdxLx[2];
-	int (size=16) mvLx[2][2];
+	int (size=32) mvLx[2][2];
 	uint(size=2)  numList;
 	int           logWDTab[8][8][3];
 	int           weightCuTab[8][8][3][2];
@@ -131,14 +135,6 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 	int (size=16) predSampLuma[2][64+7][64+7];
 	int (size=16) predSampChr[2][2][32+3][32+3];
 
-
-
-
-	int shift1 = 6;
-
-	/* Fix me !! */
-	uint(size=4) bitDepth = 8;
-	uint(size=10) maxPixVal = (1<<bitDepth)-1;
 
 	/* Coefficients used for the 8-tap filter (luma component) and 4-tap filter
 	 * (chroma component).
@@ -836,21 +832,28 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 	/* We have a new slice, we will update differents value then get the new
 	 * refList and weights
 	 */
-	isNewSlice: action PartMode:[partMode], Poc:[poc], SliceType:[sliceType],
+	isNewSlice.notDep: action PartMode:[partMode], Poc:[poc], SliceType:[sliceType],
 		WeightedPredSe:[weightPredIdc] ==>
 	guard
-		partMode = PART_MODE_SLICE || partMode = PART_MODE_PICT
+		partMode = PART_MODE_SLICE_INDEP ||
+		partMode = PART_MODE_PICT
 	do
 		isBSlice := sliceType = B_SLICE;
-		currPoc := poc;
-		wpIdc := weightPredIdc;
-		listIdx := 0;
+		currPoc  := poc;
+		wpIdc    := weightPredIdc;
+		listIdx  := 0;
+	end
+
+	isNewSlice.dep: action PartMode:[partMode] ==>
+	guard
+		partMode = PART_MODE_SLICE_DEP
 	end
 
 	/* We have a New Cu in the Slice */
 	getPartMode: action PartMode:[partMode] ==>
 	guard
-		partMode != PART_MODE_SLICE && partMode != PART_MODE_PICT
+		partMode != PART_MODE_SLICE_DEP && partMode != PART_MODE_SLICE_INDEP &&
+		partMode != PART_MODE_PICT
 	do
 		numPart := partModeToNumPart[partMode];
 		numPartDecoded := 0;
@@ -1478,7 +1481,8 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 	end
 
 	schedule fsm GetPartMode:
-		GetPartMode (isNewSlice  )--> GetSizeRefList;
+		GetPartMode (isNewSlice.dep    )--> GetPartMode;
+		GetPartMode (isNewSlice.notDep )--> GetSizeRefList;
 		GetPartMode (getPartMode )--> GetCuInfo;
 
 		GetSizeRefList (getSizeRefList.launch )--> GetRefList;
