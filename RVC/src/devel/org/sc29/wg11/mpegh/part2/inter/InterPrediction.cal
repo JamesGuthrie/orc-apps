@@ -700,7 +700,7 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 				do
 					if(numList = 1) then
 						if(wpIdc = 0) then
-							predSampChr[0][cIdx-1][x][y] := (predSampChr[0][cIdx-1][x][y] + (1 <<(shift1-1)))>>shift1;
+							predSampChr[0][cIdx-1][x][y] := (predSampChr[rdList][cIdx-1][x][y] + (1 <<(shift1-1)))>>shift1;
 						else
 							if(isBiPredOrLx != BI_PRED) then
 								wX := weightCu[cIdx][rdList];
@@ -1286,8 +1286,9 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 	end
 
 	getSamples.done: action ==>
+	// This guard should be simplified.
 	guard
-		listIdx = numList
+		listIdx = numList && isBiPredOrLx = BI_PRED || listIdx = 2 || listIdx = 1 && isBiPredOrLx = PRED_L0
 	var
 		uint(size=7) puIdxMax[2],
 		uint(size=2) COMP_MIN = if((DECODE_COMP & LUMA_COMP) = 0) then 1 else 0 end,
