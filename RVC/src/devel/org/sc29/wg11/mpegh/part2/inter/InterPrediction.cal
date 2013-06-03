@@ -587,8 +587,10 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 	/* Computing the weighted prediction of the current pixel */
 	/* CLEAN ME */
 	procedure weightedPred(uint(size=2) cIdx, uint(size=7) puIdxMax[2], uint(size=2)  numList,
-		uint(size=2) isBiPredOrLx, uint(size=2)  wpIdc, int weightCu[3][2], int offsetCu[3][2], int logWD[3])
+		uint(size=2) isBiPredOrLx, uint(size=2)  wpIdc, int weightCu[3][2], int offsetCu[3][2],
+		int logWD[3])
 	var
+		uint(size=1) rdList = if(isBiPredOrLx = PRED_L1) then 1 else 0 end,
 		int wX,
 		int oX,
 		int locLogWD,
@@ -608,7 +610,7 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 							/* When we don't have a weighted prediction, we do the
 							 * average.
 							 */
-							predSampLuma[0][x][y] := (predSampLuma[0][x][y] + (1 <<(shift1-1)))>>shift1;
+							predSampLuma[0][x][y] := (predSampLuma[rdList][x][y] + (1 <<(shift1-1)))>>shift1;
 							/* We apply a threashold according to bitDepth
 							 * (which is equal to 8, 10 or 12 bits).
 							 */
@@ -625,14 +627,14 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 							 */
 							if(isBiPredOrLx != BI_PRED) then
 								/* We use the bi-prediction way */
-								wX := weightCu[cIdx][listIdx];
-								oX := offsetCu[cIdx][listIdx];
+								wX := weightCu[cIdx][rdList];
+								oX := offsetCu[cIdx][rdList];
 								locLogWD := logWD[cIdx];
 								predSampLuma[0][x][y] :=
 									if(locLogWD >= 1) then
-										((predSampLuma[0][x][y]*wX + (1<<(locLogWD-1))) >> locLogWD)+oX
+										((predSampLuma[rdList][x][y]*wX + (1<<(locLogWD-1))) >> locLogWD)+oX
 									else
-										predSampLuma[0][x][y]*wX +oX
+										predSampLuma[rdList][x][y]*wX +oX
 									end;
 							else
 								/* Weighted prediction for mono-prediction. */
@@ -701,14 +703,14 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 							predSampChr[0][cIdx-1][x][y] := (predSampChr[0][cIdx-1][x][y] + (1 <<(shift1-1)))>>shift1;
 						else
 							if(isBiPredOrLx != BI_PRED) then
-								wX := weightCu[cIdx][listIdx];
-								oX := offsetCu[cIdx][listIdx];
+								wX := weightCu[cIdx][rdList];
+								oX := offsetCu[cIdx][rdList];
 								locLogWD := logWD[cIdx];
 								predSampChr[0][cIdx-1][x][y] :=
 									if(locLogWD >= 1) then
-										((predSampChr[0][cIdx-1][x][y]*wX + (1<<(locLogWD-1))) >> locLogWD)+oX
+										((predSampChr[rdList][cIdx-1][x][y]*wX + (1<<(locLogWD-1))) >> locLogWD)+oX
 									else
-										predSampChr[0][cIdx-1][x][y]*wX +oX
+										predSampChr[rdList][cIdx-1][x][y]*wX +oX
 									end;
 							else
 								wX := weightCu[cIdx][0] + weightCu[cIdx][1];
@@ -919,8 +921,7 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 
 	getWeightLX.launch: action ==>
 	guard
-		listIdx = 0 && not isBSlice||
-		listIdx = 1 && isBSlice
+		listIdx = 0 || listIdx = 1 && isBSlice
 	do
 		iLoop := 0;
 		if(listIdx = 0) then
