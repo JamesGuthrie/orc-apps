@@ -103,12 +103,12 @@ actor DecodingPictureBuffer ()
 	uint(size=2)  cIdx    := 1;
 
 	bool          isBiPred;
-	int (size=16) lastMvRef[2];
+	int (size=32) lastMvRef[2];
 	int (size=16) lastPocRef;
-	int (size=16) xMvOffset;
-	int (size=16) yMvOffset;
-	int (size=16) xMvOffChr;
-	int (size=16) yMvOffChr;
+	int (size=32) xMvOffset;
+	int (size=32) yMvOffset;
+	int (size=32) xMvOffChr;
+	int (size=32) yMvOffChr;
 	uint(size=7)  iLoop;
 	uint(size=7)  jLoop;
 	uint(size=2)  compIdx;
