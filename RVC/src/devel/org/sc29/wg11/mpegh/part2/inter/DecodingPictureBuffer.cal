@@ -514,7 +514,7 @@ actor DecodingPictureBuffer ()
 		GetRpsFirstPoc (getRpsPoc.done   )--> GetFirstRps;
 
 		IsNewSlice (isNewPict  )--> GetRps;
-		IsNewSlice (isNewSlice )--> GetRps;
+		IsNewSlice (isNewSlice )--> GetRps2;
 
 		IsNewMvOrLCU (checkNewMv.isMv         )--> GetReadAddr;
 		IsNewMvOrLCU (checkNewMv.isLcu.skip   )--> IsNewMvOrLCU;
@@ -534,6 +534,13 @@ actor DecodingPictureBuffer ()
 
 		GetRpsPoc (getRpsPoc.launch )--> GetRpsPoc;
 		GetRpsPoc (getRpsPoc.done   )--> GetRps;
+
+		/* Get the rps info. */
+		GetRps2 (getRps.launch )--> GetRpsPoc2;
+		GetRps2 (getRps.done   )--> IsNewSlice;
+
+		GetRpsPoc2 (getRpsPoc.launch )--> GetRpsPoc2;
+		GetRpsPoc2 (getRpsPoc.done   )--> GetRps2;
 
 		/* Getting the decoded picture */
 		GetCuPixLuma    (getCuPix.launch.otherLuma )--> GetCuPixLuma;

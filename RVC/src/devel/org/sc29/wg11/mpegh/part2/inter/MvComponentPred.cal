@@ -713,7 +713,7 @@ actor MvComponentPred(bool FIX_TMVP_REFIDX0)
 	 * tables, and initializing the reference tables
 	 */
 	isNewPicOrSlice: action PartMode:[partMode], SliceAddr:[sliceAddress] repeat 2,
-		 SyntaxElem:[paralMergeLevel], disableTMVP:[tmvpFlag] ==> IsReadOrNewSlice:[0]
+		 SyntaxElem:[paralMergeLevel], disableTMVP:[tmvpFlag] ==>
 	guard
 		partMode = PART_MODE_SLICE_DEP || partMode = PART_MODE_SLICE_INDEP ||
 		partMode = PART_MODE_PICT
