@@ -125,16 +125,16 @@ actor DecodingPictureBuffer ()
 		picHeightInPix], Poc:[poc] ==>
 	guard
 		/* Fix me : We should know when there is a new picture */
-		currIdx != -1 and poc = pocRef[currIdx&7]
+		currIdx != -1 and poc = pocRef[currIdx]
 	do
 		nbList := 0;
-		isStillRef := [false: for int i in 0 .. 16];
+		isStillRef := [false: for int i in 0 .. DPB_SIZE - 1];
 	end
 
 	isNewPict: action IsReadOrNewSlc:[isRead], PicSize:[picWidthInPix,
 		picHeightInPix], Poc:[poc], NewMvOrLCU:[isMv] ==>
 	guard
-		not(currIdx != -1 and poc = pocRef[currIdx&7])
+		not(currIdx != -1 and poc = pocRef[currIdx])
 	do
 		picSize[0] := picWidthInPix;
 		picSize[1] := picHeightInPix;
@@ -150,7 +150,7 @@ actor DecodingPictureBuffer ()
 		isRef[currIdx]  := true;
 		pocRef[currIdx] := poc;
 		nbList          := 0;
-		isStillRef := [false: for int i in 0 .. 6];
+		isStillRef := [false: for int i in 0 .. DPB_SIZE - 1];
 		numLcuPerPict := ((picWidthInPix+63)/64) * ((picHeightInPix+63)/64);
 		lcuBufferSz := numLcuPerPict;
 		idxLcu := 0;

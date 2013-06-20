@@ -133,8 +133,7 @@
         <Class name="testBench.common.u8Toi16"/>
     </Instance>
     <Instance id="InterPrediction">
-<<<<<<< HEAD
-        <Class name="devel.org.sc29.wg11.mpegh.part2.inter.InterPrediction"/>
+        <Class name="devel.org.sc29.wg11.mpegh.part2.main.inter.InterPrediction"/>
         <Parameter name="DECODE_COMP">
             <Expr kind="Literal" literal-kind="Integer" value="3"/>
         </Parameter>
@@ -153,9 +152,6 @@
         <Parameter name="PROCESS_MODE_HALF_PIX">
             <Expr kind="Literal" literal-kind="Integer" value="3"/>
         </Parameter>
-=======
-        <Class name="devel.org.sc29.wg11.mpegh.part2.main.inter.InterPrediction"/>
->>>>>>> a8380647e76794effcdbe12317cacf8bf12b4412
     </Instance>
     <Instance id="WeightedPredSe">
         <Class name="testBench.common.SourceActor"/>

@@ -21,6 +21,20 @@
             </Entry>
         </Type>
     </Port>
+    <Port kind="Output" name="PictSize">
+        <Type name="uint">
+            <Entry kind="Expr" name="size">
+                <Expr kind="Literal" literal-kind="Integer" value="16"/>
+            </Entry>
+        </Type>
+    </Port>
+    <Port kind="Output" name="SEI_MD5">
+        <Type name="uint">
+            <Entry kind="Expr" name="size">
+                <Expr kind="Literal" literal-kind="Integer" value="8"/>
+            </Entry>
+        </Type>
+    </Port>
     <Port kind="Output" name="VID">
         <Type name="int">
             <Entry kind="Expr" name="size">
@@ -43,297 +57,136 @@
     <Instance id="SelectCU">
         <Class name="devel.org.sc29.wg11.mpegh.part2.SelectCu"/>
     </Instance>
-<<<<<<< HEAD
-    <Instance id="GenerateInterInfo">
-        <Class name="interPrediction.GenerateInterInformation"/>
-=======
-    <Instance id="LCU_reord">
-        <Class name="devel.org.sc29.wg11.mpegh.part2.main.inter.Framedelay"/>
-    </Instance>
-    <Instance id="GenerateInterInfo">
-        <Class name="devel.org.sc29.wg11.mpegh.part2.main.inter.GenerateInterInformation"/>
->>>>>>> a8380647e76794effcdbe12317cacf8bf12b4412
-    </Instance>
-    <Instance id="feeder">
-        <Class name="devel.org.sc29.wg11.mpegh.part2.common.feed_i16"/>
-    </Instance>
     <Instance id="DecodingPictureBuffer">
-<<<<<<< HEAD
-        <Class name="devel.org.sc29.wg11.mpegh.part2.inter.DecodingPictureBuffer"/>
-        <Parameter name="READ_INPUT_PARAL">
-            <Expr kind="Literal" literal-kind="Boolean" value="true"/>
-        </Parameter>
-    </Instance>
-    <Instance id="InterPrediction">
-        <Class name="devel.org.sc29.wg11.mpegh.part2.inter.InterPredictionBase"/>
-=======
         <Class name="devel.org.sc29.wg11.mpegh.part2.main.inter.DecodingPictureBuffer"/>
     </Instance>
     <Instance id="InterPrediction">
-        <Class name="devel.org.sc29.wg11.mpegh.part2.main.inter.InterPrediction"/>
+        <Class name="devel.org.sc29.wg11.mpegh.part2.inter.InterPredictionBase"/>
     </Instance>
-    <Instance id="LCU_reord2">
-        <Class name="devel.org.sc29.wg11.mpegh.part2.main.inter.FrameDelayBorder"/>
->>>>>>> a8380647e76794effcdbe12317cacf8bf12b4412
+    <Instance id="SAO">
+        <Class name="devel.org.sc29.wg11.mpegh.part2.main.Filters.SaoFilter"/>
+        <Parameter name="DEBUG">
+            <Expr kind="Literal" literal-kind="Boolean" value="true"/>
+        </Parameter>
     </Instance>
-    <Connection dst="xIT" dst-port="Size" src="Algo_Parser" src-port="TUSize">
-        <Attribute kind="Value" name="bufferSize">
-            <Expr kind="Literal" literal-kind="Integer" value="32"/>
-        </Attribute>
-    </Connection>
-    <Connection dst="xIT" dst-port="Coeff" src="Algo_Parser" src-port="Coeff">
-        <Attribute kind="Value" name="bufferSize">
-            <Expr kind="Literal" literal-kind="Integer" value="2048"/>
-        </Attribute>
-    </Connection>
+    <Instance id="QpGen">
+        <Class name="devel.org.sc29.wg11.mpegh.part2.main.Filters.QpGen"/>
+    </Instance>
+    <Instance id="DBFilter">
+        <Class name="devel.org.sc29.wg11.mpegh.part2.main.Filters.Dbf"/>
+    </Instance>
+    <Instance id="generateInfo">
+        <Class name="devel.org.sc29.wg11.mpegh.part2.main.inter.GenerateInterInformation"/>
+    </Instance>
+    <Connection dst="xIT" dst-port="Size" src="Algo_Parser" src-port="TUSize"/>
+    <Connection dst="xIT" dst-port="Coeff" src="Algo_Parser" src-port="Coeff"/>
     <Connection dst="IntraPrediction" dst-port="CUInfo"
-        src="Algo_Parser" src-port="CUInfo">
-        <Attribute kind="Value" name="bufferSize">
-            <Expr kind="Literal" literal-kind="Integer" value="32"/>
-        </Attribute>
-    </Connection>
+        src="Algo_Parser" src-port="CUInfo"/>
     <Connection dst="IntraPrediction" dst-port="IntraPredMode"
-        src="Algo_Parser" src-port="IntraPredMode">
-        <Attribute kind="Value" name="bufferSize">
-            <Expr kind="Literal" literal-kind="Integer" value="16"/>
-        </Attribute>
-    </Connection>
+        src="Algo_Parser" src-port="IntraPredMode"/>
     <Connection dst="IntraPrediction" dst-port="PictSize"
-        src="Algo_Parser" src-port="PictSize">
-        <Attribute kind="Value" name="bufferSize">
-            <Expr kind="Literal" literal-kind="Integer" value="4"/>
-        </Attribute>
-    </Connection>
+        src="Algo_Parser" src-port="PictSize"/>
     <Connection dst="IntraPrediction" dst-port="PartMode"
-        src="Algo_Parser" src-port="PartMode">
-        <Attribute kind="Value" name="bufferSize">
-            <Expr kind="Literal" literal-kind="Integer" value="2"/>
-        </Attribute>
-    </Connection>
+        src="Algo_Parser" src-port="PartMode"/>
     <Connection dst="IntraPrediction" dst-port="SplitTransform"
-        src="Algo_Parser" src-port="SplitTransform">
-        <Attribute kind="Value" name="bufferSize">
-            <Expr kind="Literal" literal-kind="Integer" value="4"/>
-        </Attribute>
-    </Connection>
+        src="Algo_Parser" src-port="SplitTransform"/>
     <Connection dst="IntraPrediction" dst-port="SliceAddr"
-        src="Algo_Parser" src-port="SliceAddr">
-        <Attribute kind="Value" name="bufferSize">
-            <Expr kind="Literal" literal-kind="Integer" value="4"/>
-        </Attribute>
-    </Connection>
+        src="Algo_Parser" src-port="SliceAddr"/>
     <Connection dst="SelectCU" dst-port="IntraSample"
-        src="IntraPrediction" src-port="PredSample">
-        <Attribute kind="Value" name="bufferSize">
-            <Expr kind="Literal" literal-kind="Integer" value="8192"/>
-        </Attribute>
-    </Connection>
-    <Connection dst="SelectCU" dst-port="PartMode" src="Algo_Parser" src-port="PartMode">
-        <Attribute kind="Value" name="bufferSize">
-            <Expr kind="Literal" literal-kind="Integer" value="2"/>
-        </Attribute>
-    </Connection>
-    <Connection dst="SelectCU" dst-port="CUInfo" src="Algo_Parser" src-port="CUInfo">
-        <Attribute kind="Value" name="bufferSize">
-            <Expr kind="Literal" literal-kind="Integer" value="32"/>
-        </Attribute>
-    </Connection>
+        src="IntraPrediction" src-port="PredSample"/>
+    <Connection dst="SelectCU" dst-port="PartMode" src="Algo_Parser" src-port="PartMode"/>
+    <Connection dst="SelectCU" dst-port="CUInfo" src="Algo_Parser" src-port="CUInfo"/>
     <Connection dst="IntraPrediction" dst-port="StrongIntraSmoothing"
-        src="Algo_Parser" src-port="StrongIntraSmoothing">
-        <Attribute kind="Value" name="bufferSize">
-            <Expr kind="Literal" literal-kind="Integer" value="2"/>
-        </Attribute>
-    </Connection>
+        src="Algo_Parser" src-port="StrongIntraSmoothing"/>
     <Connection dst="Algo_Parser" dst-port="byte" src="" src-port="BYTE"/>
     <Connection dst="" dst-port="SIZE" src="Algo_Parser" src-port="PicSizeInMb"/>
     <Connection dst="" dst-port="DispCoord" src="Algo_Parser" src-port="DispCoord"/>
-    <Connection dst="GenerateInterInfo" dst-port="NumRefIdxLxAct"
-        src="Algo_Parser" src-port="NumRefIdxLxActive">
-        <Attribute kind="Value" name="bufferSize">
-            <Expr kind="Literal" literal-kind="Integer" value="4"/>
-        </Attribute>
-    </Connection>
-    <Connection dst="GenerateInterInfo" dst-port="RePicListModif"
-        src="Algo_Parser" src-port="RefPicListModif">
-        <Attribute kind="Value" name="bufferSize">
-            <Expr kind="Literal" literal-kind="Integer" value="4"/>
-        </Attribute>
-    </Connection>
-    <Connection dst="GenerateInterInfo" dst-port="RefPoc"
-        src="Algo_Parser" src-port="RefPoc">
-        <Attribute kind="Value" name="bufferSize">
-            <Expr kind="Literal" literal-kind="Integer" value="16"/>
-        </Attribute>
-    </Connection>
-    <Connection dst="GenerateInterInfo" dst-port="PartMode"
-<<<<<<< HEAD
-        src="Algo_Parser" src-port="PartMode">
-        <Attribute kind="Value" name="bufferSize">
-            <Expr kind="Literal" literal-kind="Integer" value="2"/>
-        </Attribute>
-    </Connection>
-    <Connection dst="GenerateInterInfo" dst-port="ColocInfo"
-        src="Algo_Parser" src-port="ColocInfo">
-        <Attribute kind="Value" name="bufferSize">
-            <Expr kind="Literal" literal-kind="Integer" value="4"/>
-        </Attribute>
-    </Connection>
-=======
-        src="Algo_Parser" src-port="PartMode"/>
->>>>>>> 70e2b0d2fdda5940ae2247b6e230550f4772b43f
-    <Connection dst="GenerateInterInfo" dst-port="SliceType"
-        src="Algo_Parser" src-port="SliceType">
-        <Attribute kind="Value" name="bufferSize">
-            <Expr kind="Literal" literal-kind="Integer" value="2"/>
-        </Attribute>
-    </Connection>
-    <Connection dst="GenerateInterInfo" dst-port="PictSize"
-        src="Algo_Parser" src-port="PictSize">
-        <Attribute kind="Value" name="bufferSize">
-            <Expr kind="Literal" literal-kind="Integer" value="4"/>
-        </Attribute>
-    </Connection>
-    <Connection dst="GenerateInterInfo" dst-port="MvPredSyntElem"
-        src="Algo_Parser" src-port="MvPredSyntaxElem">
-        <Attribute kind="Value" name="bufferSize">
-            <Expr kind="Literal" literal-kind="Integer" value="16"/>
-        </Attribute>
-    </Connection>
-    <Connection dst="GenerateInterInfo" dst-port="CUInfo"
-        src="Algo_Parser" src-port="CUInfo">
-        <Attribute kind="Value" name="bufferSize">
-            <Expr kind="Literal" literal-kind="Integer" value="32"/>
-        </Attribute>
-    </Connection>
-    <Connection dst="GenerateInterInfo" dst-port="Poc" src="Algo_Parser" src-port="Poc">
-        <Attribute kind="Value" name="bufferSize">
-            <Expr kind="Literal" literal-kind="Integer" value="2"/>
-        </Attribute>
-    </Connection>
     <Connection dst="SelectCU" dst-port="ResidualSample" src="xIT" src-port="Block"/>
-    <Connection dst="DecodingPictureBuffer" dst-port="PocRef"
-        src="GenerateInterInfo" src-port="PocRef">
-        <Attribute kind="Value" name="bufferSize">
-            <Expr kind="Literal" literal-kind="Integer" value="2"/>
-        </Attribute>
-    </Connection>
-    <Connection dst="DecodingPictureBuffer" dst-port="IsBiPredOrLx"
-        src="GenerateInterInfo" src-port="IsBiPredOrLx">
-        <Attribute kind="Value" name="bufferSize">
-            <Expr kind="Literal" literal-kind="Integer" value="2"/>
-        </Attribute>
-    </Connection>
-    <Connection dst="DecodingPictureBuffer" dst-port="IsReadOrNewSlc"
-        src="GenerateInterInfo" src-port="IsReadOrNewSlice">
-        <Attribute kind="Value" name="bufferSize">
-            <Expr kind="Literal" literal-kind="Integer" value="2"/>
-        </Attribute>
-    </Connection>
-    <Connection dst="DecodingPictureBuffer" dst-port="Mv"
-        src="GenerateInterInfo" src-port="Mv">
-        <Attribute kind="Value" name="bufferSize">
-            <Expr kind="Literal" literal-kind="Integer" value="8"/>
-        </Attribute>
-    </Connection>
-    <Connection dst="DecodingPictureBuffer" dst-port="PredCuSize"
-        src="GenerateInterInfo" src-port="PredCuSize">
-        <Attribute kind="Value" name="bufferSize">
-            <Expr kind="Literal" literal-kind="Integer" value="4"/>
-        </Attribute>
-    </Connection>
     <Connection dst="DecodingPictureBuffer" dst-port="Poc"
-        src="Algo_Parser" src-port="Poc">
-        <Attribute kind="Value" name="bufferSize">
-            <Expr kind="Literal" literal-kind="Integer" value="2"/>
-        </Attribute>
-    </Connection>
+        src="Algo_Parser" src-port="Poc"/>
     <Connection dst="DecodingPictureBuffer" dst-port="PicSize"
-        src="Algo_Parser" src-port="PictSize">
-        <Attribute kind="Value" name="bufferSize">
-            <Expr kind="Literal" literal-kind="Integer" value="4"/>
-        </Attribute>
-    </Connection>
+        src="Algo_Parser" src-port="PictSize"/>
     <Connection dst="DecodingPictureBuffer" dst-port="RpsPoc"
-        src="Algo_Parser" src-port="RefPoc">
-        <Attribute kind="Value" name="bufferSize">
-            <Expr kind="Literal" literal-kind="Integer" value="16"/>
-        </Attribute>
-    </Connection>
-    <Connection dst="InterPrediction" dst-port="IsBiPredOrLx"
-        src="GenerateInterInfo" src-port="IsBiPredOrLx">
-        <Attribute kind="Value" name="bufferSize">
-            <Expr kind="Literal" literal-kind="Integer" value="2"/>
-        </Attribute>
-    </Connection>
+        src="Algo_Parser" src-port="RefPoc"/>
     <Connection dst="InterPrediction" dst-port="CUInfo"
-        src="Algo_Parser" src-port="CUInfo">
-        <Attribute kind="Value" name="bufferSize">
-            <Expr kind="Literal" literal-kind="Integer" value="32"/>
-        </Attribute>
-    </Connection>
-    <Connection dst="InterPrediction" dst-port="Mv"
-        src="GenerateInterInfo" src-port="Mv">
-        <Attribute kind="Value" name="bufferSize">
-            <Expr kind="Literal" literal-kind="Integer" value="8"/>
-        </Attribute>
-    </Connection>
+        src="Algo_Parser" src-port="CUInfo"/>
     <Connection dst="InterPrediction" dst-port="PartMode"
-        src="Algo_Parser" src-port="PartMode">
-        <Attribute kind="Value" name="bufferSize">
-            <Expr kind="Literal" literal-kind="Integer" value="2"/>
-        </Attribute>
-    </Connection>
-    <Connection dst="InterPrediction" dst-port="Poc" src="Algo_Parser" src-port="Poc">
-        <Attribute kind="Value" name="bufferSize">
-            <Expr kind="Literal" literal-kind="Integer" value="2"/>
-        </Attribute>
-    </Connection>
-    <Connection dst="InterPrediction" dst-port="RefIdx"
-        src="GenerateInterInfo" src-port="RefIdx">
-        <Attribute kind="Value" name="bufferSize">
-            <Expr kind="Literal" literal-kind="Integer" value="4"/>
-        </Attribute>
-    </Connection>
-    <Connection dst="InterPrediction" dst-port="RefList"
-        src="GenerateInterInfo" src-port="RefList">
-        <Attribute kind="Value" name="bufferSize">
-            <Expr kind="Literal" literal-kind="Integer" value="4"/>
-        </Attribute>
-    </Connection>
+        src="Algo_Parser" src-port="PartMode"/>
+    <Connection dst="InterPrediction" dst-port="Poc" src="Algo_Parser" src-port="Poc"/>
     <Connection dst="InterPrediction" dst-port="Sample"
-        src="DecodingPictureBuffer" src-port="RefSample">
-        <Attribute kind="Value" name="bufferSize">
-            <Expr kind="Literal" literal-kind="Integer" value="1024"/>
-        </Attribute>
-    </Connection>
+        src="DecodingPictureBuffer" src-port="RefSample"/>
     <Connection dst="InterPrediction" dst-port="SliceType"
-        src="Algo_Parser" src-port="SliceType">
-        <Attribute kind="Value" name="bufferSize">
-            <Expr kind="Literal" literal-kind="Integer" value="2"/>
-        </Attribute>
-    </Connection>
+        src="Algo_Parser" src-port="SliceType"/>
     <Connection dst="SelectCU" dst-port="InterSample"
-        src="InterPrediction" src-port="PredSample">
+        src="InterPrediction" src-port="PredSample"/>
+    <Connection dst="IntraPrediction" dst-port="Sample" src="SelectCU" src-port="Sample"/>
+    <Connection dst="SAO" dst-port="SaoSe" src="Algo_Parser" src-port="SaoSe">
         <Attribute kind="Value" name="bufferSize">
-            <Expr kind="Literal" literal-kind="Integer" value="32"/>
+            <Expr kind="Literal" literal-kind="Integer" value="16384"/>
         </Attribute>
     </Connection>
+    <Connection dst="SAO" dst-port="LFAcrossSlc" src="Algo_Parser" src-port="LFAcrossSlc"/>
+    <Connection dst="SAO" dst-port="IsPicSlcLcu" src="Algo_Parser" src-port="IsPicSlcLcu"/>
+    <Connection dst="SAO" dst-port="PicSize" src="Algo_Parser" src-port="PictSize"/>
+    <Connection dst="" dst-port="VID" src="SAO" src-port="FiltSample"/>
+    <Connection dst="DecodingPictureBuffer" dst-port="Sample" src="SAO" src-port="FiltSample"/>
+    <Connection dst="QpGen" dst-port="TuSize" src="Algo_Parser" src-port="TUSize"/>
     <Connection dst="InterPrediction" dst-port="WeightedPredSe"
-        src="feeder" src-port="OUT">
+        src="Algo_Parser" src-port="weightedPred">
         <Attribute kind="Value" name="bufferSize">
-            <Expr kind="Literal" literal-kind="Integer" value="8"/>
+            <Expr kind="Literal" literal-kind="Integer" value="16384"/>
         </Attribute>
     </Connection>
-    <Connection dst="IntraPrediction" dst-port="Sample" src="SelectCU" src-port="Sample">
-        <Attribute kind="Value" name="bufferSize">
-            <Expr kind="Literal" literal-kind="Integer" value="8192"/>
-        </Attribute>
-    </Connection>
-    <Connection dst="DecodingPictureBuffer" dst-port="Sample"
-        src="SelectCU" src-port="IntraRefSample">
-        <Attribute kind="Value" name="bufferSize">
-            <Expr kind="Literal" literal-kind="Integer" value="8192"/>
-        </Attribute>
-    </Connection>
-    <Connection dst="" dst-port="VID" src="SelectCU" src-port="IntraRefSample"/>
+    <Connection dst="" dst-port="PictSize" src="Algo_Parser" src-port="PictSize"/>
+    <Connection dst="" dst-port="SEI_MD5" src="Algo_Parser" src-port="SEI_MD5"/>
+    <Connection dst="SAO" dst-port="SampleIn" src="DBFilter" src-port="FiltSample"/>
+    <Connection dst="generateInfo" dst-port="PartMode" src="Algo_Parser" src-port="PartMode"/>
+    <Connection dst="generateInfo" dst-port="PictSize" src="Algo_Parser" src-port="PictSize"/>
+    <Connection dst="generateInfo" dst-port="RefPoc" src="Algo_Parser" src-port="RefPoc"/>
+    <Connection dst="generateInfo" dst-port="SliceType"
+        src="Algo_Parser" src-port="SliceType"/>
+    <Connection dst="generateInfo" dst-port="SliceAddr"
+        src="Algo_Parser" src-port="SliceAddr"/>
+    <Connection dst="generateInfo" dst-port="Poc" src="Algo_Parser" src-port="Poc"/>
+    <Connection dst="generateInfo" dst-port="CUInfo" src="Algo_Parser" src-port="CUInfo"/>
+    <Connection dst="generateInfo" dst-port="MvPredSyntElem"
+        src="Algo_Parser" src-port="MvPredSyntaxElem"/>
+    <Connection dst="generateInfo" dst-port="NumRefIdxLxAct"
+        src="Algo_Parser" src-port="NumRefIdxLxActive"/>
+    <Connection dst="generateInfo" dst-port="RePicListModif"
+        src="Algo_Parser" src-port="RefPicListModif"/>
+    <Connection dst="DBFilter" dst-port="Qp" src="QpGen" src-port="Qp"/>
+    <Connection dst="DBFilter" dst-port="CuInfo" src="Algo_Parser" src-port="CUInfo"/>
+    <Connection dst="DBFilter" dst-port="Cbf" src="Algo_Parser" src-port="Cbf"/>
+    <Connection dst="DBFilter" dst-port="Mv" src="generateInfo" src-port="Mv"/>
+    <Connection dst="DBFilter" dst-port="IsBiPredOrLx"
+        src="generateInfo" src-port="IsBiPredOrLx"/>
+    <Connection dst="DBFilter" dst-port="SplitTransf" src="Algo_Parser" src-port="SplitTransform"/>
+    <Connection dst="DBFilter" dst-port="PartMode" src="Algo_Parser" src-port="PartMode"/>
+    <Connection dst="DBFilter" dst-port="RefPoc" src="generateInfo" src-port="PocRef"/>
+    <Connection dst="DBFilter" dst-port="SlcAddr" src="Algo_Parser" src-port="SliceAddr"/>
+    <Connection dst="DBFilter" dst-port="LFAcrossSlc" src="Algo_Parser" src-port="LFAcrossSlc"/>
+    <Connection dst="DBFilter" dst-port="PicSize" src="Algo_Parser" src-port="PictSize"/>
+    <Connection dst="DBFilter" dst-port="IsPicSlcLcu" src="Algo_Parser" src-port="IsPicSlcLcu"/>
+    <Connection dst="DBFilter" dst-port="DBFDisable" src="Algo_Parser" src-port="DBFDisable"/>
+    <Connection dst="InterPrediction" dst-port="RefIdx"
+        src="generateInfo" src-port="RefIdx"/>
+    <Connection dst="InterPrediction" dst-port="RefList"
+        src="generateInfo" src-port="RefList"/>
+    <Connection dst="InterPrediction" dst-port="IsBiPredOrLx"
+        src="generateInfo" src-port="IsBiPredOrLx"/>
+    <Connection dst="InterPrediction" dst-port="Mv" src="generateInfo" src-port="Mv"/>
+    <Connection dst="DecodingPictureBuffer" dst-port="IsBiPredOrLx"
+        src="generateInfo" src-port="IsBiPredOrLx"/>
+    <Connection dst="DecodingPictureBuffer" dst-port="IsReadOrNewSlc"
+        src="generateInfo" src-port="IsReadOrNewSlice"/>
+    <Connection dst="DecodingPictureBuffer" dst-port="Mv"
+        src="generateInfo" src-port="Mv"/>
+    <Connection dst="DecodingPictureBuffer" dst-port="PredCuSize"
+        src="generateInfo" src-port="PredCuSize"/>
+    <Connection dst="DecodingPictureBuffer" dst-port="PocRef"
+        src="generateInfo" src-port="PocRef"/>
+    <Connection dst="DBFilter" dst-port="SampleIn" src="SelectCU" src-port="Sample"/>
+    <Connection dst="DecodingPictureBuffer" dst-port="NewMvOrLCU"
+        src="generateInfo" src-port="NewMvOrLcu"/>
 </XDF>

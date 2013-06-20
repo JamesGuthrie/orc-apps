@@ -81,6 +81,8 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 	uint(size=8) PredSample
 		:
 
+	uint(size=8) SZ_REF_LIST = 16;
+
 	uint(size=2) HALF_PIX_1ST_PART = 1;
 	uint(size=2) HALF_PIX_2ND_PART = 2;
 	int shift1 = 6;
@@ -103,14 +105,14 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 	uint(size=13)  pixIdx;
 
 	uint(size=2)  compIdx;
-	int (size=16) refListX[2][6];
+	int (size=16) refListX[2][SZ_REF_LIST];
 	uint(size=2)  wpIdc;
 	uint(size=4)  numRefIdxLxAct[2];
 	bool          isBSlice;
 	uint(size=4)  refIdxLxAct;
 	uint(size=3)  log2WeightDenom[3];
-	int           weight[6][2][3];
-	int           offset[6][2][3];
+	int           weight[SZ_REF_LIST][2][3];
+	int           offset[SZ_REF_LIST][2][3];
 
 	uint(size=3)  numPartDecoded;
 	uint(size=3)  numPart;
@@ -128,9 +130,9 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 	int (size=4)  refIdxLx[2];
 	int (size=32) mvLx[2][2];
 	uint(size=2)  numList;
-	int           logWDTab[8][8][3];
-	int           weightCuTab[8][8][3][2];
-	int           offsetCuTab[8][8][3][2];
+	int           logWDTab[SZ_REF_LIST+1][SZ_REF_LIST+1][3];
+	int           weightCuTab[SZ_REF_LIST+1][SZ_REF_LIST+1][3][2];
+	int           offsetCuTab[SZ_REF_LIST+1][SZ_REF_LIST+1][3][2];
 
 	int (size=16) predSampLuma[2][64+7][64+7];
 	int (size=16) predSampChr[2][2][32+3][32+3];
@@ -756,8 +758,8 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 		int          weightScalFact,
 		int          w0,
 		int          w1,
-		uint(size=3) idxL0 = (refIdxL0+1)&7,
-		uint(size=3) idxL1 = (refIdxL1+1)&7,
+		uint(size=3) idxL0 = refIdxL0+1,
+		uint(size=3) idxL1 = refIdxL1+1,
 		uint(size=2) COMP_MIN = if((DECODE_COMP & LUMA_COMP) = 0) then 1 else 0 end,
 		uint(size=2) COMP_MAX = if((DECODE_COMP & CHROMA_COMP) != 0) then 2 else 1 end
 	begin
@@ -1106,16 +1108,16 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 		if(isBiPredOrLx = PRED_L0) then
 			mvLx[0] := [mv[i]:for int i in 0 .. 1];
 			mvLx[1] := [0,0];
-			refIdxLx := [refIndexLx&7, -1];
+			refIdxLx := [refIndexLx, -1];
 			listIdx := 0;
 		else
 			mvLx[1] := [mv[i]:for int i in 0 .. 1];
 			mvLx[0] := [0,0];
-			refIdxLx := [-1, refIndexLx&7];
+			refIdxLx := [-1, refIndexLx];
 			listIdx := 1;
 		end
-		idxL0 := (refIdxLx[0]+1)&7;
-		idxL1 := (refIdxLx[1]+1)&7;
+		idxL0 := refIdxLx[0]+1;
+		idxL1 := refIdxLx[1]+1;
 		foreach int component in COMP_MIN .. COMP_MAX
 		do
 			logWD[component] := logWDTab[idxL0][idxL1][component];
@@ -1141,8 +1143,8 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 	do
 		mvLx := [[mv[2*i+j]:for uint j in 0 ..1]: for int i in 0 .. 1];
 		refIdxLx := [refIndexLx[i]: for uint i in 0 .. 1];
-		idxL0 := (refIdxLx[0]+1)&7;
-		idxL1 := (refIdxLx[1]+1)&7;
+		idxL0 := refIdxLx[0]+1;
+		idxL1 := refIdxLx[1]+1;
 		foreach int component in COMP_MIN .. COMP_MAX
 		do
 			logWD[component] := logWDTab[idxL0][idxL1][component];

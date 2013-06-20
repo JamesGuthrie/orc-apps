@@ -46,6 +46,18 @@
             <Expr kind="Literal" literal-kind="Boolean" value="false"/>
         </Parameter>
     </Instance>
+    <Instance id="SAO">
+        <Class name="devel.org.sc29.wg11.mpegh.part2.main.Filters.SaoFilter"/>
+        <Parameter name="DEBUG">
+            <Expr kind="Literal" literal-kind="Boolean" value="true"/>
+        </Parameter>
+    </Instance>
+    <Instance id="DBFilter">
+        <Class name="devel.org.sc29.wg11.mpegh.part2.main.Filters.Dbf"/>
+    </Instance>
+    <Instance id="QpGen">
+        <Class name="devel.org.sc29.wg11.mpegh.part2.main.Filters.QpGen"/>
+    </Instance>
     <Connection dst="xIT" dst-port="Size" src="Algo_Parser" src-port="TUSize"/>
     <Connection dst="xIT" dst-port="Coeff" src="Algo_Parser" src-port="Coeff"/>
     <Connection dst="SelectCU" dst-port="PartMode" src="Algo_Parser" src-port="PartMode"/>
