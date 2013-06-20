@@ -148,6 +148,7 @@
         </Attribute>
     </Connection>
     <Connection dst="GenerateInterInfo" dst-port="PartMode"
+<<<<<<< HEAD
         src="Algo_Parser" src-port="PartMode">
         <Attribute kind="Value" name="bufferSize">
             <Expr kind="Literal" literal-kind="Integer" value="2"/>
@@ -159,6 +160,9 @@
             <Expr kind="Literal" literal-kind="Integer" value="4"/>
         </Attribute>
     </Connection>
+=======
+        src="Algo_Parser" src-port="PartMode"/>
+>>>>>>> 70e2b0d2fdda5940ae2247b6e230550f4772b43f
     <Connection dst="GenerateInterInfo" dst-port="SliceType"
         src="Algo_Parser" src-port="SliceType">
         <Attribute kind="Value" name="bufferSize">

@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <layout>
 	<vertices>
-		<vertex id="PartMode" x="225" y="70"/>
-		<vertex id="ColocInfo" x="225" y="165"/>
-		<vertex id="DisableTMVP" x="87" y="250"/>
-		<vertex id="PictSize" x="225" y="260"/>
-		<vertex id="RefPoc" x="57" y="318"/>
-		<vertex id="SliceType" x="225" y="376"/>
+		<vertex id="PartMode" x="223" y="11"/>
+		<vertex id="PictSize" x="223" y="201"/>
+		<vertex id="RefPoc" x="55" y="259"/>
+		<vertex id="SliceType" x="223" y="317"/>
 		<vertex id="SliceAddr" x="145" y="319"/>
 		<vertex id="Poc" x="225" y="471"/>
 		<vertex id="CUInfo" x="225" y="566"/>
