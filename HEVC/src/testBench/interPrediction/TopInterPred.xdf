@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <XDF name="TopInterPred">
     <Instance id="GenerateInterInformation">
-        <Class name="devel.org.sc29.wg11.mpegh.part2.inter.GenerateInterInformation"/>
+        <Class name="devel.org.sc29.wg11.mpegh.part2.main.inter.GenerateInterInformation"/>
     </Instance>
     <Instance id="Poc">
         <Class name="testBench.common.SourceActor"/>
@@ -136,6 +136,7 @@
         <Class name="testBench.common.u8Toi16"/>
     </Instance>
     <Instance id="InterPrediction">
+<<<<<<< HEAD
         <Class name="devel.org.sc29.wg11.mpegh.part2.inter.InterPrediction"/>
         <Parameter name="DECODE_COMP">
             <Expr kind="Literal" literal-kind="Integer" value="3"/>
@@ -155,6 +156,9 @@
         <Parameter name="PROCESS_MODE_HALF_PIX">
             <Expr kind="Literal" literal-kind="Integer" value="3"/>
         </Parameter>
+=======
+        <Class name="devel.org.sc29.wg11.mpegh.part2.main.inter.InterPrediction"/>
+>>>>>>> a8380647e76794effcdbe12317cacf8bf12b4412
     </Instance>
     <Instance id="WeightedPredSe">
         <Class name="testBench.common.SourceActor"/>
@@ -244,7 +248,7 @@
         <Class name="testBench.common.u8Tou3"/>
     </Instance>
     <Instance id="DecodingPictureBuffer">
-        <Class name="devel.org.sc29.wg11.mpegh.part2.inter.DecodingPictureBuffer"/>
+        <Class name="devel.org.sc29.wg11.mpegh.part2.main.inter.DecodingPictureBuffer"/>
     </Instance>
     <Instance id="DpbSampleIn">
         <Class name="testBench.common.SourceActor"/>

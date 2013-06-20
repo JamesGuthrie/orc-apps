@@ -29,13 +29,13 @@
         </Type>
     </Port>
     <Instance id="Algo_Parser">
-        <Class name="devel.org.sc29.wg11.mpegh.part2.synParser.Algo_Parser"/>
+        <Class name="devel.org.sc29.wg11.mpegh.part2.main.synParser.Algo_Parser"/>
     </Instance>
     <Instance id="xIT">
         <Class name="xIT.xIT"/>
     </Instance>
     <Instance id="IntraPrediction">
-        <Class name="devel.org.sc29.wg11.mpegh.part2.intra.IntraPrediction"/>
+        <Class name="devel.org.sc29.wg11.mpegh.part2.main.intra.IntraPrediction"/>
         <Parameter name="EnabSkipInPix">
             <Expr kind="Literal" literal-kind="Boolean" value="false"/>
         </Parameter>
@@ -43,13 +43,22 @@
     <Instance id="SelectCU">
         <Class name="devel.org.sc29.wg11.mpegh.part2.SelectCu"/>
     </Instance>
+<<<<<<< HEAD
     <Instance id="GenerateInterInfo">
         <Class name="interPrediction.GenerateInterInformation"/>
+=======
+    <Instance id="LCU_reord">
+        <Class name="devel.org.sc29.wg11.mpegh.part2.main.inter.Framedelay"/>
+    </Instance>
+    <Instance id="GenerateInterInfo">
+        <Class name="devel.org.sc29.wg11.mpegh.part2.main.inter.GenerateInterInformation"/>
+>>>>>>> a8380647e76794effcdbe12317cacf8bf12b4412
     </Instance>
     <Instance id="feeder">
         <Class name="devel.org.sc29.wg11.mpegh.part2.common.feed_i16"/>
     </Instance>
     <Instance id="DecodingPictureBuffer">
+<<<<<<< HEAD
         <Class name="devel.org.sc29.wg11.mpegh.part2.inter.DecodingPictureBuffer"/>
         <Parameter name="READ_INPUT_PARAL">
             <Expr kind="Literal" literal-kind="Boolean" value="true"/>
@@ -57,6 +66,15 @@
     </Instance>
     <Instance id="InterPrediction">
         <Class name="devel.org.sc29.wg11.mpegh.part2.inter.InterPredictionBase"/>
+=======
+        <Class name="devel.org.sc29.wg11.mpegh.part2.main.inter.DecodingPictureBuffer"/>
+    </Instance>
+    <Instance id="InterPrediction">
+        <Class name="devel.org.sc29.wg11.mpegh.part2.main.inter.InterPrediction"/>
+    </Instance>
+    <Instance id="LCU_reord2">
+        <Class name="devel.org.sc29.wg11.mpegh.part2.main.inter.FrameDelayBorder"/>
+>>>>>>> a8380647e76794effcdbe12317cacf8bf12b4412
     </Instance>
     <Connection dst="xIT" dst-port="Size" src="Algo_Parser" src-port="TUSize">
         <Attribute kind="Value" name="bufferSize">

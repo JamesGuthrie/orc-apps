@@ -29,7 +29,7 @@
         </Type>
     </Port>
     <Instance id="Algo_Parser">
-        <Class name="devel.org.sc29.wg11.mpegh.part2.synParser.Algo_Parser"/>
+        <Class name="devel.org.sc29.wg11.mpegh.part2.main.synParser.Algo_Parser"/>
     </Instance>
     <Instance id="xIT">
         <Class name="xIT.xIT"/>
@@ -37,15 +37,22 @@
     <Instance id="SelectCU">
         <Class name="devel.org.sc29.wg11.mpegh.part2.SelectCu"/>
     </Instance>
+<<<<<<< HEAD
+=======
+    <Instance id="LCU_reord">
+        <Class name="devel.org.sc29.wg11.mpegh.part2.main.inter.FrameDelayBorder"/>
+    </Instance>
+>>>>>>> a8380647e76794effcdbe12317cacf8bf12b4412
     <Instance id="feeder">
         <Class name="devel.org.sc29.wg11.mpegh.part2.common.feed_u8"/>
     </Instance>
     <Instance id="IntraPrediction">
-        <Class name="devel.org.sc29.wg11.mpegh.part2.intra.IntraPrediction"/>
+        <Class name="devel.org.sc29.wg11.mpegh.part2.main.intra.IntraPrediction"/>
         <Parameter name="EnabSkipInPix">
             <Expr kind="Literal" literal-kind="Boolean" value="false"/>
         </Parameter>
     </Instance>
+<<<<<<< HEAD
     <Instance id="ParserSink">
         <Class name="devel.org.sc29.wg11.mpegh.part2.synParser.ParserSink"/>
     </Instance>
@@ -94,6 +101,19 @@
             <Expr kind="Literal" literal-kind="Integer" value="2048"/>
         </Attribute>
     </Connection>
+=======
+    <Connection dst="xIT" dst-port="Size" src="Algo_Parser" src-port="TUSize"/>
+    <Connection dst="xIT" dst-port="Coeff" src="Algo_Parser" src-port="Coeff"/>
+    <Connection dst="SelectCU" dst-port="PartMode" src="Algo_Parser" src-port="PartMode"/>
+    <Connection dst="SelectCU" dst-port="CUInfo" src="Algo_Parser" src-port="CUInfo"/>
+    <Connection dst="LCU_reord" dst-port="Block_in" src="SelectCU" src-port="Sample"/>
+    <Connection dst="LCU_reord" dst-port="PictSize" src="Algo_Parser" src-port="PictSize"/>
+    <Connection dst="Algo_Parser" dst-port="byte" src="" src-port="BYTE"/>
+    <Connection dst="" dst-port="SIZE" src="Algo_Parser" src-port="PicSizeInMb"/>
+    <Connection dst="" dst-port="DispCoord" src="Algo_Parser" src-port="DispCoord"/>
+    <Connection dst="SelectCU" dst-port="InterSample" src="feeder" src-port="OUT"/>
+    <Connection dst="IntraPrediction" dst-port="Sample" src="SelectCU" src-port="Sample"/>
+>>>>>>> a8380647e76794effcdbe12317cacf8bf12b4412
     <Connection dst="IntraPrediction" dst-port="PartMode"
         src="Algo_Parser" src-port="PartMode">
         <Attribute kind="Value" name="bufferSize">
@@ -137,6 +157,7 @@
         </Attribute>
     </Connection>
     <Connection dst="IntraPrediction" dst-port="IntraPredMode"
+<<<<<<< HEAD
         src="Algo_Parser" src-port="IntraPredMode">
         <Attribute kind="Value" name="bufferSize">
             <Expr kind="Literal" literal-kind="Integer" value="16"/>
@@ -190,4 +211,9 @@
             <Expr kind="Literal" literal-kind="Integer" value="512"/>
         </Attribute>
     </Connection>
+=======
+        src="Algo_Parser" src-port="IntraPredMode"/>
+    <Connection dst="SelectCU" dst-port="ResidualSample" src="xIT" src-port="Block"/>
+    <Connection dst="" dst-port="VID" src="LCU_reord" src-port="Block_out"/>
+>>>>>>> a8380647e76794effcdbe12317cacf8bf12b4412
 </XDF>

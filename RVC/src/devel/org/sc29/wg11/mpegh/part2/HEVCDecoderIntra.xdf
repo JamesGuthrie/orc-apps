@@ -29,10 +29,10 @@
         </Type>
     </Port>
     <Instance id="Algo_Parser">
-        <Class name="devel.org.sc29.wg11.mpegh.part2.synParser.Algo_Parser"/>
+        <Class name="devel.org.sc29.wg11.mpegh.part2.main.synParser.Algo_Parser"/>
     </Instance>
     <Instance id="xIT">
-        <Class name="devel.org.sc29.wg11.mpegh.part2.xIT.xIT"/>
+        <Class name="devel.org.sc29.wg11.mpegh.part2.main.IT.xIT"/>
     </Instance>
     <Instance id="SelectCU">
         <Class name="devel.org.sc29.wg11.mpegh.part2.SelectCu"/>
@@ -41,13 +41,10 @@
         <Class name="devel.org.sc29.wg11.mpegh.part2.common.feed_u8"/>
     </Instance>
     <Instance id="IntraPrediction">
-        <Class name="devel.org.sc29.wg11.mpegh.part2.intra.IntraPrediction"/>
+        <Class name="devel.org.sc29.wg11.mpegh.part2.main.intra.IntraPrediction"/>
         <Parameter name="EnabSkipInPix">
             <Expr kind="Literal" literal-kind="Boolean" value="false"/>
         </Parameter>
-    </Instance>
-    <Instance id="ParserSink">
-        <Class name="devel.org.sc29.wg11.mpegh.part2.synParser.ParserSink"/>
     </Instance>
     <Connection dst="xIT" dst-port="Size" src="Algo_Parser" src-port="TUSize"/>
     <Connection dst="xIT" dst-port="Coeff" src="Algo_Parser" src-port="Coeff"/>

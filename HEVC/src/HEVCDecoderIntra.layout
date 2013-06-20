@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <layout>
 	<vertices>
+<<<<<<< HEAD
 		<vertex id="BYTE" x="57" y="687"/>
 		<vertex id="DispCoord" x="401" y="84"/>
 		<vertex id="SIZE" x="401" y="181"/>
@@ -11,5 +12,17 @@
 		<vertex id="feeder" x="401" y="278"/>
 		<vertex id="IntraPrediction" x="401" y="538"/>
 		<vertex id="ParserSink" x="401" y="853"/>
+=======
+		<vertex id="BYTE" x="57" y="759"/>
+		<vertex id="DispCoord" x="401" y="189"/>
+		<vertex id="SIZE" x="401" y="286"/>
+		<vertex id="VID" x="1042" y="992"/>
+		<vertex id="Algo_Parser" x="171" y="561"/>
+		<vertex id="xIT" x="401" y="383"/>
+		<vertex id="SelectCU" x="631" y="704"/>
+		<vertex id="LCU_reord" x="834" y="970"/>
+		<vertex id="feeder" x="401" y="70"/>
+		<vertex id="IntraPrediction" x="401" y="524"/>
+>>>>>>> a8380647e76794effcdbe12317cacf8bf12b4412
 	</vertices>
 </layout>
