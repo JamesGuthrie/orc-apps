@@ -78,7 +78,7 @@ actor DecodingPictureBuffer ()
 
 
 	/* /!\ : Check the size of the border. */
-	uint(size = 6) BORDER_SIZE = 128;
+	uint(size = 16) BORDER_SIZE = 128;
 	uint(size = 8) DPB_SIZE = 17;
 
 	uint(size=8)  pictureBuffer[DPB_SIZE][3][PICT_WIDTH+2*BORDER_SIZE][PICT_HEIGHT+2*BORDER_SIZE];
@@ -156,54 +156,8 @@ actor DecodingPictureBuffer ()
 		idxLcu := 0;
 	end
 
+
 	resetReadInPict.launch: action NewMvOrLCU:[newMv] ==>
-	end
-
-	/** We get all the references from the 5 lists of the Rps
-	 * (StCurrentBefore, StCurrentAfter, StFollowing, LtCurrent, LtFollowing)
-	 **/
-	getRps.launch: action RpsPoc:[numPic]==>
-	guard
-		nbList < 5
-	do
-		sizeOfList := numPic;
-	end
-
-	getRps.done: action ==>
-	guard
-		nbList = 5
-	do
-		/* We remove from the Dpb all the pictures who are not in the Rps of
-		 * the current picture
-		 */
-		foreach int i in 0 .. DPB_SIZE - 1
-		do
-			isRef[i] := isRef[i] and isStillRef[i];
-		end
-		isRef[currIdx] := true;
-	end
-
-	/** For each we check the index of the reference poc
-	 * (in order to not remove them from the Dpb).
-	 **/
-	getRpsPoc.launch: action RpsPoc:[pocVal] ==>
-	guard
-		sizeOfList > 0
-	do
-		sizeOfList := sizeOfList - 1;
-		foreach int i in 0 .. DPB_SIZE - 1
-		do
-			if(pocRef[i] = pocVal)then
-				isStillRef[i] := true;
-			end
-		end
-	end
-
-	getRpsPoc.done: action ==>
-	guard
-		sizeOfList = 0
-	do
-		nbList := nbList + 1;
 	end
 
 	checkNewMv.isMv: action NewMvOrLCU:[newMv] ==>
@@ -310,6 +264,69 @@ actor DecodingPictureBuffer ()
 		numLcuRemain = lcuBufferSz && idxLcu >= numLcuPerPict - lcuBufferSz
 	end
 
+	getReadAddr.isMonoPred: action IsReadOrNewSlc:[isRead], IsBiPredOrLx:[isBiPredOrLx] ==>
+	guard
+		isBiPredOrLx != BI_PRED
+	do
+		isBiPred := false;
+		numPocRef := 1;
+	end
+
+	getReadAddr.isBiPred: action IsReadOrNewSlc:[isRead], IsBiPredOrLx:[isBiPredOrLx], NewMvOrLCU:[newMv] ==>
+	guard
+		isBiPredOrLx = BI_PRED
+	do
+		isBiPred := true;
+		numPocRef := 2;
+	end
+
+	/** We get all the references from the 5 lists of the Rps
+	 * (StCurrentBefore, StCurrentAfter, StFollowing, LtCurrent, LtFollowing)
+	 **/
+	getRps.launch: action RpsPoc:[numPic]==>
+	guard
+		nbList < 5
+	do
+		sizeOfList := numPic;
+	end
+
+	getRps.done: action ==>
+	guard
+		nbList = 5
+	do
+		/* We remove from the Dpb all the pictures who are not in the Rps of
+		 * the current picture
+		 */
+		foreach int i in 0 .. DPB_SIZE - 1
+		do
+			isRef[i] := isRef[i] and isStillRef[i];
+		end
+		isRef[currIdx] := true;
+	end
+
+	/** For each we check the index of the reference poc
+	 * (in order to not remove them from the Dpb).
+	 **/
+	getRpsPoc.launch: action RpsPoc:[pocVal] ==>
+	guard
+		sizeOfList > 0
+	do
+		sizeOfList := sizeOfList - 1;
+		foreach int i in 0 .. DPB_SIZE - 1
+		do
+			if(pocRef[i] = pocVal)then
+				isStillRef[i] := true;
+			end
+		end
+	end
+
+	getRpsPoc.done: action ==>
+	guard
+		sizeOfList = 0
+	do
+		nbList := nbList + 1;
+	end
+
 	/* When we get the picture we add the border (in order to be able to give a
 	 * reference pixels which can be outside of the picture).
 	 */
@@ -317,12 +334,11 @@ actor DecodingPictureBuffer ()
 	guard
 		numLcuRemain = 0
 	var
-		uint xSize = picSize[0],
-		uint ySize = picSize[1]
+		uint xSize := picSize[0],
+		uint ySize := picSize[1]
 	do
-		numLcuRemain := 0;
 		/* Fill in luma border */
-		foreach uint x in BORDER_SIZE .. xSize-1 + BORDER_SIZE
+		foreach uint x in BORDER_SIZE .. xSize + BORDER_SIZE - 1
 		do
 			foreach uint y in 0 .. BORDER_SIZE - 1
 			do
@@ -332,7 +348,7 @@ actor DecodingPictureBuffer ()
 					pictureBuffer[inputPicIdx][0][x][ySize+BORDER_SIZE-1];
 			end
 		end
-		foreach uint y in 0 .. ySize + 2*BORDER_SIZE
+		foreach uint y in 0 .. ySize + 2*BORDER_SIZE - 1
 		do
 			foreach uint x in 0 .. BORDER_SIZE - 1
 			do
@@ -356,7 +372,7 @@ actor DecodingPictureBuffer ()
 						pictureBuffer[inputPicIdx][comp][x][ySize/2+BORDER_SIZE/2-1];
 				end
 			end
-			foreach uint y in 0 .. ySize/2 + BORDER_SIZE*2/2
+			foreach uint y in 0 .. ySize/2 + BORDER_SIZE - 1
 			do
 				foreach uint x in 0 .. BORDER_SIZE/2 - 1
 				do
@@ -369,20 +385,16 @@ actor DecodingPictureBuffer ()
 		end
 	end
 
-	getReadAddr.isMonoPred: action IsReadOrNewSlc:[isRead], IsBiPredOrLx:[isBiPredOrLx] ==>
+	getReadAddr: action IsReadOrNewSlc:[isRead], IsBiPredOrLx:[isBiPredOrLx] ==>
 	guard
-		isBiPredOrLx != BI_PRED
+		isRead = 1
 	do
-		isBiPred := false;
-		numPocRef := 1;
-	end
-
-	getReadAddr.isBiPred: action IsReadOrNewSlc:[isRead], IsBiPredOrLx:[isBiPredOrLx], NewMvOrLCU:[newMv] ==>
-	guard
-		isBiPredOrLx = BI_PRED
-	do
-		isBiPred := true;
-		numPocRef := 2;
+		numPocRef :=
+			if(isBiPredOrLx = BI_PRED) then
+				2
+			else
+				1
+			end;
 	end
 
 	/* We get all the informations needed for sending the reference Cu. We save

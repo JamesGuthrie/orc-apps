@@ -60,6 +60,7 @@ actor SaoFilter(bool DEBUG)
 	uint(size=8) OrigPict[3][PICT_WIDTH][4*64];
 	uint(size=8) FiltPict[3][PICT_WIDTH][PICT_HEIGHT];
 
+	
 	uint(size=2)  cIdx;
 	uint(size=2)  saoTypeIdx[PICT_WIDTH/64][2][3];
 	int (size=9)  saoOffset[PICT_WIDTH/64][2][3][5];
@@ -68,8 +69,8 @@ actor SaoFilter(bool DEBUG)
 	uint(size=3)  bandTable[32];
 	uint(size=6)  picSizeInCu[2];
 	uint(size=16) picSize[2];
-	uint(size=6)  xCu := 0;
-	uint(size=6)  yCu := 0;
+	uint(size=8)  xCu := 0;
+	uint(size=8)  yCu := 0;
 	uint(size=6)  xCuFilt := 0;
 	uint(size=6)  yCuFilt := 0;
 
@@ -326,6 +327,7 @@ actor SaoFilter(bool DEBUG)
 			end
 		end end
 	end
+
 
 	procedure saoFilterEdgeChroma_Horiz(uint(size=16) rx, uint(size=16) ry,
 		uint(size=2) cIdx, uint(size=16) picSize[2], bool lcuIsPictBorder)
