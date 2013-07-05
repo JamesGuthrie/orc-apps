@@ -108,11 +108,7 @@ actor Display()
 	displayPicture: action ==>
 	guard
 		nbBlockGot >= pictureSizeInMb,
-<<<<<<< HEAD
 		(displayYUV_getFlags() & DISP_ENABLE) != 0
-=======
-		(displayYUV_getFlags() & DISP_ENABLE) != 0
->>>>>>> hevc_hm10
 	do
 		fpsPrintNewPicDecoded();
 		displayYUV_displayPicture(pictureBufferY, pictureBufferU, pictureBufferV, pictureWidthLuma, pictureHeightLuma);

@@ -7,6 +7,13 @@
             </Entry>
         </Type>
     </Port>
+    <Port kind="Output" name="VID">
+        <Type name="int">
+            <Entry kind="Expr" name="size">
+                <Expr kind="Literal" literal-kind="Integer" value="32"/>
+            </Entry>
+        </Type>
+    </Port>
     <Port kind="Output" name="SIZE">
         <Type name="int">
             <Entry kind="Expr" name="size">
@@ -32,13 +39,6 @@
         <Type name="uint">
             <Entry kind="Expr" name="size">
                 <Expr kind="Literal" literal-kind="Integer" value="8"/>
-            </Entry>
-        </Type>
-    </Port>
-    <Port kind="Output" name="VID">
-        <Type name="int">
-            <Entry kind="Expr" name="size">
-                <Expr kind="Literal" literal-kind="Integer" value="32"/>
             </Entry>
         </Type>
     </Port>
@@ -125,7 +125,6 @@
             <Expr kind="Literal" literal-kind="Integer" value="16384"/>
         </Attribute>
     </Connection>
-    <Connection dst="SAO" dst-port="LFAcrossSlc" src="Algo_Parser" src-port="LFAcrossSlc"/>
     <Connection dst="SAO" dst-port="IsPicSlcLcu" src="Algo_Parser" src-port="IsPicSlcLcu"/>
     <Connection dst="SAO" dst-port="PicSize" src="Algo_Parser" src-port="PictSize"/>
     <Connection dst="" dst-port="VID" src="SAO" src-port="FiltSample"/>
@@ -165,7 +164,6 @@
     <Connection dst="DBFilter" dst-port="PartMode" src="Algo_Parser" src-port="PartMode"/>
     <Connection dst="DBFilter" dst-port="RefPoc" src="generateInfo" src-port="PocRef"/>
     <Connection dst="DBFilter" dst-port="SlcAddr" src="Algo_Parser" src-port="SliceAddr"/>
-    <Connection dst="DBFilter" dst-port="LFAcrossSlc" src="Algo_Parser" src-port="LFAcrossSlc"/>
     <Connection dst="DBFilter" dst-port="PicSize" src="Algo_Parser" src-port="PictSize"/>
     <Connection dst="DBFilter" dst-port="IsPicSlcLcu" src="Algo_Parser" src-port="IsPicSlcLcu"/>
     <Connection dst="DBFilter" dst-port="DBFDisable" src="Algo_Parser" src-port="DBFDisable"/>
@@ -189,4 +187,20 @@
     <Connection dst="DBFilter" dst-port="SampleIn" src="SelectCU" src-port="Sample"/>
     <Connection dst="DecodingPictureBuffer" dst-port="NewMvOrLCU"
         src="generateInfo" src-port="NewMvOrLcu"/>
+    <Connection dst="IntraPrediction" dst-port="LcuSizeMax"
+        src="Algo_Parser" src-port="LcuSizeMax"/>
+    <Connection dst="IntraPrediction" dst-port="TilesCoord"
+        src="Algo_Parser" src-port="TilesCoord"/>
+    <Connection dst="SAO" dst-port="LFAcrossSlcTile" src="Algo_Parser" src-port="LFAcrossSlcTile"/>
+    <Connection dst="DBFilter" dst-port="LcuSizeMax" src="Algo_Parser" src-port="LcuSizeMax"/>
+    <Connection dst="DBFilter" dst-port="DbfSe" src="Algo_Parser" src-port="DbfSe"/>
+    <Connection dst="DBFilter" dst-port="TilesCoord" src="Algo_Parser" src-port="TilesCoord"/>
+    <Connection dst="generateInfo" dst-port="LcuSizeMax"
+        src="Algo_Parser" src-port="LcuSizeMax"/>
+    <Connection dst="SAO" dst-port="LcuSizeMax" src="Algo_Parser" src-port="LcuSizeMax"/>
+    <Connection dst="SAO" dst-port="TilesCoord" src="Algo_Parser" src-port="TilesCoord"/>
+    <Connection dst="DBFilter" dst-port="LFAcrossSlcTile"
+        src="Algo_Parser" src-port="LFAcrossSlcTile"/>
+    <Connection dst="generateInfo" dst-port="TilesCoord"
+        src="Algo_Parser" src-port="TilesCoord"/>
 </XDF>

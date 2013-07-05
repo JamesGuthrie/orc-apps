@@ -438,7 +438,7 @@
     <Instance id="dbfSamples">
         <Class name="testBench.common.SourceActor"/>
         <Parameter name="exitWhenFinished">
-            <Expr kind="Literal" literal-kind="Boolean" value="false"/>
+            <Expr kind="Literal" literal-kind="Boolean" value="true"/>
         </Parameter>
         <Parameter name="fileName">
             <Expr kind="Literal" literal-kind="String" value="dbfSamp"/>
@@ -456,7 +456,7 @@
     <Instance id="DpbSampIn">
         <Class name="testBench.common.SourceActor"/>
         <Parameter name="exitWhenFinished">
-            <Expr kind="Literal" literal-kind="Boolean" value="false"/>
+            <Expr kind="Literal" literal-kind="Boolean" value="true"/>
         </Parameter>
         <Parameter name="fileName">
             <Expr kind="Literal" literal-kind="String" value="DpbSampleIn"/>
@@ -464,15 +464,6 @@
         <Parameter name="hasWritenFiles">
             <Expr kind="Literal" literal-kind="Boolean" value="false"/>
         </Parameter>
-    </Instance>
-    <Instance id="CheckOutput12">
-        <Class name="testBench.common.CheckU8"/>
-        <Parameter name="portName">
-            <Expr kind="Literal" literal-kind="String" value="Pipelined DeblockFilt"/>
-        </Parameter>
-    </Instance>
-    <Instance id="DeblockFiltNetwork">
-        <Class name="inLoopFilter.Pipelined_Dbf"/>
     </Instance>
     <Instance id="U8ToI16_7">
         <Class name="testBench.common.u8Toi16"/>
@@ -487,18 +478,6 @@
         <Class name="testBench.common.CheckU8"/>
         <Parameter name="portName">
             <Expr kind="Literal" literal-kind="String" value="SaoFilter_FiltSample"/>
-        </Parameter>
-    </Instance>
-    <Instance id="SaoSamples">
-        <Class name="testBench.common.SourceActor"/>
-        <Parameter name="exitWhenFinished">
-            <Expr kind="Literal" literal-kind="Boolean" value="true"/>
-        </Parameter>
-        <Parameter name="fileName">
-            <Expr kind="Literal" literal-kind="String" value="saoSamples"/>
-        </Parameter>
-        <Parameter name="hasWritenFiles">
-            <Expr kind="Literal" literal-kind="Boolean" value="false"/>
         </Parameter>
     </Instance>
     <Instance id="U8Toi9">
@@ -538,7 +517,7 @@
         </Parameter>
     </Instance>
     <Instance id="U8ToBool3">
-        <Class name="testBench.common.u8ToBool"/>
+        <Class name="testBench.common.u8Tou2"/>
     </Instance>
     <Instance id="LFAcrossSlc">
         <Class name="testBench.common.SourceActor"/>
@@ -592,6 +571,48 @@
         </Parameter>
         <Parameter name="fileName">
             <Expr kind="Literal" literal-kind="String" value="dbfDis"/>
+        </Parameter>
+        <Parameter name="hasWritenFiles">
+            <Expr kind="Literal" literal-kind="Boolean" value="false"/>
+        </Parameter>
+    </Instance>
+    <Instance id="TileCoordFile">
+        <Class name="testBench.common.SourceActor"/>
+        <Parameter name="exitWhenFinished">
+            <Expr kind="Literal" literal-kind="Boolean" value="false"/>
+        </Parameter>
+        <Parameter name="fileName">
+            <Expr kind="Literal" literal-kind="String" value="tilesCoord"/>
+        </Parameter>
+        <Parameter name="hasWritenFiles">
+            <Expr kind="Literal" literal-kind="Boolean" value="false"/>
+        </Parameter>
+    </Instance>
+    <Instance id="U8ToU16_10">
+        <Class name="testBench.common.u8Tou16"/>
+    </Instance>
+    <Instance id="lcuSizeMaxFile">
+        <Class name="testBench.common.SourceActor"/>
+        <Parameter name="exitWhenFinished">
+            <Expr kind="Literal" literal-kind="Boolean" value="false"/>
+        </Parameter>
+        <Parameter name="fileName">
+            <Expr kind="Literal" literal-kind="String" value="lcuSizeMax"/>
+        </Parameter>
+        <Parameter name="hasWritenFiles">
+            <Expr kind="Literal" literal-kind="Boolean" value="false"/>
+        </Parameter>
+    </Instance>
+    <Instance id="U8Toi8_1">
+        <Class name="testBench.common.u8ToI8"/>
+    </Instance>
+    <Instance id="dbfSe">
+        <Class name="testBench.common.SourceActor"/>
+        <Parameter name="exitWhenFinished">
+            <Expr kind="Literal" literal-kind="Boolean" value="false"/>
+        </Parameter>
+        <Parameter name="fileName">
+            <Expr kind="Literal" literal-kind="String" value="dbfSe"/>
         </Parameter>
         <Parameter name="hasWritenFiles">
             <Expr kind="Literal" literal-kind="Boolean" value="false"/>
@@ -731,38 +752,6 @@
             <Expr kind="Literal" literal-kind="Integer" value="8192"/>
         </Attribute>
     </Connection>
-    <Connection dst="CheckOutput12" dst-port="RealValue"
-        src="DeblockFilt" src-port="FiltSample">
-        <Attribute kind="Value" name="bufferSize">
-            <Expr kind="Literal" literal-kind="Integer" value="8192"/>
-        </Attribute>
-    </Connection>
-    <Connection dst="DeblockFiltNetwork" dst-port="Qp" src="U8Toi8" src-port="Out"/>
-    <Connection dst="DeblockFiltNetwork" dst-port="PicSize"
-        src="U8Tou16_2" src-port="Out"/>
-    <Connection dst="DeblockFiltNetwork" dst-port="SampleIn"
-        src="SelectCu" src-port="Sample">
-        <Attribute kind="Value" name="bufferSize">
-            <Expr kind="Literal" literal-kind="Integer" value="8192"/>
-        </Attribute>
-    </Connection>
-    <Connection dst="DeblockFiltNetwork" dst-port="CuInfo"
-        src="MergeCUInfo" src-port="CUInfo"/>
-    <Connection dst="DeblockFiltNetwork" dst-port="SplitTransf"
-        src="U8ToBool" src-port="Out"/>
-    <Connection dst="DeblockFiltNetwork" dst-port="IsBiPredOrLx"
-        src="GenerateInterInformation" src-port="IsBiPredOrLx"/>
-    <Connection dst="DeblockFiltNetwork" dst-port="Mv"
-        src="GenerateInterInformation" src-port="Mv"/>
-    <Connection dst="DeblockFiltNetwork" dst-port="RefPoc"
-        src="GenerateInterInformation" src-port="PocRef"/>
-    <Connection dst="DeblockFiltNetwork" dst-port="Cbf" src="U8ToBool2" src-port="Out"/>
-    <Connection dst="CheckOutput12" dst-port="ValueGenerated"
-        src="DeblockFiltNetwork" src-port="FiltSample">
-        <Attribute kind="Value" name="bufferSize">
-            <Expr kind="Literal" literal-kind="Integer" value="8192"/>
-        </Attribute>
-    </Connection>
     <Connection dst="InterPrediction" dst-port="Poc" src="U8ToI16_7" src-port="Out"/>
     <Connection dst="DecodingPictureBuffer" dst-port="Poc"
         src="U8ToI16_7" src-port="Out"/>
@@ -777,12 +766,6 @@
     </Connection>
     <Connection dst="CheckOutput13" dst-port="ValueGenerated"
         src="SaoFilter" src-port="FiltSample">
-        <Attribute kind="Value" name="bufferSize">
-            <Expr kind="Literal" literal-kind="Integer" value="8192"/>
-        </Attribute>
-    </Connection>
-    <Connection dst="CheckOutput13" dst-port="RealValue"
-        src="SaoSamples" src-port="O">
         <Attribute kind="Value" name="bufferSize">
             <Expr kind="Literal" literal-kind="Integer" value="8192"/>
         </Attribute>
@@ -812,8 +795,6 @@
     <Connection dst="CheckOutput8" dst-port="ValueGenerated"
         src="IntraPrediction" src-port="PredSample"/>
     <Connection dst="IntraPrediction" dst-port="PartMode" src="u8tou4_2" src-port="Out"/>
-    <Connection dst="DeblockFiltNetwork" dst-port="PartMode"
-        src="u8tou4_2" src-port="Out"/>
     <Connection dst="GenerateBs" dst-port="PartMode" src="u8tou4_2" src-port="Out"/>
     <Connection dst="SelectCu" dst-port="PartMode" src="u8tou4_2" src-port="Out"/>
     <Connection dst="InterPrediction" dst-port="PartMode" src="u8tou4_2" src-port="Out"/>
@@ -821,23 +802,13 @@
         src="u8tou4_2" src-port="Out"/>
     <Connection dst="GenerateBs" dst-port="SliceAddr" src="U8ToU16_9" src-port="Out"/>
     <Connection dst="U8ToBool3" dst-port="Byte" src="LFAcrossSlc" src-port="O"/>
-    <Connection dst="GenerateBs" dst-port="LFAcrossSlc" src="U8ToBool3" src-port="Out"/>
-    <Connection dst="DeblockFiltNetwork" dst-port="LFAcrossSlice"
-        src="U8ToBool3" src-port="Out"/>
     <Connection dst="U8ToU2_4" dst-port="Byte" src="IsPicSlcLcu" src-port="O"/>
     <Connection dst="DeblockFilt" dst-port="IsPicSlcLcu" src="U8ToU2_4" src-port="Out"/>
     <Connection dst="SaoFilter" dst-port="IsPicSlcLcu" src="U8ToU2_4" src-port="Out"/>
-    <Connection dst="DeblockFiltNetwork" dst-port="IsPicSlcLcu"
-        src="U8ToU2_4" src-port="Out"/>
-    <Connection dst="SaoFilter" dst-port="LFAcrossSlc" src="U8ToBool3" src-port="Out"/>
-    <Connection dst="DeblockFiltNetwork" dst-port="SlcAddr"
-        src="U8ToU16_9" src-port="Out"/>
     <Connection dst="U8ToBool4" dst-port="Byte" src="IntraConfig" src-port="O"/>
     <Connection dst="IntraPrediction" dst-port="StrongIntraSmoothing"
         src="U8ToBool4" src-port="Out"/>
     <Connection dst="U8ToBoo2" dst-port="Byte" src="DbfDis" src-port="O"/>
-    <Connection dst="DeblockFiltNetwork" dst-port="DbfDisable"
-        src="U8ToBoo2" src-port="Out"/>
     <Connection dst="DeblockFilt" dst-port="DBFDisable" src="U8ToBoo2" src-port="Out"/>
     <Connection dst="DecodingPictureBuffer" dst-port="RpsPoc"
         src="U8ToI16_4" src-port="Out"/>
@@ -845,6 +816,38 @@
         src="U8ToI16_4" src-port="Out"/>
     <Connection dst="GenerateInterInformation" dst-port="SliceAddr"
         src="U8ToU16_9" src-port="Out"/>
+<<<<<<< HEAD
     <Connection dst="DecodingPictureBuffer" dst-port="NewMvOrLCU"
         src="GenerateInterInformation" src-port="NewMvOrLcu"/>
+=======
+    <Connection dst="U8ToU16_10" dst-port="Byte" src="TileCoordFile" src-port="O"/>
+    <Connection dst="IntraPrediction" dst-port="TilesCoord"
+        src="U8ToU16_10" src-port="Out"/>
+    <Connection dst="GenerateInterInformation" dst-port="TilesCoord"
+        src="U8ToU16_10" src-port="Out"/>
+    <Connection dst="DeblockFilt" dst-port="TilesCoord" src="U8ToU16_10" src-port="Out"/>
+    <Connection dst="SaoFilter" dst-port="TilesCoord" src="U8ToU16_10" src-port="Out"/>
+    <Connection dst="IntraPrediction" dst-port="LcuSizeMax"
+        src="lcuSizeMaxFile" src-port="O"/>
+    <Connection dst="GenerateInterInformation" dst-port="LcuSizeMax"
+        src="lcuSizeMaxFile" src-port="O"/>
+    <Connection dst="CheckOutput13" dst-port="RealValue" src="DpbSampIn" src-port="O">
+        <Attribute kind="Value" name="bufferSize">
+            <Expr kind="Literal" literal-kind="Integer" value="8192"/>
+        </Attribute>
+    </Connection>
+    <Connection dst="SaoFilter" dst-port="LFAcrossSlcTile"
+        src="U8ToBool3" src-port="Out"/>
+    <Connection dst="GenerateBs" dst-port="LFAcrossSlcTile"
+        src="U8ToBool3" src-port="Out"/>
+    <Connection dst="GenerateBs" dst-port="LcuSizeMax"
+        src="lcuSizeMaxFile" src-port="O"/>
+    <Connection dst="GenerateBs" dst-port="TilesCoord" src="U8ToU16_10" src-port="Out"/>
+    <Connection dst="DeblockFilt" dst-port="LcuSizeMax"
+        src="lcuSizeMaxFile" src-port="O"/>
+    <Connection dst="U8Toi8_1" dst-port="Byte" src="dbfSe" src-port="O"/>
+    <Connection dst="DeblockFilt" dst-port="SyntaxElem" src="U8Toi8_1" src-port="Out"/>
+    <Connection dst="SaoFilter" dst-port="LcuSizeMax"
+        src="lcuSizeMaxFile" src-port="O"/>
+>>>>>>> hevc_hm10
 </XDF>

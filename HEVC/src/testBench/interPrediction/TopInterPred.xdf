@@ -140,6 +140,9 @@
         <Parameter name="DECODE_COMP">
             <Expr kind="Literal" literal-kind="Integer" value="3"/>
         </Parameter>
+        <Parameter name="PROCESS_MODE_HALF_PIX">
+            <Expr kind="Literal" literal-kind="Integer" value="3"/>
+        </Parameter>
         <Parameter name="IDX_SUB_BLOCK">
             <Expr kind="List">
                 <Expr kind="Literal" literal-kind="Integer" value="0"/>
@@ -151,9 +154,6 @@
                 <Expr kind="Literal" literal-kind="Integer" value="0"/>
                 <Expr kind="Literal" literal-kind="Integer" value="0"/>
             </Expr>
-        </Parameter>
-        <Parameter name="PROCESS_MODE_HALF_PIX">
-            <Expr kind="Literal" literal-kind="Integer" value="3"/>
         </Parameter>
     </Instance>
     <Instance id="WeightedPredSe">
@@ -246,18 +246,6 @@
     <Instance id="DecodingPictureBuffer">
         <Class name="devel.org.sc29.wg11.mpegh.part2.main.inter.DecodingPictureBuffer"/>
     </Instance>
-    <Instance id="DpbSampleIn">
-        <Class name="testBench.common.SourceActor"/>
-        <Parameter name="exitWhenFinished">
-            <Expr kind="Literal" literal-kind="Boolean" value="false"/>
-        </Parameter>
-        <Parameter name="fileName">
-            <Expr kind="Literal" literal-kind="String" value="DpbSampleIn"/>
-        </Parameter>
-        <Parameter name="hasWritenFiles">
-            <Expr kind="Literal" literal-kind="Boolean" value="false"/>
-        </Parameter>
-    </Instance>
     <Instance id="U8Tou16_2">
         <Class name="testBench.common.u8Tou16"/>
     </Instance>
@@ -339,6 +327,45 @@
             <Expr kind="Literal" literal-kind="String" value="MvCompPred_Mv"/>
         </Parameter>
     </Instance>
+    <Instance id="TileCoord">
+        <Class name="testBench.common.SourceActor"/>
+        <Parameter name="exitWhenFinished">
+            <Expr kind="Literal" literal-kind="Boolean" value="false"/>
+        </Parameter>
+        <Parameter name="fileName">
+            <Expr kind="Literal" literal-kind="String" value="tilesCoord"/>
+        </Parameter>
+        <Parameter name="hasWritenFiles">
+            <Expr kind="Literal" literal-kind="Boolean" value="false"/>
+        </Parameter>
+    </Instance>
+    <Instance id="U8ToU16_10">
+        <Class name="testBench.common.u8Tou16"/>
+    </Instance>
+    <Instance id="lcuSzMax">
+        <Class name="testBench.common.SourceActor"/>
+        <Parameter name="exitWhenFinished">
+            <Expr kind="Literal" literal-kind="Boolean" value="false"/>
+        </Parameter>
+        <Parameter name="fileName">
+            <Expr kind="Literal" literal-kind="String" value="lcuSizeMax"/>
+        </Parameter>
+        <Parameter name="hasWritenFiles">
+            <Expr kind="Literal" literal-kind="Boolean" value="false"/>
+        </Parameter>
+    </Instance>
+    <Instance id="DpbSampleIn">
+        <Class name="testBench.common.SourceActor"/>
+        <Parameter name="exitWhenFinished">
+            <Expr kind="Literal" literal-kind="Boolean" value="false"/>
+        </Parameter>
+        <Parameter name="fileName">
+            <Expr kind="Literal" literal-kind="String" value="DpbSampleIn"/>
+        </Parameter>
+        <Parameter name="hasWritenFiles">
+            <Expr kind="Literal" literal-kind="Boolean" value="false"/>
+        </Parameter>
+    </Instance>
     <Connection dst="u8tou5_1" dst-port="Byte" src="NumRefIdxLxAct" src-port="O"/>
     <Connection dst="GenerateInterInformation" dst-port="NumRefIdxLxAct"
         src="u8tou5_1" src-port="Out"/>
@@ -381,34 +408,10 @@
     <Connection dst="CheckOutput5" dst-port="RealValue" src="u8tou3_2" src-port="Out"/>
     <Connection dst="CheckOutput5" dst-port="ValueGenerated"
         src="GenerateInterInformation" src-port="RefIdx"/>
-    <Connection dst="DecodingPictureBuffer" dst-port="Sample"
-        src="DpbSampleIn" src-port="O">
-        <Attribute kind="Value" name="bufferSize">
-            <Expr kind="Literal" literal-kind="Integer" value="8192"/>
-        </Attribute>
-    </Connection>
     <Connection dst="U8Tou16_2" dst-port="Byte" src="PicSize" src-port="O"/>
-    <Connection dst="DecodingPictureBuffer" dst-port="PicSize"
-        src="U8Tou16_2" src-port="Out"/>
-    <Connection dst="DecodingPictureBuffer" dst-port="IsBiPredOrLx"
-        src="GenerateInterInformation" src-port="IsBiPredOrLx"/>
-    <Connection dst="DecodingPictureBuffer" dst-port="PocRef"
-        src="GenerateInterInformation" src-port="PocRef"/>
-    <Connection dst="DecodingPictureBuffer" dst-port="Mv"
-        src="GenerateInterInformation" src-port="Mv"/>
-    <Connection dst="DecodingPictureBuffer" dst-port="IsReadOrNewSlc"
-        src="GenerateInterInformation" src-port="IsReadOrNewSlice"/>
-    <Connection dst="InterPrediction" dst-port="Sample"
-        src="DecodingPictureBuffer" src-port="RefSample">
-        <Attribute kind="Value" name="bufferSize">
-            <Expr kind="Literal" literal-kind="Integer" value="8192"/>
-        </Attribute>
-    </Connection>
     <Connection dst="InterPrediction" dst-port="WeightedPredSe"
         src="U8ToI16_8" src-port="Out"/>
     <Connection dst="U8ToI16_8" dst-port="Byte" src="WeightedPredSe" src-port="O"/>
-    <Connection dst="DecodingPictureBuffer" dst-port="PredCuSize"
-        src="GenerateInterInformation" src-port="PredCuSize"/>
     <Connection dst="GenerateInterInformation" dst-port="PictSize"
         src="U8Tou16_2" src-port="Out"/>
     <Connection dst="MergeCUInfo" dst-port="CUAddr" src="u8tou16_1" src-port="Out"/>
@@ -418,14 +421,10 @@
         src="MergeCUInfo" src-port="CUInfo"/>
     <Connection dst="InterPrediction" dst-port="CUInfo"
         src="MergeCUInfo" src-port="CUInfo"/>
-    <Connection dst="DecodingPictureBuffer" dst-port="Poc"
-        src="U8ToI16_7" src-port="Out"/>
     <Connection dst="InterPrediction" dst-port="Poc" src="U8ToI16_7" src-port="Out"/>
     <Connection dst="GenerateInterInformation" dst-port="Poc"
         src="U8ToI16_7" src-port="Out"/>
     <Connection dst="U8ToI16_7" dst-port="Byte" src="Poc" src-port="O"/>
-    <Connection dst="DecodingPictureBuffer" dst-port="RpsPoc"
-        src="U8ToI16_4" src-port="Out"/>
     <Connection dst="GenerateInterInformation" dst-port="RefPoc"
         src="U8ToI16_4" src-port="Out"/>
     <Connection dst="U8ToU16_9" dst-port="Byte" src="SliceAddr" src-port="O"/>
@@ -439,6 +438,39 @@
     <Connection dst="CheckOutput4" dst-port="RealValue" src="U8ToI32_1" src-port="Out"/>
     <Connection dst="CheckOutput4" dst-port="ValueGenerated"
         src="GenerateInterInformation" src-port="Mv"/>
+    <Connection dst="U8ToU16_10" dst-port="Byte" src="TileCoord" src-port="O"/>
+    <Connection dst="GenerateInterInformation" dst-port="TilesCoord"
+        src="U8ToU16_10" src-port="Out"/>
+    <Connection dst="GenerateInterInformation" dst-port="LcuSizeMax"
+        src="lcuSzMax" src-port="O"/>
+    <Connection dst="DecodingPictureBuffer" dst-port="RpsPoc"
+        src="U8ToI16_4" src-port="Out"/>
+    <Connection dst="DecodingPictureBuffer" dst-port="Poc"
+        src="U8ToI16_7" src-port="Out"/>
+    <Connection dst="DecodingPictureBuffer" dst-port="PredCuSize"
+        src="GenerateInterInformation" src-port="PredCuSize"/>
+    <Connection dst="DecodingPictureBuffer" dst-port="IsReadOrNewSlc"
+        src="GenerateInterInformation" src-port="IsReadOrNewSlice"/>
+    <Connection dst="DecodingPictureBuffer" dst-port="Mv"
+        src="GenerateInterInformation" src-port="Mv"/>
+    <Connection dst="DecodingPictureBuffer" dst-port="PocRef"
+        src="GenerateInterInformation" src-port="PocRef"/>
+    <Connection dst="DecodingPictureBuffer" dst-port="IsBiPredOrLx"
+        src="GenerateInterInformation" src-port="IsBiPredOrLx"/>
+    <Connection dst="InterPrediction" dst-port="Sample"
+        src="DecodingPictureBuffer" src-port="RefSample">
+        <Attribute kind="Value" name="bufferSize">
+            <Expr kind="Literal" literal-kind="Integer" value="8192"/>
+        </Attribute>
+    </Connection>
+    <Connection dst="DecodingPictureBuffer" dst-port="PicSize"
+        src="U8Tou16_2" src-port="Out"/>
+    <Connection dst="DecodingPictureBuffer" dst-port="Sample"
+        src="DpbSampleIn" src-port="O">
+        <Attribute kind="Value" name="bufferSize">
+            <Expr kind="Literal" literal-kind="Integer" value="8192"/>
+        </Attribute>
+    </Connection>
     <Connection dst="DecodingPictureBuffer" dst-port="NewMvOrLCU"
         src="GenerateInterInformation" src-port="NewMvOrLcu"/>
 </XDF>

@@ -7,6 +7,13 @@
             </Entry>
         </Type>
     </Port>
+    <Port kind="Input" name="TilesCoord">
+        <Type name="uint">
+            <Entry kind="Expr" name="size">
+                <Expr kind="Literal" literal-kind="Integer" value="16"/>
+            </Entry>
+        </Type>
+    </Port>
     <Port kind="Input" name="PictSize">
         <Type name="uint">
             <Entry kind="Expr" name="size">
@@ -39,6 +46,13 @@
         <Type name="uint">
             <Entry kind="Expr" name="size">
                 <Expr kind="Literal" literal-kind="Integer" value="16"/>
+            </Entry>
+        </Type>
+    </Port>
+    <Port kind="Input" name="LcuSizeMax">
+        <Type name="uint">
+            <Entry kind="Expr" name="size">
+                <Expr kind="Literal" literal-kind="Integer" value="8"/>
             </Entry>
         </Type>
     </Port>
@@ -152,4 +166,6 @@
     <Connection dst="" dst-port="RefList" src="GenerateRefList" src-port="RefList"/>
     <Connection dst="" dst-port="NewMvOrLcu" src="MvComponentPred" src-port="NewMvOrLCU"/>
     <Connection dst="MvComponentPred" dst-port="SliceAddr" src="" src-port="SliceAddr"/>
+    <Connection dst="MvComponentPred" dst-port="TilesCoord" src="" src-port="TilesCoord"/>
+    <Connection dst="MvComponentPred" dst-port="LcuSizeMax" src="" src-port="LcuSizeMax"/>
 </XDF>

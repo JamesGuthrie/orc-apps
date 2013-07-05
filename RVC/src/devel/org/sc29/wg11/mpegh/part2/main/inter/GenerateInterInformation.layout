@@ -1,25 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <layout>
 	<vertices>
-		<vertex id="PartMode" x="223" y="11"/>
-		<vertex id="PictSize" x="223" y="201"/>
-		<vertex id="RefPoc" x="55" y="259"/>
-		<vertex id="SliceType" x="223" y="317"/>
-		<vertex id="SliceAddr" x="145" y="319"/>
-		<vertex id="Poc" x="225" y="471"/>
-		<vertex id="CUInfo" x="225" y="566"/>
-		<vertex id="MvPredSyntElem" x="225" y="661"/>
-		<vertex id="NumRefIdxLxAct" x="57" y="721"/>
-		<vertex id="RePicListModif" x="57" y="816"/>
-		<vertex id="IsBiPredOrLx" x="675" y="138"/>
-		<vertex id="IsReadOrNewSlice" x="675" y="233"/>
-		<vertex id="Mv" x="675" y="328"/>
-		<vertex id="PocRef" x="675" y="423"/>
-		<vertex id="PredCuSize" x="675" y="518"/>
-		<vertex id="RefIdx" x="675" y="613"/>
-		<vertex id="RefList" x="435" y="786"/>
-		<vertex id="GenerateRefList" x="225" y="756"/>
-		<vertex id="MvComponentPred" x="435" y="286"/>
-		<vertex id="NewMvOrLcu" x="799" y="415"/>
+		<vertex id="PartMode" x="252" y="76"/>
+		<vertex id="TilesCoord" x="252" y="173"/>
+		<vertex id="PictSize" x="252" y="270"/>
+		<vertex id="RefPoc" x="57" y="329"/>
+		<vertex id="SliceType" x="252" y="388"/>
+		<vertex id="SliceAddr" x="252" y="485"/>
+		<vertex id="Poc" x="252" y="582"/>
+		<vertex id="LcuSizeMax" x="252" y="679"/>
+		<vertex id="CUInfo" x="252" y="776"/>
+		<vertex id="MvPredSyntElem" x="252" y="873"/>
+		<vertex id="NumRefIdxLxAct" x="57" y="939"/>
+		<vertex id="RePicListModif" x="57" y="1036"/>
+		<vertex id="IsBiPredOrLx" x="787" y="194"/>
+		<vertex id="IsReadOrNewSlice" x="787" y="291"/>
+		<vertex id="Mv" x="787" y="388"/>
+		<vertex id="NewMvOrLcu" x="787" y="485"/>
+		<vertex id="PocRef" x="787" y="582"/>
+		<vertex id="PredCuSize" x="787" y="679"/>
+		<vertex id="RefIdx" x="787" y="776"/>
+		<vertex id="RefList" x="501" y="1003"/>
+		<vertex id="GenerateRefList" x="252" y="970"/>
+		<vertex id="MvComponentPred" x="502" y="358"/>
 	</vertices>
 </layout>
