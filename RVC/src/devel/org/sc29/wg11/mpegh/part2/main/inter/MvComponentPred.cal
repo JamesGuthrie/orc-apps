@@ -93,7 +93,6 @@ actor MvComponentPred(bool FIX_TMVP_REFIDX0)
 	uint(size=2)  IsBiPredOrLx,
 	uint(size=1)  IsReadOrNewSlice,
 	int (size=32) Mv,
-	bool          NewMvOrLCU,
 	int (size=16) PocRef,
 	uint(size=7)  PredCuSize,
 	uint(size=3)  RefIdx
@@ -829,16 +828,6 @@ actor MvComponentPred(bool FIX_TMVP_REFIDX0)
 		maskLcuSzMax     := lcuSizeMaxInPart - 1;
 	end
 
-	newPicture.isTrue: action ==> NewMvOrLCU:[false]
-	guard
-		newPict
-	end
-
-	newPicture.isFalse: action ==>
-	guard
-		not newPict
-	end
-
 	getPartMode: action PartMode:[partMode] ==>
 	guard
 		partMode != PART_MODE_SLICE_DEP && partMode != PART_MODE_SLICE_INDEP &&
@@ -872,18 +861,6 @@ actor MvComponentPred(bool FIX_TMVP_REFIDX0)
 		if DEBUG_CUInfo then
 			println("CUInfo = "+cuInfo[0] + " " + cuInfo[1] + " "+ cuInfo[2] + " " + cuInfo[3] + " " + cuInfo[4]);
 		end
-	end
-
-	isNewLcu.isTrue: action  ==> NewMvOrLCU:[false]
-	guard
-		(cuAddr[0] & 63) = 0,
-		(cuAddr[1] & 63) = 0
-	end
-
-	isNewLcu.isFalse: action  ==>
-	guard
-		(cuAddr[0] & 63) != 0 ||
-		(cuAddr[1] & 63) != 0
 	end
 
 	getCuInfo.done: action ==>
@@ -1105,7 +1082,7 @@ actor MvComponentPred(bool FIX_TMVP_REFIDX0)
 	end
 
 	getMvd: action SyntaxElem:[mvd] repeat 4 ==> IsBiPredOrLx:[isBiPredOrLx],
-		IsReadOrNewSlice:[1], Mv:[mvToSend] repeat 2, NewMvOrLCU:[true],
+		IsReadOrNewSlice:[1], Mv:[mvToSend] repeat 2,
 		RefIdx:[refIdxToSend], PocRef:[pocToSend], PredCuSize:[puSize] repeat 2
 	var
 		int idxMvInfo,
@@ -1269,7 +1246,7 @@ actor MvComponentPred(bool FIX_TMVP_REFIDX0)
 	end
 
 	send2ndMv.launch: action ==> PocRef:[pocToSend], RefIdx:[refIdxToSend],
-		Mv:[mvToSend] repeat 2, NewMvOrLCU:[true], PredCuSize:[puSize] repeat 2
+		Mv:[mvToSend] repeat 2, PredCuSize:[puSize] repeat 2
 	guard
 		isBiPredOrLx = BI_PRED
 	var
@@ -1299,9 +1276,8 @@ actor MvComponentPred(bool FIX_TMVP_REFIDX0)
 		CheckIndepSlc(checkDepSlc.isFalse )--> GetTilesCoord;
 
 		GetTilesCoord (getTilesCoord.launch )--> GetTilesCoord;
-		GetTilesCoord (getTilesCoord.done   )--> CheckNewPict;
+		GetTilesCoord (getTilesCoord.done   )--> GetRps;
 
-		CheckNewPict (newPicture    )--> GetRps;
 		GetRps       (getRps.launch )--> GetRpsPoc;
 		GetRps       (getRps.done   )--> GetSizeRefList;
 
@@ -1314,10 +1290,8 @@ actor MvComponentPred(bool FIX_TMVP_REFIDX0)
 		GetRefList (getRefList.launch )--> GetRefList;
 		GetRefList (getRefList.done   )--> GetSizeRefList;
 
-		GetCuInfo   (getCuInfo.launch )--> CheckNewLcu;
+		GetCuInfo   (getCuInfo.launch )--> GetCuMode;
 		GetCuInfo   (getCuInfo.done   )--> GetPartMode;
-
-		CheckNewLcu (isNewLcu )--> GetCuMode;
 
 		GetCuMode (getCuMode.isNotInter )--> GetCuInfo;
 		GetCuMode (getCuMode.isInter    )--> CheckMergeIdx;

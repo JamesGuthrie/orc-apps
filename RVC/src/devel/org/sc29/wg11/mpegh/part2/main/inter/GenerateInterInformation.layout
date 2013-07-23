@@ -16,7 +16,6 @@
 		<vertex id="IsBiPredOrLx" x="787" y="194"/>
 		<vertex id="IsReadOrNewSlice" x="787" y="291"/>
 		<vertex id="Mv" x="787" y="388"/>
-		<vertex id="NewMvOrLcu" x="787" y="485"/>
 		<vertex id="PocRef" x="787" y="582"/>
 		<vertex id="PredCuSize" x="787" y="679"/>
 		<vertex id="RefIdx" x="787" y="776"/>
