@@ -133,25 +133,7 @@
         <Class name="testBench.common.u8Toi16"/>
     </Instance>
     <Instance id="InterPrediction">
-        <Class name="devel.org.sc29.wg11.mpegh.part2.main.inter.InterPrediction"/>
-        <Parameter name="DECODE_COMP">
-            <Expr kind="Literal" literal-kind="Integer" value="3"/>
-        </Parameter>
-        <Parameter name="IDX_SUB_BLOCK">
-            <Expr kind="List">
-                <Expr kind="Literal" literal-kind="Integer" value="0"/>
-                <Expr kind="Literal" literal-kind="Integer" value="0"/>
-            </Expr>
-        </Parameter>
-        <Parameter name="LOG2_NUM_SUB_BLK">
-            <Expr kind="List">
-                <Expr kind="Literal" literal-kind="Integer" value="0"/>
-                <Expr kind="Literal" literal-kind="Integer" value="0"/>
-            </Expr>
-        </Parameter>
-        <Parameter name="PROCESS_MODE_HALF_PIX">
-            <Expr kind="Literal" literal-kind="Integer" value="3"/>
-        </Parameter>
+        <Class name="devel.org.sc29.wg11.mpegh.part2.inter.InterPredictionBase"/>
     </Instance>
     <Instance id="WeightedPredSe">
         <Class name="testBench.common.SourceActor"/>
@@ -816,10 +798,6 @@
         src="U8ToI16_4" src-port="Out"/>
     <Connection dst="GenerateInterInformation" dst-port="SliceAddr"
         src="U8ToU16_9" src-port="Out"/>
-<<<<<<< HEAD
-    <Connection dst="DecodingPictureBuffer" dst-port="NewMvOrLCU"
-        src="GenerateInterInformation" src-port="NewMvOrLcu"/>
-=======
     <Connection dst="U8ToU16_10" dst-port="Byte" src="TileCoordFile" src-port="O"/>
     <Connection dst="IntraPrediction" dst-port="TilesCoord"
         src="U8ToU16_10" src-port="Out"/>
@@ -849,5 +827,4 @@
     <Connection dst="DeblockFilt" dst-port="SyntaxElem" src="U8Toi8_1" src-port="Out"/>
     <Connection dst="SaoFilter" dst-port="LcuSizeMax"
         src="lcuSizeMaxFile" src-port="O"/>
->>>>>>> hevc_hm10
 </XDF>

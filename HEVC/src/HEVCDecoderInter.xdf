@@ -7,13 +7,6 @@
             </Entry>
         </Type>
     </Port>
-    <Port kind="Output" name="VID">
-        <Type name="int">
-            <Entry kind="Expr" name="size">
-                <Expr kind="Literal" literal-kind="Integer" value="32"/>
-            </Entry>
-        </Type>
-    </Port>
     <Port kind="Output" name="SIZE">
         <Type name="int">
             <Entry kind="Expr" name="size">
@@ -42,6 +35,13 @@
             </Entry>
         </Type>
     </Port>
+    <Port kind="Output" name="VID">
+        <Type name="int">
+            <Entry kind="Expr" name="size">
+                <Expr kind="Literal" literal-kind="Integer" value="32"/>
+            </Entry>
+        </Type>
+    </Port>
     <Instance id="Algo_Parser">
         <Class name="devel.org.sc29.wg11.mpegh.part2.main.synParser.Algo_Parser"/>
     </Instance>
@@ -66,7 +66,7 @@
     <Instance id="SAO">
         <Class name="devel.org.sc29.wg11.mpegh.part2.main.Filters.SaoFilter"/>
         <Parameter name="DEBUG">
-            <Expr kind="Literal" literal-kind="Boolean" value="true"/>
+            <Expr kind="Literal" literal-kind="Boolean" value="false"/>
         </Parameter>
     </Instance>
     <Instance id="QpGen">
@@ -185,8 +185,6 @@
     <Connection dst="DecodingPictureBuffer" dst-port="PocRef"
         src="generateInfo" src-port="PocRef"/>
     <Connection dst="DBFilter" dst-port="SampleIn" src="SelectCU" src-port="Sample"/>
-    <Connection dst="DecodingPictureBuffer" dst-port="NewMvOrLCU"
-        src="generateInfo" src-port="NewMvOrLcu"/>
     <Connection dst="IntraPrediction" dst-port="LcuSizeMax"
         src="Algo_Parser" src-port="LcuSizeMax"/>
     <Connection dst="IntraPrediction" dst-port="TilesCoord"
