@@ -66,6 +66,7 @@ actor SelectCu()
 	uint(size=8) Sample
 		:
 
+	uint(size=8)  SCU_SIZE = 16+2*4;
 	uint(size=4)  numPart;
 	uint(size=3)  numPartDecoded;
 
@@ -186,15 +187,15 @@ actor SelectCu()
 	end
 
 	/* Getting samples from intraPrediction */
-	getCuSample.isIntra: action IntraSample:[intraSample] repeat 16 +2*4,
-		ResidualSample:[resSample] repeat 16 +2*4
-		==> Sample:[sample] repeat 16+2*4
+	getCuSample.isIntra: action IntraSample:[intraSample] repeat SCU_SIZE,
+		ResidualSample:[resSample] repeat SCU_SIZE
+		==> Sample:[sample] repeat SCU_SIZE
 	guard
 		idxBlk < nbBlk
 	var
-		uint(size=8) sample[16+2*4]
+		uint(size=8) sample[SCU_SIZE]
 	do
-		foreach uint sampIdx in 0 .. 23
+		foreach uint sampIdx in 0 .. SCU_SIZE-1
 		do
 			sample[sampIdx] :=
 				clip_i32(intraSample[sampIdx]+resSample[sampIdx], 0, 255);
@@ -203,7 +204,7 @@ actor SelectCu()
 	end
 
 	/* Getting prediction samples from interPrediction */
-	getCuSample.isInter: action InterSample:[interSample] repeat 16 +2*4 ==>
+	getCuSample.isInter: action InterSample:[interSample] repeat SCU_SIZE ==>
 	guard
 		idxBlk < nbBlk
 	var
@@ -215,7 +216,7 @@ actor SelectCu()
 	do
 		blkAddr := [xIdx+xOff << 2, yIdx+yOff << 2];
 		blkIdx := absCoordToRasterScan(blkAddr);
-		foreach int i in 0 .. 23
+		foreach int i in 0 .. SCU_SIZE-1
 		do
 			predSamp[24*blkIdx + i] := interSample[i];
 		end
@@ -237,14 +238,14 @@ actor SelectCu()
 	/* Getting the residual part for interPrediction then computing the
 	 * result.
 	 */
-	getCuSample.isInterRes: action ResidualSample:[resSample] repeat 16 +2*4
-		==> Sample:[sample] repeat 16+2*4
+	getCuSample.isInterRes: action ResidualSample:[resSample] repeat SCU_SIZE
+		==> Sample:[sample] repeat SCU_SIZE
 	guard
 		idxBlk < nbBlk
 	var
-		uint(size=8)  sample[16+2*4]
+		uint(size=8)  sample[SCU_SIZE]
 	do
-		foreach int i in 0 .. 23
+		foreach int i in 0 .. SCU_SIZE-1
 		do
 			sample[i] := clip_i32(predSamp[24*idxBlk + i] +
 						resSample[i], 0, 255);
