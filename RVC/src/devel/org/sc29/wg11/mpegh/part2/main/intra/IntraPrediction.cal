@@ -155,6 +155,8 @@ actor IntraPrediction(bool EnabSkipInPix)
 	uint(size=16) sliceAddr[3][2];
 	uint(size=3)  numPart;
 	uint(size=3)  numPartDecoded;
+	uint(size=7)  numPixNeighb;
+	uint(size=8)  idxPixNeighb;
 
 	bool strongIntraSmoothing;
 	bool constrIntraPred;
@@ -796,6 +798,8 @@ actor IntraPrediction(bool EnabSkipInPix)
 			cuMode := cuMode - NO_IN_SAMP;
 		end
 		nS := cuInfo[3];
+		numPixNeighb := nS * 2 - 1;
+		idxPixNeighb := 0;
 		cuAddr := [cuInfo[1], cuInfo[2]];
 		numPartDecoded := numPartDecoded + 1;
 	end
@@ -831,6 +835,8 @@ actor IntraPrediction(bool EnabSkipInPix)
 			cuMode := cuMode - NO_IN_SAMP;
 		end
 		nS := max(cuInfo[3], cuInfo[4]);
+		numPixNeighb := nS * 2 - 1;
+		idxPixNeighb := 0;
 		idxBlk := 0;
 		numBlkToSend := nS*nS/16;
 		neighbBlkSz  := nS;
@@ -1025,7 +1031,7 @@ actor IntraPrediction(bool EnabSkipInPix)
 			trafoTreeIdx[trafoTreeDepth] := 0;
 		else
 			trafoTreeIdx[trafoTreeDepth] := trafoTreeIdx[trafoTreeDepth] + 1;
-			while(trafoTreeDepth > -1 && if trafoTreeDepth>= 0 then (trafoTreeIdx[trafoTreeDepth] = 4) else false end)
+			while(if trafoTreeDepth>= 0 then (trafoTreeIdx[trafoTreeDepth] = 4) else false end)
 			do
 				trafoTreeDepth := trafoTreeDepth - 1;
 				if(trafoTreeDepth>-1) then
@@ -1155,6 +1161,20 @@ actor IntraPrediction(bool EnabSkipInPix)
 	guard
 		idxBlk = numBlkToSend || (EnabSkipInPix && not getInSamp)
 	end
+
+
+
+	getIntraNeighb.launch: action ==>
+	guard
+		idxPixNeighb < numPixNeighb
+	do
+		idxPixNeighb := idxPixNeighb + 1;
+	end
+
+	getIntraNeighb.done: action ==>
+	guard
+		idxPixNeighb = numPixNeighb
+	end	
 
 	schedule fsm GetPartMode:
 		GetPartMode(isNewSliceOrPict.notDep   )--> GetTilesCoord;

@@ -201,4 +201,6 @@
         src="Algo_Parser" src-port="LFAcrossSlcTile"/>
     <Connection dst="generateInfo" dst-port="TilesCoord"
         src="Algo_Parser" src-port="TilesCoord"/>
+    <Connection dst="SelectCU" dst-port="SplitTransform"
+        src="Algo_Parser" src-port="SplitTransform"/>
 </XDF>

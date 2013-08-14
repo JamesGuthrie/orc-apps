@@ -61,6 +61,7 @@ actor SelectCu()
 	uint(size=8)  InterSample,
 	uint(size=8)  IntraSample,
 	uint(size=4)  PartMode,
+	bool          SplitTransform,
 	int (size=9)  ResidualSample
 		==>
 	uint(size=8) Sample
@@ -78,6 +79,8 @@ actor SelectCu()
 	uint(size=7)  cuSize[4][2];
 	uint(size=5)  cuOff[4][2] := [[0,0],[0,0],[0,0],[0,0]];
 	uint(size=7)  cuWidth;
+	uint(size=7)  numPixNeighb;
+	uint(size=8)  idxPixNeighb;
 
 	uint(size=9)  nbBlk;
 	uint(size=9)  idxBlk;
@@ -117,6 +120,10 @@ actor SelectCu()
 		curLcuAddr := cuInfo[1]&~63;
 		cuSize  := [[cuInfo[i]/4:for int i in 3 .. 4]:for int j in 0 .. 3];
 		cuOff[0] := [0:for int i in 0 .. 1];
+		trafoTreeDepth  := 0;
+		trafoTreeIdx[0] := 3;
+		numPixNeighb := (cuWidth * 2) - 1;
+		idxPixNeighb := 0;
 	end
 
 	/* Getting informations of the next CU when there are two part.
@@ -142,6 +149,10 @@ actor SelectCu()
 			cuOff[1][0] := cuInfo[3]/4;
 			cuOff[1][1] := 0;
 		end
+		numPixNeighb := (cuWidth * 2) - 1;
+		trafoTreeDepth  := 0;
+		trafoTreeIdx[0] := 3;
+		idxPixNeighb := 0;
 		numPartDecoded := 0;
 	end
 
@@ -261,6 +272,169 @@ actor SelectCu()
 		idxBlk := 0;
 	end
 
+	int (size=4) trafoTreeDepth;
+	uint(size=3) trafoTreeIdx[6];
+	uint(size=3)  log2NS;
+	uint(size=7)  nS;
+	uint(size=16) treeAddr[2];
+	uint(size=9) numBlkToSend;
+	uint(size=6) predMode;
+	uint(size=8) chrComp[2][32][32];
+	uint(size=7)  neighbBlkSz;
+	uint(size=6) predModeTab[3];
+
+	/* Check if the intra prediction CU has to be split in 4 "subCU" */
+	getSplitTrafo.isTrue: action SplitTransform:[splitTrafo] ==>
+	guard
+		splitTrafo && trafoTreeDepth>-1
+	do
+		trafoTreeDepth := trafoTreeDepth + 1;
+		trafoTreeIdx[trafoTreeDepth] := 0;
+	end
+
+	/* Check if the intra prediction will not be split again, then realize the
+	 * prediction for this part of CU
+	 */
+	getSplitTrafo.isFalse: action SplitTransform:[splitTrafo] ==>
+	guard
+		not splitTrafo && trafoTreeDepth>-1
+	var
+		uint(size=2)  cIdxMax,
+		uint(size=7)  treeNS,
+		uint(size=3)  treeLog2NS,
+		uint(size=16) locAddr[2],
+		uint(size=3)  off[2]
+	do
+		/* Computing the size and the address of the current block. */
+//		treeLog2NS := log2NS - trafoTreeDepth;
+//		treeNS := nS;
+//		treeAddr := [cuAddr[i]: for int i in 0 .. 1];
+//		foreach uint idx in 1 .. trafoTreeDepth
+//		do
+//			treeNS := treeNS >> 1;
+//			if((trafoTreeIdx[idx]&1) != 0) then
+//				treeAddr[0] := treeAddr[0] + treeNS;
+//			end
+//			if((trafoTreeIdx[idx]&2) != 0) then
+//				treeAddr[1] := treeAddr[1] + treeNS;
+//			end
+//		end
+//
+//		numBlkToSend := treeNS*treeNS/16;
+//		neighbBlkSz  := treeNS;
+//		idxBlk := 0;
+
+		/* Chroma component are not split if we get a 2x2 block (this problem
+		 * appear with YUV420)
+		 */
+//		if(treeLog2NS != 2) then
+//			cIdxMax := 3;
+//		else
+//			/* In this case, we interpolate chroma component only once*/
+//			if((treeAddr[0]&7) = 0 && (treeAddr[1]&7) = 0) then
+//				cIdxMax := 3;
+//			else
+//				cIdxMax := 1; // Computation will be only for luma component.
+//			end
+//		end
+//		locAddr := [treeAddr[i]:for int i in 0 .. 1];
+//		foreach uint cIdx in 0 .. cIdxMax-1
+//		do
+//			predMode := predModeTab[cIdx];
+//			if(cIdx = 1) then // chroma component.
+//				if(treeLog2NS != 2) then
+//					/* 2x2 blocks are forbidden */
+//					treeNS := treeNS >> 1;
+//					treeLog2NS := treeLog2NS - 1;
+//				end
+//				locAddr[0] := locAddr[0] >> 1;
+//				locAddr[1] := locAddr[1] >> 1;
+//			end
+//
+//			/*getNeighbSamples(locAddr, cIdx, treeNS, treeLog2NS);
+//
+//			if(predMode = INTRA_PLANAR) then
+//				intraPlanarPred(cIdx, treeNS, treeLog2NS);
+//			else if(predMode = INTRA_DC) then
+//				intraDcPred(cIdx, treeNS, treeLog2NS);
+//			else
+//				intraAngularPred(cIdx, treeNS);
+//			end end*/
+//		end
+
+		
+//		if(cIdxMax=1) then
+//			/* When we have 4x4 luma blocks, the chroma block corresponding to
+//			 * the luma one is copied at the begining of result in order to be
+//			 * sent (this block might have been computed beforehand).
+//			 */
+//			off := [(treeAddr[i]>>1)&2: for int i in 0 .. 1];
+//			if(off[0]!=0 || off[1]!=0) then
+//				foreach uint comp in 0 .. 1
+//				do
+//					foreach int y in 0 .. 1
+//					do
+//						foreach int x in 0 .. 1
+//						do
+//							chrComp[comp][x][y] := chrComp[comp][x+off[0]][y+off[1]];
+//						end
+//					end
+//				end
+//			end
+//		end
+
+		/* going to the next "branch of the tree" */
+		trafoTreeIdx[trafoTreeDepth] := trafoTreeIdx[trafoTreeDepth] + 1;
+		/* Replace by (trafoTreeDepth > -1 && trafoTreeIdx[trafoTreeDepth] = 4) when orcc's simulator
+		 * support short-circuit evaluation.
+		 */
+		while(if trafoTreeDepth>= 0 then (trafoTreeIdx[trafoTreeDepth] = 4) else false end)
+		do
+			trafoTreeDepth := trafoTreeDepth - 1;
+			if(trafoTreeDepth>-1) then
+				trafoTreeIdx[trafoTreeDepth] :=
+					trafoTreeIdx[trafoTreeDepth] + 1;
+			end
+		end
+	end
+
+	getSplitTrafo.isInter: action SplitTransform:[splitTrafo] ==>
+	guard
+		trafoTreeDepth>-1
+	do
+		if(splitTrafo) then
+			trafoTreeDepth := trafoTreeDepth + 1;
+			trafoTreeIdx[trafoTreeDepth] := 0;
+		else
+			trafoTreeIdx[trafoTreeDepth] := trafoTreeIdx[trafoTreeDepth] + 1;
+			while(if trafoTreeDepth>= 0 then (trafoTreeIdx[trafoTreeDepth] = 4) else false end)
+			do
+				trafoTreeDepth := trafoTreeDepth - 1;
+				if(trafoTreeDepth>-1) then
+					trafoTreeIdx[trafoTreeDepth] :=
+						trafoTreeIdx[trafoTreeDepth] + 1;
+				end
+			end
+		end
+	end
+
+	getSplitTrafo.done: action ==>
+	guard
+		trafoTreeDepth = -1
+	end
+
+	sendIntraNeighb.launch: action ==>
+	guard
+		idxPixNeighb < numPixNeighb
+	do
+		idxPixNeighb := idxPixNeighb + 1;
+	end
+
+	sendIntraNeighb.done: action ==>
+	guard
+		idxPixNeighb = numPixNeighb
+	end		
+
 	schedule fsm GetPartMode:
 		GetPartMode (isNewSlice       )--> GetPartMode;
 		GetPartMode (getPartMode      )--> GetCuInfo;
@@ -276,12 +450,23 @@ actor SelectCu()
 		GetCuMode (getCuMode.isOther )--> GetCuInfo;
 
 		GetCuSampleIntra (getCuSample.isIntra )--> GetCuSampleIntra;
-		GetCuSampleIntra (getCuSample.done    )--> GetCuInfo;
+		GetCuSampleIntra (getCuSample.done    )--> GetSplitTrafoIntra;
 
 		GetCuSampleInter (getCuSample.isInter )--> GetCuSampleInter;
 		GetCuSampleInter (getCuSample.done    )--> GetCuResInter;
 
 		GetCuResInter (getCuSample.isInterRes )--> GetCuResInter;
-		GetCuResInter (getCuSample.done       )--> GetCuInfo;
+		GetCuResInter (getCuSample.done       )--> GetSplitTrafoInter;
+
+
+		GetSplitTrafoIntra (getSplitTrafo.isTrue  )--> GetSplitTrafoIntra;
+		GetSplitTrafoIntra (getSplitTrafo.isFalse )--> GetSplitTrafoIntra;
+		GetSplitTrafoIntra (getSplitTrafo.done    )--> SendIntraNeighb;
+
+		GetSplitTrafoInter (getSplitTrafo.isInter  )--> GetSplitTrafoInter;
+		GetSplitTrafoInter (getSplitTrafo.done    )--> SendIntraNeighb;
+
+		SendIntraNeighb (sendIntraNeighb.launch )--> SendIntraNeighb;
+		SendIntraNeighb (sendIntraNeighb.done   )--> GetCuInfo;
 	end
 end
