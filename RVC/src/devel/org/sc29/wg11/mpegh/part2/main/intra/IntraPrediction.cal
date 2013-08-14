@@ -64,6 +64,7 @@ actor IntraPrediction(bool EnabSkipInPix)
 	uint(size=16) CUInfo,
 	uint(size=6)  IntraPredMode,
 	uint(size=8)  LcuSizeMax,
+	uint(size=8)  NeighbVal,
 	uint(size=4)  PartMode,
 	uint(size=16) PictSize,
 	uint(size=8)  Sample,
@@ -798,8 +799,6 @@ actor IntraPrediction(bool EnabSkipInPix)
 			cuMode := cuMode - NO_IN_SAMP;
 		end
 		nS := cuInfo[3];
-		numPixNeighb := nS * 2 - 1;
-		idxPixNeighb := 0;
 		cuAddr := [cuInfo[1], cuInfo[2]];
 		numPartDecoded := numPartDecoded + 1;
 	end
@@ -835,8 +834,6 @@ actor IntraPrediction(bool EnabSkipInPix)
 			cuMode := cuMode - NO_IN_SAMP;
 		end
 		nS := max(cuInfo[3], cuInfo[4]);
-		numPixNeighb := nS * 2 - 1;
-		idxPixNeighb := 0;
 		idxBlk := 0;
 		numBlkToSend := nS*nS/16;
 		neighbBlkSz  := nS;
@@ -845,6 +842,8 @@ actor IntraPrediction(bool EnabSkipInPix)
 		numPartDecoded := 2;
 		trafoTreeDepth  := 0;
 		trafoTreeIdx[0] := 3;
+		numPixNeighb := (nS * 2) - 1;
+		idxPixNeighb := 0;
 	end
 
 	getCuInfo.done: action ==>
@@ -882,6 +881,8 @@ actor IntraPrediction(bool EnabSkipInPix)
 		end
 		trafoTreeDepth  := 0;
 		trafoTreeIdx[0] := 3;
+		numPixNeighb := nS * 2 - 1;
+		idxPixNeighb := 0;
 	end
 
 	/* Check if it's an inter prediction, then the pixels sent will be saved in
@@ -897,6 +898,8 @@ actor IntraPrediction(bool EnabSkipInPix)
 		treeAddr := [cuAddr[i]: for int i in 0 .. 1];
 		trafoTreeDepth  := 0;
 		trafoTreeIdx[0] := 3;
+		numPixNeighb := nS * 2 - 1;
+		idxPixNeighb := 0;
 	end
 
 	/* When it's neither an intra nor inter prediction CU, do neither
@@ -1164,14 +1167,14 @@ actor IntraPrediction(bool EnabSkipInPix)
 
 
 
-	getIntraNeighb.launch: action ==>
+	getNeighb.launch: action NeighbVal:[neighb] ==>
 	guard
 		idxPixNeighb < numPixNeighb
 	do
 		idxPixNeighb := idxPixNeighb + 1;
 	end
 
-	getIntraNeighb.done: action ==>
+	getNeighb.done: action ==>
 	guard
 		idxPixNeighb = numPixNeighb
 	end	
@@ -1195,21 +1198,30 @@ actor IntraPrediction(bool EnabSkipInPix)
 		GetCuMode (getCuMode.isInter )--> GetSplitTrafoInter;
 		GetCuMode (getCuMode.isOther )--> GetCuInfo;
 
-		GetInterSamples (getSamples.launch )--> GetInterSamples;
-		GetInterSamples (getSamples.done   )--> GetCuInfo;
 
 		GetSplitTrafoIntra (getSplitTrafo.isTrue  )--> GetSplitTrafoIntra;
 		GetSplitTrafoIntra (getSplitTrafo.isFalse )--> SendSamples;
-		GetSplitTrafoIntra (getSplitTrafo.done    )--> GetCuInfo;
-
-		GetSplitTrafoInter (getSplitTrafo.isInter  )--> GetSplitTrafoInter;
-		GetSplitTrafoInter (getSplitTrafo.done    )--> GetInterSamples;
+		GetSplitTrafoIntra (getSplitTrafo.done    )--> GetIntraNeighb;
 
 		SendSamples (sendSamples.launch )--> SendSamples;
 		SendSamples (sendSamples.done   )--> GetIntraSamples;
 
 		GetIntraSamples (getSamples.launch )--> GetIntraSamples;
 		GetIntraSamples (getSamples.done   )--> GetSplitTrafoIntra;
+
+		GetIntraNeighb (getNeighb.launch )--> GetIntraNeighb;
+		GetIntraNeighb (getNeighb.done   )--> GetCuInfo;
+
+
+		GetSplitTrafoInter (getSplitTrafo.isInter  )--> GetSplitTrafoInter;
+		GetSplitTrafoInter (getSplitTrafo.done    )--> GetInterSamples;
+
+		GetInterSamples (getSamples.launch )--> GetInterSamples;
+		GetInterSamples (getSamples.done   )--> GetInterNeighb;
+
+		GetInterNeighb (getNeighb.launch )--> GetInterNeighb;
+		GetInterNeighb (getNeighb.done   )--> GetCuInfo;
+
 
 		GetInSamples (getSamples.launch )--> GetInSamples;
 		GetInSamples (getSamples.done   )--> GetCuInfo;

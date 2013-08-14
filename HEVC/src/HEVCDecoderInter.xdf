@@ -203,4 +203,6 @@
         src="Algo_Parser" src-port="TilesCoord"/>
     <Connection dst="SelectCU" dst-port="SplitTransform"
         src="Algo_Parser" src-port="SplitTransform"/>
+    <Connection dst="IntraPrediction" dst-port="NeighbVal"
+        src="SelectCU" src-port="IntraNeighb"/>
 </XDF>
