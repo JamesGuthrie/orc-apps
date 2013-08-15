@@ -881,8 +881,6 @@ actor IntraPrediction(bool EnabSkipInPix)
 		end
 		trafoTreeDepth  := 0;
 		trafoTreeIdx[0] := 3;
-		numPixNeighb := nS * 2 - 1;
-		idxPixNeighb := 0;
 	end
 
 	/* Check if it's an inter prediction, then the pixels sent will be saved in
@@ -1023,6 +1021,8 @@ actor IntraPrediction(bool EnabSkipInPix)
 					trafoTreeIdx[trafoTreeDepth] + 1;
 			end
 		end
+		numPixNeighb := 0;//neighbBlkSz * 2 - 1;
+		idxPixNeighb := 0;
 	end
 
 	getSplitTrafo.isInter: action SplitTransform:[splitTrafo] ==>
@@ -1170,7 +1170,14 @@ actor IntraPrediction(bool EnabSkipInPix)
 	getNeighb.launch: action NeighbVal:[neighb] ==>
 	guard
 		idxPixNeighb < numPixNeighb
+	var
+		uint tabIdx
 	do
+		tabIdx := pictSize[0][1] - (treeAddr[1] + neighbBlkSz - 1) + treeAddr[0] + idxPixNeighb;
+		if(puNeighb[0][tabIdx] != neighb) then
+			println("Fuck");
+		end
+
 		idxPixNeighb := idxPixNeighb + 1;
 	end
 
@@ -1201,16 +1208,16 @@ actor IntraPrediction(bool EnabSkipInPix)
 
 		GetSplitTrafoIntra (getSplitTrafo.isTrue  )--> GetSplitTrafoIntra;
 		GetSplitTrafoIntra (getSplitTrafo.isFalse )--> SendSamples;
-		GetSplitTrafoIntra (getSplitTrafo.done    )--> GetIntraNeighb;
+		GetSplitTrafoIntra (getSplitTrafo.done    )--> GetCuInfo;
 
 		SendSamples (sendSamples.launch )--> SendSamples;
 		SendSamples (sendSamples.done   )--> GetIntraSamples;
 
 		GetIntraSamples (getSamples.launch )--> GetIntraSamples;
-		GetIntraSamples (getSamples.done   )--> GetSplitTrafoIntra;
+		GetIntraSamples (getSamples.done   )--> GetIntraNeighb;
 
 		GetIntraNeighb (getNeighb.launch )--> GetIntraNeighb;
-		GetIntraNeighb (getNeighb.done   )--> GetCuInfo;
+		GetIntraNeighb (getNeighb.done   )--> GetSplitTrafoIntra;
 
 
 		GetSplitTrafoInter (getSplitTrafo.isInter  )--> GetSplitTrafoInter;

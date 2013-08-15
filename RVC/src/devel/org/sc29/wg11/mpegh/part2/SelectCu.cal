@@ -73,6 +73,7 @@ actor SelectCu()
 	uint(size=3)  numPartDecoded;
 
 	uint(size=8)  predSamp[64 * 64 + 2 * 32 * 32];
+	uint(size=8)  neighbSamp[128];
 
 	uint(size=5)  cuMode;
 	uint(size=4)  partMode;
@@ -211,9 +212,6 @@ actor SelectCu()
 				clip_i32(intraSample[sampIdx]+resSample[sampIdx], 0, 255);
 		end
 		idxBlk := idxBlk + 1;
-
-		numPixNeighb := (cuWidth * 2) - 1;
-		idxPixNeighb := 0;
 	end
 
 	/* Getting prediction samples from interPrediction */
@@ -256,12 +254,39 @@ actor SelectCu()
 	guard
 		idxBlk < nbBlk
 	var
+		uint(size=16) blkAddr[2],
+		bool bottomBlk := false,
+		bool leftBlk := false,
 		uint(size=8)  sample[SCU_SIZE]
 	do
 		foreach int i in 0 .. SCU_SIZE-1
 		do
 			sample[i] := clip_i32(predSamp[24*idxBlk + i] +
 						resSample[i], 0, 255);
+		end
+
+
+		rasterScanToAbsCoord(idxBlk, blkAddr);
+
+		if(blkAddr[0]+4>=neighbBlkSz) then
+			leftBlk := true;
+		end
+		if(blkAddr[1]+4>=neighbBlkSz) then
+			bottomBlk := true;
+		end
+
+		if(bottomBlk) then
+			foreach uint x in 0 .. 3
+			do
+				neighbSamp[blkAddr[0]+x] := sample[4*3+x];
+			end
+		end
+
+		if(leftBlk) then
+			foreach uint y in 0 .. 3
+			do
+				neighbSamp[numPixNeighb-1 -blkAddr[1]-y] := sample[4*y+3];
+			end
 		end
 
 		idxBlk := idxBlk + 1;
@@ -397,6 +422,9 @@ actor SelectCu()
 					trafoTreeIdx[trafoTreeDepth] + 1;
 			end
 		end
+
+		numPixNeighb := 0;//treeNS * 2 - 1;
+		idxPixNeighb := 0;
 	end
 
 	getSplitTrafo.isInter: action SplitTransform:[splitTrafo] ==>
@@ -424,9 +452,11 @@ actor SelectCu()
 		trafoTreeDepth = -1
 	end
 
-	sendIntraNeighb.launch: action ==> IntraNeighb:[numPixNeighb]
+	sendIntraNeighb.launch: action ==> IntraNeighb:[neighbSamp[idxSamp]]
 	guard
 		idxPixNeighb < numPixNeighb
+	var
+		uint(size=8) idxSamp = idxPixNeighb
 	do
 		idxPixNeighb := idxPixNeighb + 1;
 	end
@@ -453,10 +483,13 @@ actor SelectCu()
 
 		GetSplitTrafoIntra (getSplitTrafo.isTrue  )--> GetSplitTrafoIntra;
 		GetSplitTrafoIntra (getSplitTrafo.isFalse )--> GetCuSampleIntra;
-		GetSplitTrafoIntra (getSplitTrafo.done    )--> SendIntraNeighb;
+		GetSplitTrafoIntra (getSplitTrafo.done    )--> GetCuInfo;
 
 		GetCuSampleIntra (getCuSample.isIntra )--> GetCuSampleIntra;
-		GetCuSampleIntra (getCuSample.done    )--> GetSplitTrafoIntra;
+		GetCuSampleIntra (getCuSample.done    )--> SendIntraNeighb;
+
+		SendIntraNeighb (sendIntraNeighb.launch )--> SendIntraNeighb;
+		SendIntraNeighb (sendIntraNeighb.done   )--> GetSplitTrafoIntra;
 
 
 		GetSplitTrafoInter (getSplitTrafo.isInter  )--> GetSplitTrafoInter;
@@ -466,10 +499,9 @@ actor SelectCu()
 		GetCuSampleInter (getCuSample.done    )--> GetCuResInter;
 
 		GetCuResInter (getCuSample.isInterRes )--> GetCuResInter;
-		GetCuResInter (getCuSample.done       )--> SendIntraNeighb;
+		GetCuResInter (getCuSample.done       )--> SendInterNeighb;
 
-
-		SendIntraNeighb (sendIntraNeighb.launch )--> SendIntraNeighb;
-		SendIntraNeighb (sendIntraNeighb.done   )--> GetCuInfo;
+		SendInterNeighb (sendIntraNeighb.launch )--> SendInterNeighb;
+		SendInterNeighb (sendIntraNeighb.done   )--> GetCuInfo;
 	end
 end
