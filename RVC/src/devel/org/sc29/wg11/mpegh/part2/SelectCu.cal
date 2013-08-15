@@ -73,7 +73,7 @@ actor SelectCu()
 	uint(size=3)  numPartDecoded;
 
 	uint(size=8)  predSamp[64 * 64 + 2 * 32 * 32];
-	uint(size=8)  neighbSamp[128];
+	uint(size=8)  neighbSamp[3][128];
 
 	uint(size=5)  cuMode;
 	uint(size=4)  partMode;
@@ -81,7 +81,7 @@ actor SelectCu()
 	uint(size=7)  cuSize[4][2];
 	uint(size=5)  cuOff[4][2] := [[0,0],[0,0],[0,0],[0,0]];
 	uint(size=7)  cuWidth;
-	uint(size=7)  numPixNeighb;
+	uint(size=7)  numPixNeighb[3];
 	uint(size=8)  idxPixNeighb;
 	uint(size=2)  cIdx;
 
@@ -139,6 +139,7 @@ actor SelectCu()
 		cuSize  := [[cuInfo[i+5*j]/4:for uint i in 3 .. 4]:
 			for uint j in 0 .. 1];
 		cuWidth := max(cuInfo[3], cuInfo[4]);
+		neighbBlkSz  := cuWidth;
 		nbBlk   := cuWidth*cuWidth/16;
 		idxBlk  := 0;
 		curLcuAddr := cuInfo[1]&~63;
@@ -187,7 +188,10 @@ actor SelectCu()
 	do
 		xIdx := 0;
 		yIdx := 0;
-		numPixNeighb := (cuWidth * 2) - 1;
+		neighbBlkSz := cuWidth;
+		numPixNeighb[0] := (cuWidth * 2) - 1;
+		numPixNeighb[1] := numPixNeighb[0] >> 1;
+		numPixNeighb[2] := numPixNeighb[0] >> 1;
 		idxPixNeighb := 0;
 		cIdx := 0;
 	end
@@ -207,6 +211,8 @@ actor SelectCu()
 		idxBlk < nbBlk
 	var
 		uint(size=16) blkAddr[2],
+		bool bottomBlk,
+		uint(size=5) sampOff,
 		uint(size=8) sample[SCU_SIZE]
 	do
 		foreach uint sampIdx in 0 .. SCU_SIZE-1
@@ -217,16 +223,38 @@ actor SelectCu()
 
 		rasterScanToAbsCoord(idxBlk, blkAddr);
 
-		if(blkAddr[0]+4>=neighbBlkSz) then
+		bottomBlk := blkAddr[1]+4 >= neighbBlkSz;
+		if(blkAddr[0]+4 >= neighbBlkSz) then
 			foreach uint y in 0 .. 3
 			do
-				neighbSamp[numPixNeighb-1 -blkAddr[1]-y] := sample[4*y+3];
+				neighbSamp[0][numPixNeighb[0]-1 -blkAddr[1]-y] := sample[4*y+3];
+			end
+			sampOff := 16;
+			blkAddr[1] := blkAddr[1] >> 1;
+			foreach int comp in 1 .. 2
+			do
+				foreach uint y in 0 .. 1
+				do
+					neighbSamp[comp][numPixNeighb[comp]-1 -blkAddr[1]-y] :=
+						sample[2*y+1+sampOff];
+				end
+				sampOff := 20;
 			end
 		end
-		if(blkAddr[1]+4>=neighbBlkSz) then
+		if(bottomBlk) then
 			foreach uint x in 0 .. 3
 			do
-				neighbSamp[blkAddr[0]+x] := sample[4*3+x];
+				neighbSamp[0][blkAddr[0]+x] := sample[4*3+x];
+			end
+			sampOff := 16;
+			blkAddr[0] := blkAddr[0] >> 1;
+			foreach int comp in 1 .. 2
+			do
+				foreach uint x in 0 .. 1
+				do
+					neighbSamp[comp][blkAddr[0]+x] := sample[2*1+x+sampOff];
+				end
+				sampOff := 20;
 			end
 		end
 
@@ -274,6 +302,8 @@ actor SelectCu()
 		idxBlk < nbBlk
 	var
 		uint(size=16) blkAddr[2],
+		bool bottomBlk,
+		uint(size=5)  sampOff,
 		uint(size=8)  sample[SCU_SIZE]
 	do
 		foreach int i in 0 .. SCU_SIZE-1
@@ -285,16 +315,38 @@ actor SelectCu()
 
 		rasterScanToAbsCoord(idxBlk, blkAddr);
 
-		if(blkAddr[0]+4>=neighbBlkSz) then
+		bottomBlk := blkAddr[1]+4 >= neighbBlkSz;
+		if(blkAddr[0]+4 >= 0) then
 			foreach uint y in 0 .. 3
 			do
-				neighbSamp[numPixNeighb-1 -blkAddr[1]-y] := sample[4*y+3];
+				neighbSamp[0][numPixNeighb[0]-1 -blkAddr[1]-y] := sample[4*y+3];
+			end
+			sampOff := 16;
+			blkAddr[1] := blkAddr[1] >> 1;
+			foreach int comp in 1 .. 2
+			do
+				foreach uint y in 0 .. 1
+				do
+					neighbSamp[comp][numPixNeighb[comp]-1 -blkAddr[1]-y] :=
+						sample[2*y+1+sampOff];
+				end
+				sampOff := 20;
 			end
 		end
-		if(blkAddr[1]+4>=neighbBlkSz) then
+		if(bottomBlk) then
 			foreach uint x in 0 .. 3
 			do
-				neighbSamp[blkAddr[0]+x] := sample[4*3+x];
+				neighbSamp[0][blkAddr[0]+x] := sample[4*3+x];
+			end
+			sampOff := 16;
+			blkAddr[0] := blkAddr[0] >> 1;
+			foreach int comp in 1 .. 2
+			do
+				foreach uint x in 0 .. 1
+				do
+					neighbSamp[comp][blkAddr[0]+x] := sample[2*1+x+sampOff];
+				end
+				sampOff := 20;
 			end
 		end
 
@@ -310,13 +362,7 @@ actor SelectCu()
 
 	int (size=4) trafoTreeDepth;
 	uint(size=3) trafoTreeIdx[6];
-	uint(size=3)  log2NS;
-	uint(size=16) treeAddr[2];
-	uint(size=9) numBlkToSend;
-	uint(size=6) predMode;
-	uint(size=8) chrComp[2][32][32];
-	uint(size=7)  neighbBlkSz;
-	uint(size=6) predModeTab[3];
+	uint(size=7) neighbBlkSz;
 
 	/* Check if the intra prediction CU has to be split in 4 "subCU" */
 	getSplitTrafo.isTrue: action SplitTransform:[splitTrafo] ==>
@@ -334,89 +380,19 @@ actor SelectCu()
 	guard
 		not splitTrafo && trafoTreeDepth>-1
 	var
-		uint(size=2)  cIdxMax,
-		uint(size=7)  treeNS,
-		uint(size=3)  treeLog2NS,
-		uint(size=16) locAddr[2],
-		uint(size=3)  off[2]
+		uint(size=7)  treeNS
 	do
-		/* Computing the size and the address of the current block. */
-//		treeLog2NS := log2NS - trafoTreeDepth;
 		treeNS := cuWidth;
-//		treeAddr := [cuAddr[i]: for int i in 0 .. 1];
 		foreach uint idx in 1 .. trafoTreeDepth
 		do
 			treeNS := treeNS >> 1;
-//			if((trafoTreeIdx[idx]&1) != 0) then
-//				treeAddr[0] := treeAddr[0] + treeNS;
-//			end
-//			if((trafoTreeIdx[idx]&2) != 0) then
-//				treeAddr[1] := treeAddr[1] + treeNS;
-//			end
 		end
+		
 
 		nbBlk := treeNS*treeNS/16;
-//		neighbBlkSz  := treeNS;
+		neighbBlkSz  := treeNS;
 		idxBlk := 0;
 
-		/* Chroma component are not split if we get a 2x2 block (this problem
-		 * appear with YUV420)
-		 */
-//		if(treeLog2NS != 2) then
-//			cIdxMax := 3;
-//		else
-//			/* In this case, we interpolate chroma component only once*/
-//			if((treeAddr[0]&7) = 0 && (treeAddr[1]&7) = 0) then
-//				cIdxMax := 3;
-//			else
-//				cIdxMax := 1; // Computation will be only for luma component.
-//			end
-//		end
-//		locAddr := [treeAddr[i]:for int i in 0 .. 1];
-//		foreach uint cIdx in 0 .. cIdxMax-1
-//		do
-//			predMode := predModeTab[cIdx];
-//			if(cIdx = 1) then // chroma component.
-//				if(treeLog2NS != 2) then
-//					/* 2x2 blocks are forbidden */
-//					treeNS := treeNS >> 1;
-//					treeLog2NS := treeLog2NS - 1;
-//				end
-//				locAddr[0] := locAddr[0] >> 1;
-//				locAddr[1] := locAddr[1] >> 1;
-//			end
-//
-//			/*getNeighbSamples(locAddr, cIdx, treeNS, treeLog2NS);
-//
-//			if(predMode = INTRA_PLANAR) then
-//				intraPlanarPred(cIdx, treeNS, treeLog2NS);
-//			else if(predMode = INTRA_DC) then
-//				intraDcPred(cIdx, treeNS, treeLog2NS);
-//			else
-//				intraAngularPred(cIdx, treeNS);
-//			end end*/
-//		end
-
-		
-//		if(cIdxMax=1) then
-//			/* When we have 4x4 luma blocks, the chroma block corresponding to
-//			 * the luma one is copied at the begining of result in order to be
-//			 * sent (this block might have been computed beforehand).
-//			 */
-//			off := [(treeAddr[i]>>1)&2: for int i in 0 .. 1];
-//			if(off[0]!=0 || off[1]!=0) then
-//				foreach uint comp in 0 .. 1
-//				do
-//					foreach int y in 0 .. 1
-//					do
-//						foreach int x in 0 .. 1
-//						do
-//							chrComp[comp][x][y] := chrComp[comp][x+off[0]][y+off[1]];
-//						end
-//					end
-//				end
-//			end
-//		end
 
 		/* going to the next "branch of the tree" */
 		trafoTreeIdx[trafoTreeDepth] := trafoTreeIdx[trafoTreeDepth] + 1;
@@ -432,7 +408,9 @@ actor SelectCu()
 			end
 		end
 
-		numPixNeighb := treeNS * 2 - 1;
+		numPixNeighb[0] := treeNS * 2 - 1;
+		numPixNeighb[1] := numPixNeighb[0] >> 1;
+		numPixNeighb[2] := numPixNeighb[0] >> 1;
 		idxPixNeighb := 0;
 		cIdx := 0;
 	end
@@ -462,19 +440,17 @@ actor SelectCu()
 		trafoTreeDepth = -1
 	end
 
-	sendIntraNeighb.launch: action ==> IntraNeighb:[neighbSamp[idxSamp]]
+	sendIntraNeighb.launch: action ==> IntraNeighb:[neighbSamp[idxComp][idxSamp]]
 	guard
 		cIdx < 3
 	var
-		uint(size=8) idxSamp = idxPixNeighb
+		uint(size=8) idxSamp = idxPixNeighb,
+		uint(size=2) idxComp = cIdx
 	do
 		idxPixNeighb := idxPixNeighb + 1;
-		if(idxPixNeighb = numPixNeighb) then
+		if(idxPixNeighb = numPixNeighb[cIdx]) then
 			idxPixNeighb := 0;
 			cIdx := cIdx + 1;
-			if(cIdx = 1) then
-				numPixNeighb := numPixNeighb >> 1;
-			end
 		end
 	end
 

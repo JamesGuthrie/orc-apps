@@ -1101,49 +1101,7 @@ actor IntraPrediction(bool EnabSkipInPix)
 	getSamples.launch: action Sample:[sample] repeat 16 + 2*4 ==>
 	guard
 		idxBlk < numBlkToSend && (not EnabSkipInPix || getInSamp)
-	var
-		uint(size=16) blkAddr[2],
-		bool bottomBlk := false,
-		bool leftBlk := false,
-		uint(size=5) sampOff := 16,
-		uint(size=16) tabIdx
 	do
-		rasterScanToAbsCoord(idxBlk, blkAddr);
-
-		if(blkAddr[0]+4>=neighbBlkSz) then
-			leftBlk := true;
-		end
-		if(blkAddr[1]+4>=neighbBlkSz) then
-			bottomBlk := true;
-		end
-		blkAddr[0] := blkAddr[0] + treeAddr[0];
-		blkAddr[1] := blkAddr[1] + treeAddr[1];
-		
-		blkAddr[0] := blkAddr[0]>>1;
-		blkAddr[1] := blkAddr[1]>>1;
-
-		foreach uint comp in 1 .. 2
-		do
-			if(bottomBlk) then
-				foreach uint x in 0 .. 1
-				do
-					tabIdx := pictSize[1][1] - (blkAddr[1] + 1) + blkAddr[0] + x;
-					puNeighb[comp][tabIdx]  := sample[2*1+x+sampOff];
-					puIsIntra[comp][tabIdx] := cuMode = INTRA;
-				end
-			end
-	
-			if(leftBlk) then
-				foreach uint y in 0 .. 1
-				do
-					tabIdx := pictSize[1][1] - (blkAddr[1] + y) + blkAddr[0] + 1;
-					puNeighb[comp][tabIdx]  := sample[2*y+1+sampOff];
-					puIsIntra[comp][tabIdx] := cuMode = INTRA;
-				end
-			end
-			sampOff := sampOff + 4;
-		end
-
 		idxBlk := idxBlk + 1;
 	end
 
@@ -1160,11 +1118,16 @@ actor IntraPrediction(bool EnabSkipInPix)
 	var
 		uint tabIdx
 	do
-		if(compIdx = 0) then
-			tabIdx := pictSize[0][1] - (treeAddr[1] + neighbBlkSz - 1) + treeAddr[0] + idxPixNeighb;
-			puNeighb[0][tabIdx] := neighb;
-			puIsIntra[0][tabIdx]   := cuMode = INTRA;
-		end
+		tabIdx := 
+			if(compIdx = 0) then
+				pictSize[0][1] - (treeAddr[1] + neighbBlkSz - 1) +
+				treeAddr[0] + idxPixNeighb
+			else
+				pictSize[1][1] - ((treeAddr[1]>>1) + neighbBlkSz - 1) +
+				(treeAddr[0]>>1) + idxPixNeighb
+			end;
+		puNeighb[compIdx][tabIdx]  := neighb;
+		puIsIntra[compIdx][tabIdx] := cuMode = INTRA;
 
 		idxPixNeighb := idxPixNeighb + 1;
 		if(idxPixNeighb = numPixNeighb) then
@@ -1172,6 +1135,7 @@ actor IntraPrediction(bool EnabSkipInPix)
 			compIdx := compIdx + 1;
 			if(compIdx = 1) then
 				numPixNeighb := numPixNeighb >> 1;
+				neighbBlkSz := neighbBlkSz >> 1;
 			end
 		end
 	end
