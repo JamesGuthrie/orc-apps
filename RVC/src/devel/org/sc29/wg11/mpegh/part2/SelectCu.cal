@@ -83,6 +83,7 @@ actor SelectCu()
 	uint(size=7)  cuWidth;
 	uint(size=7)  numPixNeighb;
 	uint(size=8)  idxPixNeighb;
+	uint(size=2)  cIdx;
 
 	uint(size=9)  nbBlk;
 	uint(size=9)  idxBlk;
@@ -188,6 +189,7 @@ actor SelectCu()
 		yIdx := 0;
 		numPixNeighb := (cuWidth * 2) - 1;
 		idxPixNeighb := 0;
+		cIdx := 0;
 	end
 
 	getCuMode.isOther: action ==>
@@ -204,6 +206,7 @@ actor SelectCu()
 	guard
 		idxBlk < nbBlk
 	var
+		uint(size=16) blkAddr[2],
 		uint(size=8) sample[SCU_SIZE]
 	do
 		foreach uint sampIdx in 0 .. SCU_SIZE-1
@@ -211,6 +214,22 @@ actor SelectCu()
 			sample[sampIdx] :=
 				clip_i32(intraSample[sampIdx]+resSample[sampIdx], 0, 255);
 		end
+
+		rasterScanToAbsCoord(idxBlk, blkAddr);
+
+		if(blkAddr[0]+4>=neighbBlkSz) then
+			foreach uint y in 0 .. 3
+			do
+				neighbSamp[numPixNeighb-1 -blkAddr[1]-y] := sample[4*y+3];
+			end
+		end
+		if(blkAddr[1]+4>=neighbBlkSz) then
+			foreach uint x in 0 .. 3
+			do
+				neighbSamp[blkAddr[0]+x] := sample[4*3+x];
+			end
+		end
+
 		idxBlk := idxBlk + 1;
 	end
 
@@ -255,8 +274,6 @@ actor SelectCu()
 		idxBlk < nbBlk
 	var
 		uint(size=16) blkAddr[2],
-		bool bottomBlk := false,
-		bool leftBlk := false,
 		uint(size=8)  sample[SCU_SIZE]
 	do
 		foreach int i in 0 .. SCU_SIZE-1
@@ -269,23 +286,15 @@ actor SelectCu()
 		rasterScanToAbsCoord(idxBlk, blkAddr);
 
 		if(blkAddr[0]+4>=neighbBlkSz) then
-			leftBlk := true;
-		end
-		if(blkAddr[1]+4>=neighbBlkSz) then
-			bottomBlk := true;
-		end
-
-		if(bottomBlk) then
-			foreach uint x in 0 .. 3
-			do
-				neighbSamp[blkAddr[0]+x] := sample[4*3+x];
-			end
-		end
-
-		if(leftBlk) then
 			foreach uint y in 0 .. 3
 			do
 				neighbSamp[numPixNeighb-1 -blkAddr[1]-y] := sample[4*y+3];
+			end
+		end
+		if(blkAddr[1]+4>=neighbBlkSz) then
+			foreach uint x in 0 .. 3
+			do
+				neighbSamp[blkAddr[0]+x] := sample[4*3+x];
 			end
 		end
 
@@ -423,8 +432,9 @@ actor SelectCu()
 			end
 		end
 
-		numPixNeighb := 0;//treeNS * 2 - 1;
+		numPixNeighb := treeNS * 2 - 1;
 		idxPixNeighb := 0;
+		cIdx := 0;
 	end
 
 	getSplitTrafo.isInter: action SplitTransform:[splitTrafo] ==>
@@ -454,17 +464,24 @@ actor SelectCu()
 
 	sendIntraNeighb.launch: action ==> IntraNeighb:[neighbSamp[idxSamp]]
 	guard
-		idxPixNeighb < numPixNeighb
+		cIdx < 3
 	var
 		uint(size=8) idxSamp = idxPixNeighb
 	do
 		idxPixNeighb := idxPixNeighb + 1;
+		if(idxPixNeighb = numPixNeighb) then
+			idxPixNeighb := 0;
+			cIdx := cIdx + 1;
+			if(cIdx = 1) then
+				numPixNeighb := numPixNeighb >> 1;
+			end
+		end
 	end
 
 	sendIntraNeighb.done: action ==>
 	guard
-		idxPixNeighb = numPixNeighb
-	end		
+		cIdx = 3
+	end
 
 	schedule fsm GetPartMode:
 		GetPartMode (isNewSlice       )--> GetPartMode;

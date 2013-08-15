@@ -179,6 +179,7 @@ actor IntraPrediction(bool EnabSkipInPix)
 	uint(size=8) chrComp[2][32][32];
 	uint(size=9) numBlkToSend;
 	uint(size=9) idxBlk;
+	uint(size=2) compIdx;
 
 	bool getInSamp;
 
@@ -813,6 +814,7 @@ actor IntraPrediction(bool EnabSkipInPix)
 	var
 		uint(size=7) nS = cuInfo[3]
 	do
+		cuMode := cuInfo[0];
 		getInSamp := true;
 		treeAddr := [cuInfo[1], cuInfo[2]];
 		idxBlk := 0;
@@ -844,6 +846,7 @@ actor IntraPrediction(bool EnabSkipInPix)
 		trafoTreeIdx[0] := 3;
 		numPixNeighb := (nS * 2) - 1;
 		idxPixNeighb := 0;
+		compIdx := 0;
 	end
 
 	getCuInfo.done: action ==>
@@ -898,6 +901,7 @@ actor IntraPrediction(bool EnabSkipInPix)
 		trafoTreeIdx[0] := 3;
 		numPixNeighb := nS * 2 - 1;
 		idxPixNeighb := 0;
+		compIdx := 0;
 	end
 
 	/* When it's neither an intra nor inter prediction CU, do neither
@@ -1021,8 +1025,9 @@ actor IntraPrediction(bool EnabSkipInPix)
 					trafoTreeIdx[trafoTreeDepth] + 1;
 			end
 		end
-		numPixNeighb := 0;//neighbBlkSz * 2 - 1;
+		numPixNeighb := neighbBlkSz * 2 - 1;
 		idxPixNeighb := 0;
+		compIdx := 0;
 	end
 
 	getSplitTrafo.isInter: action SplitTransform:[splitTrafo] ==>
@@ -1113,24 +1118,6 @@ actor IntraPrediction(bool EnabSkipInPix)
 		end
 		blkAddr[0] := blkAddr[0] + treeAddr[0];
 		blkAddr[1] := blkAddr[1] + treeAddr[1];
-
-		if(bottomBlk) then
-			foreach uint x in 0 .. 3
-			do
-				tabIdx := pictSize[0][1] - (blkAddr[1] + 3) + blkAddr[0] + x;
-				puNeighb[0][tabIdx] := sample[4*3+x];
-				puIsIntra[0][tabIdx]   := cuMode = INTRA;
-			end
-		end
-
-		if(leftBlk) then
-			foreach uint y in 0 .. 3
-			do
-				tabIdx := pictSize[0][1] - (blkAddr[1] + y) + blkAddr[0] + 3;
-				puNeighb[0][tabIdx] := sample[4*y+3];
-				puIsIntra[0][tabIdx]   := cuMode = INTRA;
-			end
-		end
 		
 		blkAddr[0] := blkAddr[0]>>1;
 		blkAddr[1] := blkAddr[1]>>1;
@@ -1169,21 +1156,29 @@ actor IntraPrediction(bool EnabSkipInPix)
 
 	getNeighb.launch: action NeighbVal:[neighb] ==>
 	guard
-		idxPixNeighb < numPixNeighb
+		compIdx < 3
 	var
 		uint tabIdx
 	do
-		tabIdx := pictSize[0][1] - (treeAddr[1] + neighbBlkSz - 1) + treeAddr[0] + idxPixNeighb;
-		if(puNeighb[0][tabIdx] != neighb) then
-			println("Fuck");
+		if(compIdx = 0) then
+			tabIdx := pictSize[0][1] - (treeAddr[1] + neighbBlkSz - 1) + treeAddr[0] + idxPixNeighb;
+			puNeighb[0][tabIdx] := neighb;
+			puIsIntra[0][tabIdx]   := cuMode = INTRA;
 		end
 
 		idxPixNeighb := idxPixNeighb + 1;
+		if(idxPixNeighb = numPixNeighb) then
+			idxPixNeighb := 0;
+			compIdx := compIdx + 1;
+			if(compIdx = 1) then
+				numPixNeighb := numPixNeighb >> 1;
+			end
+		end
 	end
 
 	getNeighb.done: action ==>
 	guard
-		idxPixNeighb = numPixNeighb
+		compIdx = 3
 	end	
 
 	schedule fsm GetPartMode:
