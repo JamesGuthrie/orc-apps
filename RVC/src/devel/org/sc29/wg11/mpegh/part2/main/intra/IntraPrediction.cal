@@ -67,7 +67,6 @@ actor IntraPrediction(bool EnabSkipInPix)
 	uint(size=8)  NeighbVal,
 	uint(size=4)  PartMode,
 	uint(size=16) PictSize,
-	uint(size=8)  Sample,
 	uint(size=16) SliceAddr,
 	bool          SplitTransform,
 	bool 		  StrongIntraSmoothing,
@@ -1097,21 +1096,6 @@ actor IntraPrediction(bool EnabSkipInPix)
 		idxBlk := 0;
 	end
 
-	/* Getting One 4x4 luma blocks and the corresponding chroma values. */
-	getSamples.launch: action Sample:[sample] repeat 16 + 2*4 ==>
-	guard
-		idxBlk < numBlkToSend && (not EnabSkipInPix || getInSamp)
-	do
-		idxBlk := idxBlk + 1;
-	end
-
-	getSamples.done: action ==>
-	guard
-		idxBlk = numBlkToSend || (EnabSkipInPix && not getInSamp)
-	end
-
-
-
 	getNeighb.launch: action NeighbVal:[neighb] ==>
 	guard
 		compIdx < 3
@@ -1170,26 +1154,20 @@ actor IntraPrediction(bool EnabSkipInPix)
 		GetSplitTrafoIntra (getSplitTrafo.done    )--> GetCuInfo;
 
 		SendSamples (sendSamples.launch )--> SendSamples;
-		SendSamples (sendSamples.done   )--> GetIntraSamples;
-
-		GetIntraSamples (getSamples.launch )--> GetIntraSamples;
-		GetIntraSamples (getSamples.done   )--> GetIntraNeighb;
+		SendSamples (sendSamples.done   )--> GetIntraNeighb;
 
 		GetIntraNeighb (getNeighb.launch )--> GetIntraNeighb;
 		GetIntraNeighb (getNeighb.done   )--> GetSplitTrafoIntra;
 
 
 		GetSplitTrafoInter (getSplitTrafo.isInter  )--> GetSplitTrafoInter;
-		GetSplitTrafoInter (getSplitTrafo.done    )--> GetInterSamples;
-
-		GetInterSamples (getSamples.launch )--> GetInterSamples;
-		GetInterSamples (getSamples.done   )--> GetInterNeighb;
+		GetSplitTrafoInter (getSplitTrafo.done    )--> GetInterNeighb;
 
 		GetInterNeighb (getNeighb.launch )--> GetInterNeighb;
 		GetInterNeighb (getNeighb.done   )--> GetCuInfo;
 
 
-		GetInSamples (getSamples.launch )--> GetInSamples;
-		GetInSamples (getSamples.done   )--> GetCuInfo;
+		GetInSamples (getNeighb.launch )--> GetInSamples;
+		GetInSamples (getNeighb.done   )--> GetCuInfo;
 	end
 end
