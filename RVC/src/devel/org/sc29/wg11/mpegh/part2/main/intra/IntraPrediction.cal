@@ -819,6 +819,9 @@ actor IntraPrediction(bool EnabSkipInPix)
 		idxBlk := 0;
 		numBlkToSend := (nS*nS)/16;
 		neighbBlkSz  := nS;
+		numPixNeighb := (nS * 2) - 1;
+		idxPixNeighb := 0;
+		compIdx := 0;
 		numPartDecoded := numPartDecoded + 1;
 	end
 
@@ -1098,7 +1101,7 @@ actor IntraPrediction(bool EnabSkipInPix)
 
 	getNeighb.launch: action NeighbVal:[neighb] ==>
 	guard
-		compIdx < 3
+		compIdx < 3 && (not EnabSkipInPix || getInSamp)
 	var
 		uint tabIdx
 	do
@@ -1126,7 +1129,7 @@ actor IntraPrediction(bool EnabSkipInPix)
 
 	getNeighb.done: action ==>
 	guard
-		compIdx = 3
+		compIdx = 3 || (EnabSkipInPix && not getInSamp)
 	end	
 
 	schedule fsm GetPartMode:
