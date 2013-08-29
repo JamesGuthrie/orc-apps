@@ -116,7 +116,7 @@ actor SelectCu()
 	guard
 		numPartDecoded < numPart && numPart != 2
 	do
-		cuMode  := cuInfo[0];
+		cuMode  := cuInfo[0] & ~NO_IN_SAMP;
 		cuWidth := cuInfo[3];
 		nbBlk   := cuWidth*cuWidth/16;
 		idxBlk  := 0;
@@ -135,7 +135,7 @@ actor SelectCu()
 	guard
 		numPartDecoded < numPart && numPart = 2
 	do
-		cuMode := cuInfo[0];
+		cuMode := cuInfo[0] & ~NO_IN_SAMP;
 		cuSize  := [[cuInfo[i+5*j]/4:for uint i in 3 .. 4]:
 			for uint j in 0 .. 1];
 		cuWidth := max(cuInfo[3], cuInfo[4]);
@@ -198,7 +198,7 @@ actor SelectCu()
 
 	getCuMode.isOther: action ==>
 	guard
-		cuMode = OTHER
+		cuMode = OTHER || cuMode = IN_SAMP
 	do
 		numPartDecoded := numPartDecoded + 1;
 	end
