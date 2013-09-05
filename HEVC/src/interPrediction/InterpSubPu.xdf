@@ -87,9 +87,12 @@
         </Parameter>
     </Instance>
     <Instance id="Interp_0_0">
-        <Class name="devel.org.sc29.wg11.mpegh.part2.main.inter.InterPrediction"/>
+        <Class name="interPrediction.InterPredPipeline2"/>
         <Parameter name="DECODE_COMP">
             <Expr kind="Literal" literal-kind="Integer" value="3"/>
+        </Parameter>
+        <Parameter name="PROCESS_MODE_HALF_PIX">
+            <Expr kind="Literal" literal-kind="Integer" value="2"/>
         </Parameter>
         <Parameter name="IDX_SUB_BLOCK">
             <Expr kind="List">
@@ -102,15 +105,15 @@
                 <Expr kind="Literal" literal-kind="Integer" value="1"/>
                 <Expr kind="Literal" literal-kind="Integer" value="1"/>
             </Expr>
-        </Parameter>
-        <Parameter name="PROCESS_MODE_HALF_PIX">
-            <Expr kind="Literal" literal-kind="Integer" value="2"/>
         </Parameter>
     </Instance>
     <Instance id="Interp_1_0">
-        <Class name="devel.org.sc29.wg11.mpegh.part2.main.inter.InterPrediction"/>
+        <Class name="interPrediction.InterPredPipeline2"/>
         <Parameter name="DECODE_COMP">
             <Expr kind="Literal" literal-kind="Integer" value="3"/>
+        </Parameter>
+        <Parameter name="PROCESS_MODE_HALF_PIX">
+            <Expr kind="Literal" literal-kind="Integer" value="2"/>
         </Parameter>
         <Parameter name="IDX_SUB_BLOCK">
             <Expr kind="List">
@@ -123,15 +126,15 @@
                 <Expr kind="Literal" literal-kind="Integer" value="1"/>
                 <Expr kind="Literal" literal-kind="Integer" value="1"/>
             </Expr>
-        </Parameter>
-        <Parameter name="PROCESS_MODE_HALF_PIX">
-            <Expr kind="Literal" literal-kind="Integer" value="2"/>
         </Parameter>
     </Instance>
     <Instance id="Interp_0_1">
-        <Class name="devel.org.sc29.wg11.mpegh.part2.main.inter.InterPrediction"/>
+        <Class name="interPrediction.InterPredPipeline2"/>
         <Parameter name="DECODE_COMP">
             <Expr kind="Literal" literal-kind="Integer" value="3"/>
+        </Parameter>
+        <Parameter name="PROCESS_MODE_HALF_PIX">
+            <Expr kind="Literal" literal-kind="Integer" value="2"/>
         </Parameter>
         <Parameter name="IDX_SUB_BLOCK">
             <Expr kind="List">
@@ -144,36 +147,36 @@
                 <Expr kind="Literal" literal-kind="Integer" value="1"/>
                 <Expr kind="Literal" literal-kind="Integer" value="1"/>
             </Expr>
-        </Parameter>
-        <Parameter name="PROCESS_MODE_HALF_PIX">
-            <Expr kind="Literal" literal-kind="Integer" value="2"/>
         </Parameter>
     </Instance>
     <Instance id="Interp_1_1">
-        <Class name="devel.org.sc29.wg11.mpegh.part2.main.inter.InterPrediction"/>
+        <Class name="interPrediction.InterPredPipeline2"/>
         <Parameter name="DECODE_COMP">
             <Expr kind="Literal" literal-kind="Integer" value="3"/>
-        </Parameter>
-        <Parameter name="IDX_SUB_BLOCK">
-            <Expr kind="List">
-                <Expr kind="Literal" literal-kind="Integer" value="1"/>
-                <Expr kind="Literal" literal-kind="Integer" value="1"/>
-            </Expr>
-        </Parameter>
-        <Parameter name="LOG2_NUM_SUB_BLK">
-            <Expr kind="List">
-                <Expr kind="Literal" literal-kind="Integer" value="1"/>
-                <Expr kind="Literal" literal-kind="Integer" value="1"/>
-            </Expr>
         </Parameter>
         <Parameter name="PROCESS_MODE_HALF_PIX">
             <Expr kind="Literal" literal-kind="Integer" value="2"/>
         </Parameter>
+        <Parameter name="IDX_SUB_BLOCK">
+            <Expr kind="List">
+                <Expr kind="Literal" literal-kind="Integer" value="1"/>
+                <Expr kind="Literal" literal-kind="Integer" value="1"/>
+            </Expr>
+        </Parameter>
+        <Parameter name="LOG2_NUM_SUB_BLK">
+            <Expr kind="List">
+                <Expr kind="Literal" literal-kind="Integer" value="1"/>
+                <Expr kind="Literal" literal-kind="Integer" value="1"/>
+            </Expr>
+        </Parameter>
     </Instance>
     <Instance id="InterpPreComput">
-        <Class name="devel.org.sc29.wg11.mpegh.part2.main.inter.InterPrediction"/>
+        <Class name="interPrediction.InterPredPipeline1"/>
         <Parameter name="DECODE_COMP">
             <Expr kind="Literal" literal-kind="Integer" value="3"/>
+        </Parameter>
+        <Parameter name="PROCESS_MODE_HALF_PIX">
+            <Expr kind="Literal" literal-kind="Integer" value="1"/>
         </Parameter>
         <Parameter name="IDX_SUB_BLOCK">
             <Expr kind="List">
@@ -186,9 +189,6 @@
                 <Expr kind="Literal" literal-kind="Integer" value="0"/>
                 <Expr kind="Literal" literal-kind="Integer" value="0"/>
             </Expr>
-        </Parameter>
-        <Parameter name="PROCESS_MODE_HALF_PIX">
-            <Expr kind="Literal" literal-kind="Integer" value="1"/>
         </Parameter>
     </Instance>
     <Connection dst="SubPuMux" dst-port="PuInfo" src="" src-port="CUInfo"/>

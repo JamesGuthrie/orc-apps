@@ -61,7 +61,7 @@
         <Class name="devel.org.sc29.wg11.mpegh.part2.main.inter.DecodingPictureBuffer"/>
     </Instance>
     <Instance id="InterPrediction">
-        <Class name="devel.org.sc29.wg11.mpegh.part2.inter.InterpComponent"/>
+        <Class name="interPrediction.InterpSubPu"/>
     </Instance>
     <Instance id="SAO">
         <Class name="devel.org.sc29.wg11.mpegh.part2.main.Filters.SaoFilter"/>
