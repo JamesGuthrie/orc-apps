@@ -87,7 +87,7 @@
         </Parameter>
     </Instance>
     <Instance id="Interp_0_0">
-        <Class name="interPrediction.InterPredPipeline2"/>
+        <Class name="devel.org.sc29.wg11.mpegh.part2.main.inter.InterPrediction"/>
         <Parameter name="DECODE_COMP">
             <Expr kind="Literal" literal-kind="Integer" value="3"/>
         </Parameter>
@@ -108,7 +108,7 @@
         </Parameter>
     </Instance>
     <Instance id="Interp_1_0">
-        <Class name="interPrediction.InterPredPipeline2"/>
+        <Class name="devel.org.sc29.wg11.mpegh.part2.main.inter.InterPrediction"/>
         <Parameter name="DECODE_COMP">
             <Expr kind="Literal" literal-kind="Integer" value="3"/>
         </Parameter>
@@ -129,7 +129,7 @@
         </Parameter>
     </Instance>
     <Instance id="Interp_0_1">
-        <Class name="interPrediction.InterPredPipeline2"/>
+        <Class name="devel.org.sc29.wg11.mpegh.part2.main.inter.InterPrediction"/>
         <Parameter name="DECODE_COMP">
             <Expr kind="Literal" literal-kind="Integer" value="3"/>
         </Parameter>
@@ -150,7 +150,7 @@
         </Parameter>
     </Instance>
     <Instance id="Interp_1_1">
-        <Class name="interPrediction.InterPredPipeline2"/>
+        <Class name="devel.org.sc29.wg11.mpegh.part2.main.inter.InterPrediction"/>
         <Parameter name="DECODE_COMP">
             <Expr kind="Literal" literal-kind="Integer" value="3"/>
         </Parameter>
@@ -171,7 +171,7 @@
         </Parameter>
     </Instance>
     <Instance id="InterpPreComput">
-        <Class name="interPrediction.InterPredPipeline1"/>
+        <Class name="devel.org.sc29.wg11.mpegh.part2.main.inter.InterPrediction"/>
         <Parameter name="DECODE_COMP">
             <Expr kind="Literal" literal-kind="Integer" value="3"/>
         </Parameter>
