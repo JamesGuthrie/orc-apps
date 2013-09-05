@@ -59,7 +59,7 @@ actor GenerateBs()
 	uint(size=7)  nS;
 	uint(size=16) cuAddr[2] := [-1,-1];
 	uint(size=16) cuAddrNQT[2] := [-1,-1];
-	uint(size=2)  cuMode;
+	uint(size=5)  cuMode;
 	uint(size=3)  numPart;
 	uint(size=3)  numPartDecoded;
 
@@ -83,7 +83,7 @@ actor GenerateBs()
 	uint(size=16) tilesBeg[MAX_NUM_TILES][2];
 	uint(size=16) tilesEnd[MAX_NUM_TILES][2];
 
-	uint(size=2) predModeTab[PICT_WIDTH/4][PICT_HEIGHT/4];//
+	uint(size=5) predModeTab[PICT_WIDTH/4][PICT_HEIGHT/4];//
 	bool cbfTab[PICT_WIDTH/4][PICT_HEIGHT/4];//
 	bool isBiPredTab[PICT_WIDTH/4][PICT_HEIGHT/4];//
 	int(size=16) refPocTab[PICT_WIDTH/4][PICT_HEIGHT/4][2];//
