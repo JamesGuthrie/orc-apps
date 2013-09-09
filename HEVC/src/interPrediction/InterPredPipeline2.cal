@@ -64,7 +64,7 @@ package interPrediction;
 import std.util.Math.*;
 import devel.org.sc29.wg11.mpegh.part2.common.CommonConstantHEVC.*;
 
-actor InterPredPipeline2(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_PIX,
+actor InterPredPipeline2(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_PIX = 0,
 		uint(size=8) LOG2_NUM_SUB_BLK[2], uint(size=8) IDX_SUB_BLOCK[2])
 
 	uint(size=16) CUInfo,
@@ -85,6 +85,9 @@ actor InterPredPipeline2(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 
 	uint(size=2) HALF_PIX_1ST_PART = 1;
 	uint(size=2) HALF_PIX_2ND_PART = 2;
+
+	bool IS_2ND_PART_PRED;
+
 	int shift1 = 6;
 	/* Fix me !! */
 	uint(size=4) bitDepth = 8;
@@ -826,11 +829,12 @@ actor InterPredPipeline2(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 	end
 
 	initialize ==>
-	guard
-		PROCESS_MODE_HALF_PIX = 3 && (LOG2_NUM_SUB_BLK[0] != 0 || LOG2_NUM_SUB_BLK[1] != 0)
 	do
-		print(" Warning in InterPrediction : Using SubBlk with no pre-computing for Half/Quarter Pix.");
-		println(" There will be more interpolation than needed.");
+		IS_2ND_PART_PRED := (PROCESS_MODE_HALF_PIX & HALF_PIX_2ND_PART) != 0;
+		if(PROCESS_MODE_HALF_PIX = 3 && (LOG2_NUM_SUB_BLK[0] != 0 || LOG2_NUM_SUB_BLK[1] != 0)) then
+			print(" Warning in InterPrediction : Using SubBlk with no pre-computing for Half/Quarter Pix.");
+			println(" There will be more interpolation than needed.");
+		end
 	end
 
 	/* We have a new slice, we will update differents value then get the new
@@ -1071,7 +1075,7 @@ actor InterPredPipeline2(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 	do
 		isBiPredOrLx := isBiPredOrPredLX;
 
-		if(LOG2_NUM_SUB_BLK[0] != 0 || LOG2_NUM_SUB_BLK[1] != 0) then
+		if(IS_2ND_PART_PRED && (LOG2_NUM_SUB_BLK[0] != 0 || LOG2_NUM_SUB_BLK[1] != 0)) then
 			foreach uint i in 0 .. 1
 			do
 				nbBlkInPu := cuSize[i] >> 2;
@@ -1175,7 +1179,7 @@ actor InterPredPipeline2(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 	guard
 		pixIdx  < numPixToGet
 	do
-		if(LOG2_NUM_SUB_BLK[0] = 0 && LOG2_NUM_SUB_BLK[1] = 0) then
+		if(not IS_2ND_PART_PRED || (LOG2_NUM_SUB_BLK[0] = 0 && LOG2_NUM_SUB_BLK[1] = 0)) then
 			predSampLuma[listIdx][iLoop][jLoop] := sample;
 		else if(iLoop >= subPuIdxMin[0][0] && jLoop >= subPuIdxMin[0][1] &&
 			    iLoop <  subPuIdxMax[0][0]+7 && jLoop <  subPuIdxMax[0][1]+7) then
@@ -1204,7 +1208,7 @@ actor InterPredPipeline2(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 	guard
 		compIdx < 3
 	do
-		if(LOG2_NUM_SUB_BLK[0] = 0 && LOG2_NUM_SUB_BLK[1] = 0) then
+		if(not IS_2ND_PART_PRED || (LOG2_NUM_SUB_BLK[0] = 0 && LOG2_NUM_SUB_BLK[1] = 0)) then
 			predSampChr[listIdx][compIdx-1][iLoop][jLoop] := sample;
 		else if(iLoop >= subPuIdxMin[1][0] && jLoop >= subPuIdxMin[1][1] &&
 			    iLoop < subPuIdxMax[1][0]+3 && jLoop < subPuIdxMax[1][1]+3) then
@@ -1238,7 +1242,7 @@ actor InterPredPipeline2(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 		uint(size=7) fullPuIdxMax[2]
 	do
 		puIdxMax := 
-			if(LOG2_NUM_SUB_BLK[0] = 0 && LOG2_NUM_SUB_BLK[1] = 0) then
+			if(not IS_2ND_PART_PRED || (LOG2_NUM_SUB_BLK[0] = 0 && LOG2_NUM_SUB_BLK[1] = 0)) then
 				[cuSize[i]: for int i in 0 .. 1]
 			else
 				[subPuSize[0][0], subPuSize[0][1]]
@@ -1249,7 +1253,7 @@ actor InterPredPipeline2(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 		do
 			if(component = 1) then
 				puIdxMax := 
-					if(LOG2_NUM_SUB_BLK[0] = 0 && LOG2_NUM_SUB_BLK[1] = 0) then
+					if(not IS_2ND_PART_PRED || (LOG2_NUM_SUB_BLK[0] = 0 && LOG2_NUM_SUB_BLK[1] = 0)) then
 						[cuSize[i]>>1: for int i in 0 .. 1]
 					else
 						[subPuSize[1][0], subPuSize[1][1]]
@@ -1297,7 +1301,7 @@ actor InterPredPipeline2(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 		uint(size=2) COMP_MAX = if((DECODE_COMP & CHROMA_COMP) != 0) then 2 else 1 end
 	do
 		puIdxMax := 
-			if(LOG2_NUM_SUB_BLK[0] = 0 && LOG2_NUM_SUB_BLK[1] = 0) then
+			if(not IS_2ND_PART_PRED || (LOG2_NUM_SUB_BLK[0] = 0 && LOG2_NUM_SUB_BLK[1] = 0)) then
 				[cuSize[i]: for int i in 0 .. 1]
 			else
 				[subPuSize[0][0], subPuSize[0][1]]
@@ -1318,7 +1322,7 @@ actor InterPredPipeline2(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 
 	sendPu.skip: action ==>
 	guard
-		LOG2_NUM_SUB_BLK[0] != 0 || LOG2_NUM_SUB_BLK[1] != 0,
+		IS_2ND_PART_PRED && (LOG2_NUM_SUB_BLK[0] != 0 || LOG2_NUM_SUB_BLK[1] != 0),
 		jLoop < cuSize[1],
 		iLoop < subPuIdxMin[0][0] || iLoop >= subPuIdxMax[0][0] ||
 		jLoop < subPuIdxMin[0][1] || jLoop >= subPuIdxMax[0][1]
