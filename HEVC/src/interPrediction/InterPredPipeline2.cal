@@ -313,9 +313,10 @@ actor InterPredPipeline2(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 			pixVal >> finalShift;
 	end
 
-	procedure interpol1stPart(uint(size=7) fullPuIdxMax[2], int mvQuartPix[2],
+	procedure horizInterp(uint(size=7) fullPuIdxMax[2], uint(size=7) puIdxMax[2], int mvQuartPix[2],
 		uint(size=2) cIdx)
 	var
+		int(size=32) coord[2],
 		int pixVal
 	begin
 		/* We get the 4 or 8 pixels needed for the filter and
@@ -324,7 +325,18 @@ actor InterPredPipeline2(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 		 * of pixel).
 		 */
 		if(cIdx = 0) then
-			if(mvQuartPix[0] = 1) then
+			if(mvQuartPix[1] = 0) then
+				foreach int x in 0 .. puIdxMax[0]-1
+				do
+					foreach int y in 0 .. puIdxMax[1]-1
+					do
+						/* Horizontal interpolation */
+						coord := [x, y+3];
+						@inline
+						predictionFilteringLuma(true, coord, [x, y], mvQuartPix[0], 0, 0);
+					end
+				end
+			else if(mvQuartPix[0] = 1) then
 				foreach int y in 0 .. fullPuIdxMax[1]-1
 				do
 					foreach int x in 0 .. fullPuIdxMax[0]-1
@@ -363,9 +375,19 @@ actor InterPredPipeline2(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 						predSampLuma[listIdx][x][y] := pixVal;
 					end
 				end
-			end end
+			end end end
 		else
-			if(mvQuartPix[0] = 1) then
+			if(mvQuartPix[1] = 0) then
+				foreach int x in 0 .. puIdxMax[0]-1
+				do
+					foreach int y in 0 .. puIdxMax[1]-1
+					do
+						coord := [x, y+1];
+						@inline
+						predictionFilteringChr(true, coord, [x, y], mvQuartPix[0], 0, 0, cIdx);
+					end
+				end
+			else if(mvQuartPix[0] = 1) then
 				foreach int y in 0 .. fullPuIdxMax[1]-1
 				do
 					foreach int x in 0 .. fullPuIdxMax[0]-1
@@ -443,28 +465,16 @@ actor InterPredPipeline2(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 						predSampChr[listIdx][cIdx-1][x][y] := pixVal;
 					end
 				end
-			end end end end end end
+			end end end end end end end
 		end
 	end
 
-	procedure interpolLuma2ndPart(int mvQuartPix[2], uint(size=7) puIdxMax[2])
+	procedure vertInterpLuma(int mvQuartPix[2], uint(size=7) puIdxMax[2])
 	var
 		int(size=32) coord[2],
 		int(size=32) pixValue
 	begin
-		if(mvQuartPix[0] = 0 && mvQuartPix[1] = 0) then
-			foreach int x in 0 .. puIdxMax[0]-1
-			do
-				foreach int y in 0 .. puIdxMax[1]-1
-				do
-					/* When we mvQuartPix is equal to [0,0], we multiply by 1^shift1,
-					 * because after this procedure we will have the weighted prediction.
-					 */
-					predSampLuma[listIdx][x][y] := predSampLuma[listIdx][x+3]
-						[y+3]<<shift1;
-				end
-			end
-		else if(mvQuartPix[0] != 0 && mvQuartPix[1] != 0) then
+		if(mvQuartPix[0] != 0) then
 			foreach int x in 0 .. puIdxMax[0]-1
 			do
 				foreach int y in 0 .. puIdxMax[1]-1
@@ -498,17 +508,6 @@ actor InterPredPipeline2(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 					predSampLuma[listIdx][x][y] := pixValue >> 6;
 				end
 			end
-		else if(mvQuartPix[1]=0) then
-			foreach int x in 0 .. puIdxMax[0]-1
-			do
-				foreach int y in 0 .. puIdxMax[1]-1
-				do
-					/* Horizontal interpolation */
-					coord := [x, y+3];
-					@inline
-					predictionFilteringLuma(true, coord, [x, y], mvQuartPix[0], 0, 0);
-				end
-			end	
 		else
 			foreach int x in 0 .. puIdxMax[0]-1
 			do
@@ -520,38 +519,16 @@ actor InterPredPipeline2(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 					predictionFilteringLuma(false, coord, [x, y], mvQuartPix[1], 0, 0);
 				end
 			end
-		end end end
+		end
 	end
 
-	procedure interpolChr2ndPart(int mvQuartPix[2], uint(size=7) puIdxMax[2],
+	procedure vertInterpChr(int mvQuartPix[2], uint(size=7) puIdxMax[2],
 		uint(size=2) cIdx)
 	var
 		int(size=32) coord[2],
 		int(size=32) pixValue
 	begin
-		if(mvQuartPix[0] = 0 && mvQuartPix[1] = 0) then
-			foreach int x in 0 .. puIdxMax[0]-1
-			do
-				foreach int y in 0 .. puIdxMax[1]-1
-				do
-					/* When we mvQuartPix is equal to [0,0], we multiply by 1^shift1,
-					 * because after this procedure we will have the weighted prediction.
-					 */
-					predSampChr[listIdx][cIdx-1][x][y] := predSampChr[listIdx][cIdx-1][x+1]
-						[y+1]<<shift1;
-				end
-			end
-		else if(mvQuartPix[1]=0) then /* Horizontal interpolation */
-			foreach int x in 0 .. puIdxMax[0]-1
-			do
-				foreach int y in 0 .. puIdxMax[1]-1
-				do
-					coord := [x, y+1];
-					@inline
-					predictionFilteringChr(true, coord, [x, y], mvQuartPix[0], 0, 0, cIdx);
-				end
-			end	
-		else if(mvQuartPix[0]=0) then /* Vertical interpolation */
+		if(mvQuartPix[0]=0) then /* Vertical interpolation */
 			foreach int x in 0 .. puIdxMax[0]-1
 			do
 				foreach int y in 0 .. puIdxMax[1]-1
@@ -579,15 +556,15 @@ actor InterPredPipeline2(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 					predSampChr[listIdx][cIdx-1][x][y] := pixValue >> 6;
 				end
 			end
-		end end end
+		end
 	end
 
-	procedure interpol2ndPart(int mvQuartPix[2], uint(size=7) puIdxMax[2], uint(size=2) cIdx)
+	procedure vertInterp(int mvQuartPix[2], uint(size=7) puIdxMax[2], uint(size=2) cIdx)
 	begin
 		if(cIdx = 0) then	
-			interpolLuma2ndPart(mvQuartPix, puIdxMax);
+			vertInterpLuma(mvQuartPix, puIdxMax);
 		else
-			interpolChr2ndPart(mvQuartPix, puIdxMax, cIdx);
+			vertInterpChr(mvQuartPix, puIdxMax, cIdx);
 		end
 	end
 	/* Computing the weighted prediction of the current pixel */
@@ -1287,22 +1264,42 @@ actor InterPredPipeline2(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 				for int i in 0 .. 1];
 
 
-			/* if quartPix (or eighthPix for chroma) is not equal to 0 for both
-			 * x and y, we realize the interpolation in 2 steps.
-			 */
-			/* We do the horizontal interpolation for all the samples which
-			 * will be needed for the vertical interpolation.
-			 */
 			if(((PROCESS_MODE_HALF_PIX & HALF_PIX_1ST_PART) != 0) &&
-				mvQuartPix[0]!=0 && mvQuartPix[1]!=0) then
-				interpol1stPart(idxMax1stPart, mvQuartPix, component);
+				mvQuartPix[0] = 0 && mvQuartPix[1] = 0) then
+				if(component = 0) then
+					foreach int x in 0 .. puIdxMax[0]-1
+					do
+						foreach int y in 0 .. puIdxMax[1]-1
+						do
+							/* When we mvQuartPix is equal to [0,0], we multiply by 1^shift1,
+							 * because after this procedure we will have the weighted prediction.
+							 */
+							predSampLuma[listIdx][x][y] := predSampLuma[listIdx][x+3]
+								[y+3]<<shift1;
+						end
+					end
+				else
+					foreach int x in 0 .. puIdxMax[0]-1
+					do
+						foreach int y in 0 .. puIdxMax[1]-1
+						do
+							/* When we mvQuartPix is equal to [0,0], we multiply by 1^shift1,
+							 * because after this procedure we will have the weighted prediction.
+							 */
+							predSampChr[listIdx][component-1][x][y] := predSampChr[listIdx][component-1][x+1]
+								[y+1]<<shift1;
+						end
+					end
+				end
 			end
 
-			/* We realize the interpolation then the weighted prediction
-			 * for all pixel of the Cu.
-			 */
-			if((PROCESS_MODE_HALF_PIX & HALF_PIX_2ND_PART) != 0) then
-				interpol2ndPart(mvQuartPix, puIdxMax, component);
+			if(((PROCESS_MODE_HALF_PIX & HALF_PIX_1ST_PART) != 0) &&
+				mvQuartPix[0]!=0) then
+				horizInterp(idxMax1stPart, puIdxMax, mvQuartPix, component);
+			end
+
+			if((PROCESS_MODE_HALF_PIX & HALF_PIX_2ND_PART) != 0 && mvQuartPix[1] != 0) then
+				vertInterp(mvQuartPix, puIdxMax, component);
 			end
 		end
 
