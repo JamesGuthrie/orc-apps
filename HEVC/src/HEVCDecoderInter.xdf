@@ -204,8 +204,8 @@
         src="Algo_Parser" src-port="SplitTransform"/>
     <Connection dst="IntraPrediction" dst-port="NeighbVal"
         src="SelectCU" src-port="IntraNeighb"/>
-    <Connection dst="InterPrediction" dst-port="PredCuSize"
-        src="generateInfo" src-port="PredCuSize"/>
     <Connection dst="InterPrediction" dst-port="PocRef"
         src="generateInfo" src-port="PocRef"/>
+    <Connection dst="InterPrediction" dst-port="PredCuSize"
+        src="generateInfo" src-port="PredCuSize"/>
 </XDF>

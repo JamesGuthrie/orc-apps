@@ -314,8 +314,7 @@ actor InterPredPipeline1(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 	procedure interpol1stPart(uint(size=7) fullPuIdxMax[2], int mvQuartPix[2],
 		uint(size=2) cIdx)
 	var
-		int pixVal,
-		uint(size=4) numCoeff[3] = [8, 4, 4]
+		int pixVal
 	begin
 		/* We get the 4 or 8 pixels needed for the filter and
 		 * we multiply these values with some coefficients. These coefficients
@@ -324,7 +323,7 @@ actor InterPredPipeline1(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 		 */
 		if(cIdx = 0) then
 			if(mvQuartPix[0] = 1) then
-				foreach int y in 0 .. fullPuIdxMax[1]-1 + numCoeff[0]-1
+				foreach int y in 0 .. fullPuIdxMax[1]-1
 				do
 					foreach int x in 0 .. fullPuIdxMax[0]-1
 					do
@@ -337,7 +336,7 @@ actor InterPredPipeline1(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 					end
 				end
 			else if(mvQuartPix[0] = 2) then
-				foreach int y in 0 .. fullPuIdxMax[1]-1 + numCoeff[0]-1
+				foreach int y in 0 .. fullPuIdxMax[1]-1
 				do
 					foreach int x in 0 .. fullPuIdxMax[0]-1
 					do
@@ -350,7 +349,7 @@ actor InterPredPipeline1(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 					end
 				end
 			else
-				foreach int y in 0 .. fullPuIdxMax[1]-1 + numCoeff[0]-1
+				foreach int y in 0 .. fullPuIdxMax[1]-1
 				do
 					foreach int x in 0 .. fullPuIdxMax[0]-1
 					do
@@ -365,7 +364,7 @@ actor InterPredPipeline1(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 			end end
 		else
 			if(mvQuartPix[0] = 1) then
-				foreach int y in 0 .. fullPuIdxMax[1]-1 + numCoeff[1]-1
+				foreach int y in 0 .. fullPuIdxMax[1]-1
 				do
 					foreach int x in 0 .. fullPuIdxMax[0]-1
 					do
@@ -376,7 +375,7 @@ actor InterPredPipeline1(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 					end
 				end
 			else if(mvQuartPix[0] = 2) then
-				foreach int y in 0 .. fullPuIdxMax[1]-1 + numCoeff[1]-1
+				foreach int y in 0 .. fullPuIdxMax[1]-1
 				do
 					foreach int x in 0 .. fullPuIdxMax[0]-1
 					do
@@ -388,7 +387,7 @@ actor InterPredPipeline1(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 					end
 				end
 			else if(mvQuartPix[0] = 3) then
-				foreach int y in 0 .. fullPuIdxMax[1]-1 + numCoeff[1]-1
+				foreach int y in 0 .. fullPuIdxMax[1]-1
 				do
 					foreach int x in 0 .. fullPuIdxMax[0]-1
 					do
@@ -399,7 +398,7 @@ actor InterPredPipeline1(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 					end
 				end
 			else if(mvQuartPix[0] = 4) then
-				foreach int y in 0 .. fullPuIdxMax[1]-1 + numCoeff[1]-1
+				foreach int y in 0 .. fullPuIdxMax[1]-1
 				do
 					foreach int x in 0 .. fullPuIdxMax[0]-1
 					do
@@ -410,7 +409,7 @@ actor InterPredPipeline1(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 					end
 				end
 			else if(mvQuartPix[0] = 5) then
-				foreach int y in 0 .. fullPuIdxMax[1]-1 + numCoeff[1]-1
+				foreach int y in 0 .. fullPuIdxMax[1]-1
 				do
 					foreach int x in 0 .. fullPuIdxMax[0]-1
 					do
@@ -421,7 +420,7 @@ actor InterPredPipeline1(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 					end
 				end
 			else if(mvQuartPix[0] = 6) then
-				foreach int y in 0 .. fullPuIdxMax[1]-1 + numCoeff[1]-1
+				foreach int y in 0 .. fullPuIdxMax[1]-1
 				do
 					foreach int x in 0 .. fullPuIdxMax[0]-1
 					do
@@ -432,7 +431,7 @@ actor InterPredPipeline1(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 					end
 				end
 			else
-				foreach int y in 0 .. fullPuIdxMax[1]-1 + numCoeff[1]-1
+				foreach int y in 0 .. fullPuIdxMax[1]-1
 				do
 					foreach int x in 0 .. fullPuIdxMax[0]-1
 					do
@@ -1075,26 +1074,42 @@ actor InterPredPipeline1(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 	do
 		isBiPredOrLx := isBiPredOrPredLX;
 
-		if(IS_2ND_PART_PRED && (LOG2_NUM_SUB_BLK[0] != 0 || LOG2_NUM_SUB_BLK[1] != 0)) then
-			foreach uint i in 0 .. 1
-			do
-				nbBlkInPu := cuSize[i] >> 2;
-				numBlk    := nbBlkInPu >> LOG2_NUM_SUB_BLK[i];
-				blkRemain := nbBlkInPu - (numBlk << LOG2_NUM_SUB_BLK[i]);
-				subPuIdxMin[0][i] := IDX_SUB_BLOCK[i] * numBlk;
-				if(IDX_SUB_BLOCK[i] >= (1 << LOG2_NUM_SUB_BLK[i]) - blkRemain) then
-					subPuIdxMin[0][i] := subPuIdxMin[0][i] + IDX_SUB_BLOCK[i]
-						- (1 << LOG2_NUM_SUB_BLK[i]) + blkRemain;
-					numBlk := numBlk + 1;
+		if((LOG2_NUM_SUB_BLK[0] != 0 || LOG2_NUM_SUB_BLK[1] != 0)) then
+			if(IS_2ND_PART_PRED) then
+				foreach uint i in 0 .. 1
+				do
+					nbBlkInPu := cuSize[i] >> 2;
+					numBlk    := nbBlkInPu >> LOG2_NUM_SUB_BLK[i];
+					blkRemain := nbBlkInPu - (numBlk << LOG2_NUM_SUB_BLK[i]);
+					subPuIdxMin[0][i] := IDX_SUB_BLOCK[i] * numBlk;
+					if(IDX_SUB_BLOCK[i] >= (1 << LOG2_NUM_SUB_BLK[i]) - blkRemain) then
+						subPuIdxMin[0][i] := subPuIdxMin[0][i] + IDX_SUB_BLOCK[i]
+							- (1 << LOG2_NUM_SUB_BLK[i]) + blkRemain;
+						numBlk := numBlk + 1;
+					end
+					subPuIdxMax[0][i] := subPuIdxMin[0][i] + numBlk;
+	
+					subPuSize[0][i]   := numBlk << 2;
+					subPuSize[1][i]   := numBlk << 1;
+					subPuIdxMin[1][i] := subPuIdxMin[0][i] << 1;
+					subPuIdxMax[1][i] := subPuIdxMax[0][i] << 1;
+					subPuIdxMin[0][i] := subPuIdxMin[0][i] << 2;
+					subPuIdxMax[0][i] := subPuIdxMax[0][i] << 2;
 				end
-				subPuIdxMax[0][i] := subPuIdxMin[0][i] + numBlk;
-
-				subPuSize[0][i]   := numBlk << 2;
-				subPuSize[1][i]   := numBlk << 1;
-				subPuIdxMin[1][i] := subPuIdxMin[0][i] << 1;
-				subPuIdxMax[1][i] := subPuIdxMax[0][i] << 1;
-				subPuIdxMin[0][i] := subPuIdxMin[0][i] << 2;
-				subPuIdxMax[0][i] := subPuIdxMax[0][i] << 2;
+			else
+				foreach uint i in 0 .. 1
+				do
+					nbBlkInPu := cuSize[i] + 7;
+					numBlk    := nbBlkInPu>> LOG2_NUM_SUB_BLK[i];
+					blkRemain := nbBlkInPu - (numBlk << LOG2_NUM_SUB_BLK[i]);
+					subPuIdxMin[0][i] := IDX_SUB_BLOCK[i] * numBlk;
+					if(IDX_SUB_BLOCK[i] >= (1 << LOG2_NUM_SUB_BLK[i]) - blkRemain) then
+						subPuIdxMin[0][i] := subPuIdxMin[0][i] + IDX_SUB_BLOCK[i]
+							- (1 << LOG2_NUM_SUB_BLK[i]) + blkRemain;
+						numBlk := numBlk + 1;
+					end
+					subPuIdxMax[0][i] := subPuIdxMin[0][i] + numBlk;
+				end
 			end
 		end
 	end
@@ -1239,26 +1254,27 @@ actor InterPredPipeline1(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 		uint(size=2) COMP_MIN = if((DECODE_COMP & LUMA_COMP) = 0) then 1 else 0 end,
 		uint(size=2) COMP_MAX = if((DECODE_COMP & CHROMA_COMP) != 0) then 2 else 1 end,
 		uint(size=7) puIdxMax[2],
-		uint(size=7) fullPuIdxMax[2]
+		uint(size=7) idxMax1stPart[2]
 	do
-		puIdxMax := 
-			if(not IS_2ND_PART_PRED || (LOG2_NUM_SUB_BLK[0] = 0 && LOG2_NUM_SUB_BLK[1] = 0)) then
-				[cuSize[i]: for int i in 0 .. 1]
-			else
-				[subPuSize[0][0], subPuSize[0][1]]
-			end;
-		fullPuIdxMax := [cuSize[i]: for int i in 0 .. 1];
+
+		if(LOG2_NUM_SUB_BLK[0] = 0 && LOG2_NUM_SUB_BLK[1] = 0) then
+			puIdxMax := [cuSize[i]: for int i in 0 .. 1];
+		else
+			puIdxMax := [subPuSize[0][0], subPuSize[0][1]];
+		end
+			idxMax1stPart[0] := cuSize[0];
+			idxMax1stPart[1] := cuSize[1] + 7;
 
 		foreach int component in COMP_MIN .. COMP_MAX /* Y, Cb, Cr */
 		do
 			if(component = 1) then
-				puIdxMax := 
-					if(not IS_2ND_PART_PRED || (LOG2_NUM_SUB_BLK[0] = 0 && LOG2_NUM_SUB_BLK[1] = 0)) then
-						[cuSize[i]>>1: for int i in 0 .. 1]
-					else
-						[subPuSize[1][0], subPuSize[1][1]]
-					end;
-				fullPuIdxMax := [fullPuIdxMax[i]>>1: for int i in 0 .. 1];
+				if(LOG2_NUM_SUB_BLK[0] = 0 && LOG2_NUM_SUB_BLK[1] = 0) then
+					puIdxMax := [cuSize[i]>>1: for int i in 0 .. 1];
+				else
+					puIdxMax := [subPuSize[1][0], subPuSize[1][1]];
+				end
+					idxMax1stPart[0] := cuSize[0] >> 1;
+					idxMax1stPart[1] := (cuSize[1] >> 1) + 3;
 			end
 			/* We just need to do the fractionnal part of the movement
 			 * interpolation.
@@ -1275,7 +1291,7 @@ actor InterPredPipeline1(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 			 */
 			if(((PROCESS_MODE_HALF_PIX & HALF_PIX_1ST_PART) != 0) &&
 				mvQuartPix[0]!=0 && mvQuartPix[1]!=0) then
-				interpol1stPart(fullPuIdxMax, mvQuartPix, component);
+				interpol1stPart(idxMax1stPart, mvQuartPix, component);
 			end
 
 			/* We realize the interpolation then the weighted prediction
