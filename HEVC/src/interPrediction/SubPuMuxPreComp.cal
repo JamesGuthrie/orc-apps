@@ -36,22 +36,27 @@ actor SubPuMuxPreComp(uint(size=3) LOG2_NUM_SUB_BLK[2])
 	uint(size=2)  IsBiPredOrLx,
 	int (size=32) Mv,
 	int (size=16) PocRef,
-	uint(size=7)  PredCuSize
+	uint(size=7)  PredCuSize,
+	int (size=16) PredSampleIn1,
+	int (size=16) PredSampleIn2
 		==>
+	int (size=16) PredSampleOut
 		:
 
-	/* /!\ : Check the size of the border. */
-	uint(size = 16) BORDER_SIZE = 128;
-
-	uint(size=16) picSize[2];
 	uint(size=1)  numPocRef;
-	int (size=32) xMvOffset;
-	int (size=32) yMvOffset;
-	int (size=32) xMvOffChr;
-	int (size=32) yMvOffChr;
 	bool          isBiPred;
 	int (size=16) lastPocRef;
 	int (size=32) lastMvRef[2];
+
+	uint(size=7) predSize[2];
+	uint(size=7) predSizeChr[2];
+
+	uint(size=7)  iLoop;
+	uint(size=7)  jLoop;
+	uint(size=2)  compIdx;
+
+	uint(size=7) subPuIdxMin[16][16][2];
+	uint(size=7) subPuIdxMax[16][16][2];
 
 	getNewPred: action IsBiPredOrLx:[isBiPredOrLx] ==>
 	do
@@ -71,43 +76,39 @@ actor SubPuMuxPreComp(uint(size=3) LOG2_NUM_SUB_BLK[2])
 		Mv:[mvX, mvY] ==>
 	guard
 		numPocRef != 0,
-		not(isBiPred && numPocRef = 1 && lastPocRef = poc && lastMvRef[0] = mvX && lastMvRef[1] = mvY)
+		not(isBiPred && numPocRef = 1 && lastPocRef = poc && lastMvRef[0] = mvX &&
+			lastMvRef[1] = mvY)
 	var
-		int(size=7)  sideMax,
-		uint(size=7)  sideMaxChr
+		uint(size=8) subPuIdx[2],
+		uint(size=5) numPix,
+		uint(size=5) blkRemain
 	do
+		predSize    := [predUnitSize[i]   + 7: for int i in 0 .. 1];
+		predSizeChr := [predUnitSize[i]/2 + 3: for int i in 0 .. 1];
+		iLoop   := 0;
+		jLoop   := 0;
 		lastPocRef := poc;
 		lastMvRef  := [mvX, mvY];
-		sideMax := max(predUnitSize[0], predUnitSize[1]);
-		sideMaxChr := sideMax >> 1;
 
-		/* The mv components correspond to the absolute movement vector, that's
-		 * why we don't need to add the address of the current Cu
-		 */
-
-		/* We remove 3 for each coordinate component, because for the luma
-		 * prediction we need the 3 previous pixels
-		 */
-		xMvOffset := (mvX >> 2);
-		xMvOffset := min(xMvOffset, picSize[0]+3);
-		xMvOffset := max(xMvOffset, -(8 +3 -1) -(sideMax-1));
-		xMvOffset := xMvOffset +BORDER_SIZE-3;
-		yMvOffset := (mvY >> 2);
-		yMvOffset := min(yMvOffset, picSize[1]+3);
-		yMvOffset := max(yMvOffset, -(8 +3 -1) -(sideMax-1));
-		yMvOffset := yMvOffset +BORDER_SIZE-3;
-
-		/* We remove 1 for each coordinate component, because for the chroma
-		 * prediction we need the previous pixel
-		 */
-		xMvOffChr := (mvX >> 3);
-		xMvOffChr := min(xMvOffChr, picSize[0]/2+1);
-		xMvOffChr := max(xMvOffChr, -(4 +1 -1) -(sideMaxChr-1));
-		xMvOffChr := xMvOffChr +BORDER_SIZE/2-1;
-		yMvOffChr := (mvY >> 3);
-		yMvOffChr := min(yMvOffChr, picSize[1]/2+1);
-		yMvOffChr := max(yMvOffChr, -(4 +1 -1) -(sideMaxChr-1));
-		yMvOffChr := yMvOffChr +BORDER_SIZE/2-1;
+		foreach uint yIdx in 0 .. (1<<LOG2_NUM_SUB_BLK[1])-1
+		do
+			foreach uint xIdx in 0 .. (1<<LOG2_NUM_SUB_BLK[0])-1
+			do
+				subPuIdx := [xIdx, yIdx];
+				foreach uint i in 0 .. 1
+				do
+					numPix    := predSize[i] >> LOG2_NUM_SUB_BLK[i];
+					blkRemain := predSize[i] - (numPix << LOG2_NUM_SUB_BLK[i]);
+					subPuIdxMin[xIdx][yIdx][i] := subPuIdx[i] * numPix;
+					if(subPuIdx[i] >= (1 << LOG2_NUM_SUB_BLK[i]) - blkRemain) then
+						subPuIdxMin[xIdx][yIdx][i] := subPuIdxMin[xIdx][yIdx][i] + subPuIdx[i]
+							- (1 << LOG2_NUM_SUB_BLK[i]) + blkRemain;
+						numPix := numPix + 1;
+					end
+					subPuIdxMax[xIdx][yIdx][i] := subPuIdxMin[xIdx][yIdx][i] + numPix;
+				end
+			end
+		end
 
 		numPocRef := numPocRef - 1;
 	end
@@ -123,11 +124,58 @@ actor SubPuMuxPreComp(uint(size=3) LOG2_NUM_SUB_BLK[2])
 		numPocRef = 0
 	end
 
+	getIntermPu.launch.lumaComp: action PredSampleIn1:[predSamp], PredSampleIn2:[predSamp2] ==> PredSampleOut:[predSamp]
+	guard
+		jLoop < predSize[1]
+	do
+		iLoop := iLoop + 1;
+		if(iLoop = predSize[0]) then
+			iLoop := 0;
+			jLoop := jLoop + 1;
+		end
+	end
+
+	getIntermPu.launch.lumaDone: action ==>
+	guard
+		jLoop = predSize[1]
+	do
+		iLoop   := 0;
+		jLoop   := 0;
+		compIdx := 1;
+	end
+
+	getIntermPu.launch.chromaComp: action PredSampleIn1:[predSamp], PredSampleIn2:[predSamp2] ==> PredSampleOut:[predSamp]
+	guard
+		compIdx < 3
+	do
+		iLoop := iLoop + 1;
+		if(iLoop = predSizeChr[0]) then
+			iLoop := 0;
+			jLoop := jLoop + 1;
+			if(jLoop = predSizeChr[1]) then
+				iLoop := 0;
+				jLoop := 0;
+				compIdx := compIdx + 1;
+			end
+		end
+	end
+
+	getIntermPu.done: action ==>
+	guard
+		compIdx = 3
+	end
+
 	schedule fsm GetNewPred:
 		GetNewPred (getNewPred )--> GetMvInfo;
 
-		GetMvInfo (getMvInfo.launch )--> GetMvInfo;
+		GetMvInfo (getMvInfo.launch )--> GetIntermPuLuma;
 		GetMvInfo (getMvInfo.skip   )--> GetNewPred;
 		GetMvInfo (getMvInfo.done   )--> GetNewPred;
+
+		GetIntermPuLuma (getIntermPu.launch.lumaComp )--> GetIntermPuLuma;
+		GetIntermPuLuma (getIntermPu.launch.lumaDone )--> GetIntermPuChr;
+
+		GetIntermPuChr (getIntermPu.launch.chromaComp )--> GetIntermPuChr;
+		GetIntermPuChr (getIntermPu.done              )--> GetMvInfo;
 	end
 end

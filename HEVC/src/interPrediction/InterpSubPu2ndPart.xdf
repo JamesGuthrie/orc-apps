@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<XDF name="InterpSubPu">
+<XDF name="InterpSubPu2ndPart">
     <Port kind="Input" name="IsBiPredOrLx">
         <Type name="uint">
             <Entry kind="Expr" name="size">

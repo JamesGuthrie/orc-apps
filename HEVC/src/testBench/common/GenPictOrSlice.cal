@@ -1,0 +1,22 @@
+package testBench.common;
+
+import devel.org.sc29.wg11.mpegh.part2.common.CommonConstantHEVC.*;
+
+actor GenPictOrSlice()
+	uint(size=4)  PartMode
+		==>
+	uint(size=4) PictOrSlice
+		:
+
+	action PartMode:[sliceType] ==> PictOrSlice:[sliceType]
+	guard
+		sliceType = PART_MODE_SLICE_INDEP || sliceType = PART_MODE_SLICE_DEP ||
+		sliceType = PART_MODE_PICT
+	end
+
+	action PartMode:[sliceType] ==>
+	guard
+		sliceType != PART_MODE_SLICE_INDEP && sliceType != PART_MODE_SLICE_DEP &&
+		sliceType != PART_MODE_PICT
+	end
+end
