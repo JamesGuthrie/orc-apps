@@ -339,7 +339,7 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 			else if(mvQuartPix[0] = 1) then
 				foreach int y in 0 .. fullPuIdxMax[1]-1
 				do
-					foreach int x in 0 .. fullPuIdxMax[0]-1
+					foreach int x in 0 .. puIdxMax[0]-1
 					do
 						pixVal := -8192 +
 								-    predSampLuma[listIdx][x  ][y] +  4*predSampLuma[listIdx][x+1][y]
@@ -352,7 +352,7 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 			else if(mvQuartPix[0] = 2) then
 				foreach int y in 0 .. fullPuIdxMax[1]-1
 				do
-					foreach int x in 0 .. fullPuIdxMax[0]-1
+					foreach int x in 0 .. puIdxMax[0]-1
 					do
 						pixVal := -8192 +
 								-    predSampLuma[listIdx][x  ][y] +  4*predSampLuma[listIdx][x+1][y]
@@ -365,7 +365,7 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 			else
 				foreach int y in 0 .. fullPuIdxMax[1]-1
 				do
-					foreach int x in 0 .. fullPuIdxMax[0]-1
+					foreach int x in 0 .. puIdxMax[0]-1
 					do
 						pixVal := -8192 +
 								      predSampLuma[listIdx][x+1][y] -  5*predSampLuma[listIdx][x+2][y]
@@ -390,7 +390,7 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 			else if(mvQuartPix[0] = 1) then
 				foreach int y in 0 .. fullPuIdxMax[1]-1
 				do
-					foreach int x in 0 .. fullPuIdxMax[0]-1
+					foreach int x in 0 .. puIdxMax[0]-1
 					do
 						pixVal := -8192	+ 
 								-  2*predSampChr[listIdx][cIdx-1][x]  [y] + 58*predSampChr[listIdx][cIdx-1][x+1][y]
@@ -401,7 +401,7 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 			else if(mvQuartPix[0] = 2) then
 				foreach int y in 0 .. fullPuIdxMax[1]-1
 				do
-					foreach int x in 0 .. fullPuIdxMax[0]-1
+					foreach int x in 0 .. puIdxMax[0]-1
 					do
 						pixVal := -8192;
 						pixVal := pixVal	+ 
@@ -413,7 +413,7 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 			else if(mvQuartPix[0] = 3) then
 				foreach int y in 0 .. fullPuIdxMax[1]-1
 				do
-					foreach int x in 0 .. fullPuIdxMax[0]-1
+					foreach int x in 0 .. puIdxMax[0]-1
 					do
 						pixVal := -8192	+ 
 								-  6*predSampChr[listIdx][cIdx-1][x]  [y] + 46*predSampChr[listIdx][cIdx-1][x+1][y]
@@ -424,7 +424,7 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 			else if(mvQuartPix[0] = 4) then
 				foreach int y in 0 .. fullPuIdxMax[1]-1
 				do
-					foreach int x in 0 .. fullPuIdxMax[0]-1
+					foreach int x in 0 .. puIdxMax[0]-1
 					do
 						pixVal := -8192	+ 
 								-  4*predSampChr[listIdx][cIdx-1][x]  [y] + 36*predSampChr[listIdx][cIdx-1][x+1][y]
@@ -435,7 +435,7 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 			else if(mvQuartPix[0] = 5) then
 				foreach int y in 0 .. fullPuIdxMax[1]-1
 				do
-					foreach int x in 0 .. fullPuIdxMax[0]-1
+					foreach int x in 0 .. puIdxMax[0]-1
 					do
 						pixVal := -8192	+ 
 								-  4*predSampChr[listIdx][cIdx-1][x]  [y] + 28*predSampChr[listIdx][cIdx-1][x+1][y]
@@ -446,7 +446,7 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 			else if(mvQuartPix[0] = 6) then
 				foreach int y in 0 .. fullPuIdxMax[1]-1
 				do
-					foreach int x in 0 .. fullPuIdxMax[0]-1
+					foreach int x in 0 .. puIdxMax[0]-1
 					do
 						pixVal := -8192	+ 
 								-  2*predSampChr[listIdx][cIdx-1][x]  [y] + 16*predSampChr[listIdx][cIdx-1][x+1][y]
@@ -457,7 +457,7 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 			else
 				foreach int y in 0 .. fullPuIdxMax[1]-1
 				do
-					foreach int x in 0 .. fullPuIdxMax[0]-1
+					foreach int x in 0 .. puIdxMax[0]-1
 					do
 						pixVal := -8192	+ 
 								-  2*predSampChr[listIdx][cIdx-1][x]  [y] + 10*predSampChr[listIdx][cIdx-1][x+1][y]
