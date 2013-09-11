@@ -1292,10 +1292,12 @@ actor InterPredPipeline1(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 			idxMax1stPart := [puSize[0], fullPuSize[1]];
 		else
 			puIdxMax := [subPuSize[0][0], subPuSize[0][1]];
-			idxMax1stPart := [subPuSize[0][0], subPuSize[0][1] + 7];
+			idxMax1stPart := [subPuSize[0][0], subPuSize[0][1]];
 		end
-		puIdxMax := [puSize[i]: for int i in 0 .. 1];
-		idxMax1stPart := [puSize[0], fullPuSize[1]];
+		if(IDX_SUB_BLOCK[0] != 0) then
+			puIdxMax := [puSize[i]: for int i in 0 .. 1];
+			idxMax1stPart := [puSize[0], fullPuSize[1]];
+		end
 
 		foreach int component in COMP_MIN .. COMP_MAX /* Y, Cb, Cr */
 		do
@@ -1305,10 +1307,12 @@ actor InterPredPipeline1(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 					idxMax1stPart := [puSizeChr[0], fullPuSizeChr[1]];
 				else
 					puIdxMax := [subPuSize[1][0], subPuSize[1][1]];
-					idxMax1stPart := [subPuSize[1][0], subPuSize[1][1] + 3];
+					idxMax1stPart := [subPuSize[1][0], subPuSize[1][1]];
 				end
-				puIdxMax := [puSizeChr[i]: for int i in 0 .. 1];
-				idxMax1stPart := [puSizeChr[0], fullPuSizeChr[1]];
+				if(IDX_SUB_BLOCK[0] != 0) then
+					puIdxMax := [puSizeChr[i]: for int i in 0 .. 1];
+					idxMax1stPart := [puSizeChr[0], fullPuSizeChr[1]];
+				end
 			end
 			/* We just need to do the fractionnal part of the movement
 			 * interpolation.
