@@ -48,8 +48,11 @@ actor SubPuMuxPreComp(uint(size=3) LOG2_NUM_SUB_BLK[2])
 	int (size=16) lastPocRef;
 	int (size=32) lastMvRef[2];
 
-	uint(size=7) predSize[2];
-	uint(size=7) predSizeChr[2];
+	uint(size=7) puSize[2];
+	uint(size=7) puSizeChr[2];
+
+	uint(size=7) fullPuSize[2];
+	uint(size=7) fullPuSizeChr[2];
 
 	uint(size=7)  iLoop;
 	uint(size=7)  jLoop;
@@ -83,8 +86,10 @@ actor SubPuMuxPreComp(uint(size=3) LOG2_NUM_SUB_BLK[2])
 		uint(size=5) numPix,
 		uint(size=5) blkRemain
 	do
-		predSize    := [predUnitSize[i]   + 7: for int i in 0 .. 1];
-		predSizeChr := [predUnitSize[i]/2 + 3: for int i in 0 .. 1];
+		fullPuSize    := [predUnitSize[i]   + 7: for int i in 0 .. 1];
+		fullPuSizeChr := [predUnitSize[i]/2 + 3: for int i in 0 .. 1];
+		puSize    := [predUnitSize[i]   : for int i in 0 .. 1];
+		puSizeChr := [predUnitSize[i]/2 : for int i in 0 .. 1];
 		iLoop   := 0;
 		jLoop   := 0;
 		lastPocRef := poc;
@@ -97,8 +102,8 @@ actor SubPuMuxPreComp(uint(size=3) LOG2_NUM_SUB_BLK[2])
 				subPuIdx := [xIdx, yIdx];
 				foreach uint i in 0 .. 1
 				do
-					numPix    := predSize[i] >> LOG2_NUM_SUB_BLK[i];
-					blkRemain := predSize[i] - (numPix << LOG2_NUM_SUB_BLK[i]);
+					numPix    := fullPuSize[i] >> LOG2_NUM_SUB_BLK[i];
+					blkRemain := fullPuSize[i] - (numPix << LOG2_NUM_SUB_BLK[i]);
 					subPuIdxMin[xIdx][yIdx][i] := subPuIdx[i] * numPix;
 					if(subPuIdx[i] >= (1 << LOG2_NUM_SUB_BLK[i]) - blkRemain) then
 						subPuIdxMin[xIdx][yIdx][i] := subPuIdxMin[xIdx][yIdx][i] + subPuIdx[i]
@@ -126,10 +131,10 @@ actor SubPuMuxPreComp(uint(size=3) LOG2_NUM_SUB_BLK[2])
 
 	getIntermPu.launch.lumaComp: action PredSampleIn1:[predSamp], PredSampleIn2:[predSamp2] ==> PredSampleOut:[predSamp]
 	guard
-		jLoop < predSize[1]
+		jLoop < fullPuSize[1]
 	do
 		iLoop := iLoop + 1;
-		if(iLoop = predSize[0]) then
+		if(iLoop = puSize[0]) then
 			iLoop := 0;
 			jLoop := jLoop + 1;
 		end
@@ -137,7 +142,7 @@ actor SubPuMuxPreComp(uint(size=3) LOG2_NUM_SUB_BLK[2])
 
 	getIntermPu.launch.lumaDone: action ==>
 	guard
-		jLoop = predSize[1]
+		jLoop = fullPuSize[1]
 	do
 		iLoop   := 0;
 		jLoop   := 0;
@@ -149,10 +154,10 @@ actor SubPuMuxPreComp(uint(size=3) LOG2_NUM_SUB_BLK[2])
 		compIdx < 3
 	do
 		iLoop := iLoop + 1;
-		if(iLoop = predSizeChr[0]) then
+		if(iLoop = fullPuSizeChr[0]) then
 			iLoop := 0;
 			jLoop := jLoop + 1;
-			if(jLoop = predSizeChr[1]) then
+			if(jLoop = fullPuSizeChr[1]) then
 				iLoop := 0;
 				jLoop := 0;
 				compIdx := compIdx + 1;
