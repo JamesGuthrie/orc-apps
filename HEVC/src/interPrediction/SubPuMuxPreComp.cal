@@ -154,7 +154,7 @@ actor SubPuMuxPreComp(uint(size=3) LOG2_NUM_SUB_BLK[2])
 		compIdx < 3
 	do
 		iLoop := iLoop + 1;
-		if(iLoop = fullPuSizeChr[0]) then
+		if(iLoop = puSizeChr[0]) then
 			iLoop := 0;
 			jLoop := jLoop + 1;
 			if(jLoop = fullPuSizeChr[1]) then

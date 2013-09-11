@@ -538,7 +538,11 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 			do
 				foreach int y in 0 .. puIdxMax[1]-1
 				do
-					coord := [x+1, y];
+					if((PROCESS_MODE_HALF_PIX & HALF_PIX_1ST_PART) != 0) then
+						coord := [x+1, y];
+					else
+						coord := [x, y];
+					end
 					@inline
 					predictionFilteringChr(false, coord, [x, y], mvQuartPix[1], 0, 0, cIdx);
 				end
@@ -1228,13 +1232,25 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 		end end
 
 		iLoop := iLoop + 1;
-		if(iLoop = fullPuSizeChr[0]) then
-			iLoop := 0;
-			jLoop := jLoop + 1;
-			if(jLoop = fullPuSizeChr[1]) then
+		if((PROCESS_MODE_HALF_PIX & HALF_PIX_1ST_PART) != 0) then
+			if(iLoop = fullPuSizeChr[0]) then
+ 				iLoop := 0;
+				jLoop := jLoop + 1;
+				if(jLoop = fullPuSizeChr[1]) then
+					iLoop := 0;
+					jLoop := 0;
+					compIdx := compIdx + 1;
+				end
+			end
+		else
+			if(iLoop = puSizeChr[0]) then
 				iLoop := 0;
-				jLoop := 0;
-				compIdx := compIdx + 1;
+				jLoop := jLoop + 1;
+				if(jLoop = fullPuSizeChr[1]) then
+					iLoop := 0;
+					jLoop := 0;
+					compIdx := compIdx + 1;
+				end
 			end
 		end
 	end
@@ -1496,7 +1512,13 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 	sendIntermPu.launch.lumaDone: action ==>
 	guard
 		jLoop = fullPuSize[1]
+	var
+		int mvQuartPix[2]
 	do
+		mvQuartPix := [mvLx[listIdx-1][i] & 7:
+			for int i in 0 .. 1];
+		intermOff := if(mvQuartPix[0] = 0 and mvQuartPix[1] != 0) then 1 else 0 end;
+
 		iLoop   := 0;
 		jLoop   := 0;
 		compIdx := 1;
@@ -1509,9 +1531,9 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 	var
 		int(size=16) sampVal
 	do
-		sampVal := predSampChr[listIdx-1][compIdx-1][iLoop][jLoop];
+		sampVal := predSampChr[listIdx-1][compIdx-1][iLoop + intermOff][jLoop];
 		iLoop := iLoop + 1;
-		if(iLoop = fullPuSizeChr[0]) then
+		if(iLoop = puSizeChr[0]) then
 			iLoop := 0;
 			jLoop := jLoop + 1;
 			if(jLoop = fullPuSizeChr[1]) then
