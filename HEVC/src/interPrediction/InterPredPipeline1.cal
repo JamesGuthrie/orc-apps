@@ -1062,6 +1062,8 @@ actor InterPredPipeline1(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 	guard
 		cuMode = INTER || cuMode = SKIP
 	var
+		uint(size=7) intermSize[2][2] = [[puSize[0], fullPuSize[1]],
+			[puSizeChr[0], fullPuSizeChr[1]]],
 		uint(size=5) nbBlkInPu,
 		uint(size=5) numBlk,
 		uint(size=5) blkRemain
@@ -1093,7 +1095,7 @@ actor InterPredPipeline1(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 			else
 				foreach uint i in 0 .. 1
 				do
-					nbBlkInPu := fullPuSize[i];
+					nbBlkInPu := intermSize[0][i];
 					numBlk    := nbBlkInPu>> LOG2_NUM_SUB_BLK[i];
 					blkRemain := nbBlkInPu - (numBlk << LOG2_NUM_SUB_BLK[i]);
 					subPuIdxMin[0][i] := IDX_SUB_BLOCK[i] * numBlk;
@@ -1103,6 +1105,21 @@ actor InterPredPipeline1(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 						numBlk := numBlk + 1;
 					end
 					subPuIdxMax[0][i] := subPuIdxMin[0][i] + numBlk;
+					subPuSize[0][i]   := numBlk;
+				end
+				foreach uint i in 0 .. 1
+				do
+					nbBlkInPu := intermSize[1][i];
+					numBlk    := nbBlkInPu>> LOG2_NUM_SUB_BLK[i];
+					blkRemain := nbBlkInPu - (numBlk << LOG2_NUM_SUB_BLK[i]);
+					subPuIdxMin[1][i] := IDX_SUB_BLOCK[i] * numBlk;
+					if(IDX_SUB_BLOCK[i] >= (1 << LOG2_NUM_SUB_BLK[i]) - blkRemain) then
+						subPuIdxMin[1][i] := subPuIdxMin[1][i] + IDX_SUB_BLOCK[i]
+							- (1 << LOG2_NUM_SUB_BLK[i]) + blkRemain;
+						numBlk := numBlk + 1;
+					end
+					subPuIdxMax[1][i] := subPuIdxMin[1][i] + numBlk;
+					subPuSize[1][i]   := numBlk;
 				end
 			end
 		end
@@ -1272,22 +1289,26 @@ actor InterPredPipeline1(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 
 		if(LOG2_NUM_SUB_BLK[0] = 0 && LOG2_NUM_SUB_BLK[1] = 0) then
 			puIdxMax := [puSize[i]: for int i in 0 .. 1];
+			idxMax1stPart := [puSize[0], fullPuSize[1]];
 		else
 			puIdxMax := [subPuSize[0][0], subPuSize[0][1]];
+			idxMax1stPart := [subPuSize[0][0], subPuSize[0][1] + 7];
 		end
-			idxMax1stPart[0] := puSize[0];
-			idxMax1stPart[1] := fullPuSize[1];
+		puIdxMax := [puSize[i]: for int i in 0 .. 1];
+		idxMax1stPart := [puSize[0], fullPuSize[1]];
 
 		foreach int component in COMP_MIN .. COMP_MAX /* Y, Cb, Cr */
 		do
 			if(component = 1) then
 				if(LOG2_NUM_SUB_BLK[0] = 0 && LOG2_NUM_SUB_BLK[1] = 0) then
 					puIdxMax := [puSizeChr[i]: for int i in 0 .. 1];
+					idxMax1stPart := [puSizeChr[0], fullPuSizeChr[1]];
 				else
 					puIdxMax := [subPuSize[1][0], subPuSize[1][1]];
+					idxMax1stPart := [subPuSize[1][0], subPuSize[1][1] + 3];
 				end
-					idxMax1stPart[0] := puSizeChr[0];
-					idxMax1stPart[1] := fullPuSizeChr[1];
+				puIdxMax := [puSizeChr[i]: for int i in 0 .. 1];
+				idxMax1stPart := [puSizeChr[0], fullPuSizeChr[1]];
 			end
 			/* We just need to do the fractionnal part of the movement
 			 * interpolation.
@@ -1494,7 +1515,29 @@ actor InterPredPipeline1(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 		(PROCESS_MODE_HALF_PIX & HALF_PIX_2ND_PART) != 0
 	end
 
-	sendIntermPu.launch.lumaComp: action ==> PredSample:[sampVal]
+
+
+	sendIntermPu.launch.lumaComp.skip: action ==>
+	guard
+		(PROCESS_MODE_HALF_PIX & HALF_PIX_2ND_PART) = 0,
+		jLoop < fullPuSize[1],
+		LOG2_NUM_SUB_BLK[0] != 0 || LOG2_NUM_SUB_BLK[1] != 0,
+		iLoop < subPuIdxMin[0][0] || iLoop >= subPuIdxMax[0][0] ||
+		jLoop < subPuIdxMin[0][1] || jLoop >= subPuIdxMax[0][1]
+	do
+		while(jLoop < fullPuSize[1] &&
+			(iLoop < subPuIdxMin[0][0] || iLoop >= subPuIdxMax[0][0] ||
+			 jLoop < subPuIdxMin[0][1] || jLoop >= subPuIdxMax[0][1]))
+		do
+			iLoop := iLoop + 1;
+			if(iLoop = puSize[0]) then
+				iLoop := 0;
+				jLoop := jLoop + 1;
+			end
+		end
+	end
+
+	sendIntermPu.launch.lumaComp.forward: action ==> PredSample:[sampVal]
 	guard
 		(PROCESS_MODE_HALF_PIX & HALF_PIX_2ND_PART) = 0,
 		jLoop < fullPuSize[1]
@@ -1524,7 +1567,32 @@ actor InterPredPipeline1(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 		compIdx := 1;
 	end
 
-	sendIntermPu.launch.chromaComp: action ==> PredSample:[sampVal]
+	sendIntermPu.launch.chromaComp.skip: action ==>
+	guard
+		(PROCESS_MODE_HALF_PIX & HALF_PIX_2ND_PART) = 0,
+		compIdx < 3,
+		LOG2_NUM_SUB_BLK[0] != 0 || LOG2_NUM_SUB_BLK[1] != 0,
+		iLoop < subPuIdxMin[1][0] || iLoop >= subPuIdxMax[1][0] ||
+		jLoop < subPuIdxMin[1][1] || jLoop >= subPuIdxMax[1][1]
+	do
+		while(compIdx < 3 &&
+			(iLoop < subPuIdxMin[1][0] || iLoop >= subPuIdxMax[1][0] ||
+			 jLoop < subPuIdxMin[1][1] || jLoop >= subPuIdxMax[1][1]))
+		do
+			iLoop := iLoop + 1;
+			if(iLoop = puSizeChr[0]) then
+				iLoop := 0;
+				jLoop := jLoop + 1;
+				if(jLoop = fullPuSizeChr[1]) then
+					iLoop := 0;
+					jLoop := 0;
+					compIdx := compIdx + 1;
+				end
+			end
+		end
+	end
+
+	sendIntermPu.launch.chromaComp.forward: action ==> PredSample:[sampVal]
 	guard
 		(PROCESS_MODE_HALF_PIX & HALF_PIX_2ND_PART) = 0,
 		compIdx < 3
@@ -1615,5 +1683,7 @@ actor InterPredPipeline1(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 		getWeightLX.launch > getWeightLX.skip >getWeightLX.done;
 		sendPu.skip > sendPu.launch > sendPu.done;
 		getSamples.done > getSamples.luma;
+		sendIntermPu.launch.lumaComp.skip > sendIntermPu.launch.lumaComp.forward;
+		sendIntermPu.launch.chromaComp.skip > sendIntermPu.launch.chromaComp.forward;
 	end
 end

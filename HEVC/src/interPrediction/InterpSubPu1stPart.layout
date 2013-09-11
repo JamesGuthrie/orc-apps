@@ -15,8 +15,8 @@
 		<vertex id="WeightedPredSe" x="57" y="1174"/>
 		<vertex id="PredSample" x="1292" y="576"/>
 		<vertex id="Interp2ndPart" x="875" y="551"/>
-		<vertex id="InterpPreComput" x="248" y="594"/>
 		<vertex id="SubMuxPrecomp" x="576" y="341"/>
-		<vertex id="InterpPreComput2" x="260" y="911"/>
+		<vertex id="InterpPreComput" x="260" y="911"/>
+		<vertex id="InterpPreComput2" x="281" y="592"/>
 	</vertices>
 </layout>

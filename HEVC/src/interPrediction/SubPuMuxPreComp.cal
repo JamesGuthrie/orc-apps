@@ -58,8 +58,8 @@ actor SubPuMuxPreComp(uint(size=3) LOG2_NUM_SUB_BLK[2])
 	uint(size=7)  jLoop;
 	uint(size=2)  compIdx;
 
-	uint(size=7) subPuIdxMin[16][16][2];
-	uint(size=7) subPuIdxMax[16][16][2];
+	uint(size=7) subPuIdxMin[16][16][2][2];
+	uint(size=7) subPuIdxMax[16][16][2][2];
 
 	getNewPred: action IsBiPredOrLx:[isBiPredOrLx] ==>
 	do
@@ -71,7 +71,7 @@ actor SubPuMuxPreComp(uint(size=3) LOG2_NUM_SUB_BLK[2])
 			end;
 		isBiPred := isBiPredOrLx = BI_PRED;
 	end
-
+uint numMv;
 	/* We get all the informations needed for sending the reference Cu. We save
 	 * these samples in RefCu, it will be sent with the actions sendCu.isYxY
 	 */
@@ -82,10 +82,12 @@ actor SubPuMuxPreComp(uint(size=3) LOG2_NUM_SUB_BLK[2])
 		not(isBiPred && numPocRef = 1 && lastPocRef = poc && lastMvRef[0] = mvX &&
 			lastMvRef[1] = mvY)
 	var
+		uint(size=7) intermSize[2][2],
 		uint(size=8) subPuIdx[2],
 		uint(size=5) numPix,
 		uint(size=5) blkRemain
 	do
+		numMv := numMv + 1;
 		fullPuSize    := [predUnitSize[i]   + 7: for int i in 0 .. 1];
 		fullPuSizeChr := [predUnitSize[i]/2 + 3: for int i in 0 .. 1];
 		puSize    := [predUnitSize[i]   : for int i in 0 .. 1];
@@ -95,6 +97,10 @@ actor SubPuMuxPreComp(uint(size=3) LOG2_NUM_SUB_BLK[2])
 		lastPocRef := poc;
 		lastMvRef  := [mvX, mvY];
 
+		intermSize[0][0] := puSize[0];
+		intermSize[0][1] := fullPuSize[1];
+		intermSize[1][0] := puSizeChr[0];
+		intermSize[1][1] := fullPuSizeChr[1];
 		foreach uint yIdx in 0 .. (1<<LOG2_NUM_SUB_BLK[1])-1
 		do
 			foreach uint xIdx in 0 .. (1<<LOG2_NUM_SUB_BLK[0])-1
@@ -102,15 +108,27 @@ actor SubPuMuxPreComp(uint(size=3) LOG2_NUM_SUB_BLK[2])
 				subPuIdx := [xIdx, yIdx];
 				foreach uint i in 0 .. 1
 				do
-					numPix    := fullPuSize[i] >> LOG2_NUM_SUB_BLK[i];
-					blkRemain := fullPuSize[i] - (numPix << LOG2_NUM_SUB_BLK[i]);
-					subPuIdxMin[xIdx][yIdx][i] := subPuIdx[i] * numPix;
+					numPix    := intermSize[0][i] >> LOG2_NUM_SUB_BLK[i];
+					blkRemain := intermSize[0][i] - (numPix << LOG2_NUM_SUB_BLK[i]);
+					subPuIdxMin[xIdx][yIdx][0][i] := subPuIdx[i] * numPix;
 					if(subPuIdx[i] >= (1 << LOG2_NUM_SUB_BLK[i]) - blkRemain) then
-						subPuIdxMin[xIdx][yIdx][i] := subPuIdxMin[xIdx][yIdx][i] + subPuIdx[i]
+						subPuIdxMin[xIdx][yIdx][0][i] := subPuIdxMin[xIdx][yIdx][0][i] + subPuIdx[i]
 							- (1 << LOG2_NUM_SUB_BLK[i]) + blkRemain;
 						numPix := numPix + 1;
 					end
-					subPuIdxMax[xIdx][yIdx][i] := subPuIdxMin[xIdx][yIdx][i] + numPix;
+					subPuIdxMax[xIdx][yIdx][0][i] := subPuIdxMin[xIdx][yIdx][0][i] + numPix;
+				end
+				foreach uint i in 0 .. 1
+				do
+					numPix    := intermSize[1][i] >> LOG2_NUM_SUB_BLK[i];
+					blkRemain := intermSize[1][i] - (numPix << LOG2_NUM_SUB_BLK[i]);
+					subPuIdxMin[xIdx][yIdx][1][i] := subPuIdx[i] * numPix;
+					if(subPuIdx[i] >= (1 << LOG2_NUM_SUB_BLK[i]) - blkRemain) then
+						subPuIdxMin[xIdx][yIdx][1][i] := subPuIdxMin[xIdx][yIdx][1][i] + subPuIdx[i]
+							- (1 << LOG2_NUM_SUB_BLK[i]) + blkRemain;
+						numPix := numPix + 1;
+					end
+					subPuIdxMax[xIdx][yIdx][1][i] := subPuIdxMin[xIdx][yIdx][1][i] + numPix;
 				end
 			end
 		end
@@ -129,9 +147,24 @@ actor SubPuMuxPreComp(uint(size=3) LOG2_NUM_SUB_BLK[2])
 		numPocRef = 0
 	end
 
-	getIntermPu.launch.lumaComp: action PredSampleIn1:[predSamp], PredSampleIn2:[predSamp2] ==> PredSampleOut:[predSamp]
+	getIntermPu.launch.lumaComp.forward1: action PredSampleIn1:[predSamp] ==> PredSampleOut:[predSamp]
 	guard
-		jLoop < fullPuSize[1]
+		jLoop < fullPuSize[1],
+		iLoop >= subPuIdxMin[0][0][0][0] && iLoop < subPuIdxMax[0][0][0][0] &&
+		jLoop >= subPuIdxMin[0][0][0][1] && jLoop < subPuIdxMax[0][0][0][1]
+	do
+		iLoop := iLoop + 1;
+		if(iLoop = puSize[0]) then
+			iLoop := 0;
+			jLoop := jLoop + 1;
+		end
+	end
+
+	getIntermPu.launch.lumaComp.forward2: action PredSampleIn2:[predSamp] ==> PredSampleOut:[predSamp]
+	guard
+		jLoop < fullPuSize[1],
+		iLoop >= subPuIdxMin[1][0][0][0] && iLoop < subPuIdxMax[1][0][0][0] &&
+		jLoop >= subPuIdxMin[1][0][0][1] && jLoop < subPuIdxMax[1][0][0][1]
 	do
 		iLoop := iLoop + 1;
 		if(iLoop = puSize[0]) then
@@ -144,14 +177,35 @@ actor SubPuMuxPreComp(uint(size=3) LOG2_NUM_SUB_BLK[2])
 	guard
 		jLoop = fullPuSize[1]
 	do
+//		println("lumaDone");
 		iLoop   := 0;
 		jLoop   := 0;
 		compIdx := 1;
 	end
 
-	getIntermPu.launch.chromaComp: action PredSampleIn1:[predSamp], PredSampleIn2:[predSamp2] ==> PredSampleOut:[predSamp]
+	getIntermPu.launch.chromaComp.forward1: action PredSampleIn1:[predSamp] ==> PredSampleOut:[predSamp]
 	guard
-		compIdx < 3
+		compIdx < 3,
+		iLoop >= subPuIdxMin[0][0][1][0] && iLoop < subPuIdxMax[0][0][1][0] &&
+		jLoop >= subPuIdxMin[0][0][1][1] && jLoop < subPuIdxMax[0][0][1][1]
+	do
+		iLoop := iLoop + 1;
+		if(iLoop = puSizeChr[0]) then
+			iLoop := 0;
+			jLoop := jLoop + 1;
+			if(jLoop = fullPuSizeChr[1]) then
+				iLoop := 0;
+				jLoop := 0;
+				compIdx := compIdx + 1;
+			end
+		end
+	end
+
+	getIntermPu.launch.chromaComp.forward2: action PredSampleIn2:[predSamp2] ==> PredSampleOut:[predSamp2]
+	guard
+		compIdx < 3,
+		iLoop >= subPuIdxMin[1][0][1][0] && iLoop < subPuIdxMax[1][0][1][0] &&
+		jLoop >= subPuIdxMin[1][0][1][1] && jLoop < subPuIdxMax[1][0][1][1]
 	do
 		iLoop := iLoop + 1;
 		if(iLoop = puSizeChr[0]) then
