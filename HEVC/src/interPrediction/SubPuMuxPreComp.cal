@@ -58,6 +58,8 @@ actor SubPuMuxPreComp(uint(size=3) LOG2_NUM_SUB_BLK[2])
 	uint(size=7)  jLoop;
 	uint(size=2)  compIdx;
 
+	uint(size=13) tokenToSend;
+
 	uint(size=7) subPuIdxMin[16][16][2][2];
 	uint(size=7) subPuIdxMax[16][16][2][2];
 
@@ -147,33 +149,35 @@ uint numMv;
 		numPocRef = 0
 	end
 
-	getIntermPu.launch.lumaComp.forward1: action PredSampleIn1:[predSamp] ==> PredSampleOut:[predSamp]
+	checkInputLuma.input1: action ==>
 	guard
 		jLoop < fullPuSize[1],
 		iLoop >= subPuIdxMin[0][0][0][0] && iLoop < subPuIdxMax[0][0][0][0] &&
 		jLoop >= subPuIdxMin[0][0][0][1] && jLoop < subPuIdxMax[0][0][0][1]
 	do
-		iLoop := iLoop + 1;
+		tokenToSend := subPuIdxMax[0][0][0][0] - iLoop;
+		iLoop := subPuIdxMax[0][0][0][0];
 		if(iLoop = puSize[0]) then
 			iLoop := 0;
 			jLoop := jLoop + 1;
 		end
 	end
 
-	getIntermPu.launch.lumaComp.forward2: action PredSampleIn2:[predSamp] ==> PredSampleOut:[predSamp]
+	checkInputLuma.input2: action ==>
 	guard
 		jLoop < fullPuSize[1],
 		iLoop >= subPuIdxMin[1][0][0][0] && iLoop < subPuIdxMax[1][0][0][0] &&
 		jLoop >= subPuIdxMin[1][0][0][1] && jLoop < subPuIdxMax[1][0][0][1]
 	do
-		iLoop := iLoop + 1;
+		tokenToSend := subPuIdxMax[1][0][0][0] - iLoop;
+		iLoop := subPuIdxMax[1][0][0][0];
 		if(iLoop = puSize[0]) then
 			iLoop := 0;
 			jLoop := jLoop + 1;
 		end
 	end
 
-	getIntermPu.launch.lumaDone: action ==>
+	checkInputLuma.done: action ==>
 	guard
 		jLoop = fullPuSize[1]
 	do
@@ -183,13 +187,14 @@ uint numMv;
 		compIdx := 1;
 	end
 
-	getIntermPu.launch.chromaComp.forward1: action PredSampleIn1:[predSamp] ==> PredSampleOut:[predSamp]
+	checkInputChroma.input1: action ==>
 	guard
 		compIdx < 3,
 		iLoop >= subPuIdxMin[0][0][1][0] && iLoop < subPuIdxMax[0][0][1][0] &&
 		jLoop >= subPuIdxMin[0][0][1][1] && jLoop < subPuIdxMax[0][0][1][1]
 	do
-		iLoop := iLoop + 1;
+		tokenToSend := subPuIdxMax[0][0][1][0] - iLoop;
+		iLoop := subPuIdxMax[0][0][1][0];
 		if(iLoop = puSizeChr[0]) then
 			iLoop := 0;
 			jLoop := jLoop + 1;
@@ -201,13 +206,14 @@ uint numMv;
 		end
 	end
 
-	getIntermPu.launch.chromaComp.forward2: action PredSampleIn2:[predSamp2] ==> PredSampleOut:[predSamp2]
+	checkInputChroma.input2: action ==>
 	guard
 		compIdx < 3,
 		iLoop >= subPuIdxMin[1][0][1][0] && iLoop < subPuIdxMax[1][0][1][0] &&
 		jLoop >= subPuIdxMin[1][0][1][1] && jLoop < subPuIdxMax[1][0][1][1]
 	do
-		iLoop := iLoop + 1;
+		tokenToSend := subPuIdxMax[1][0][1][0] - iLoop;
+		iLoop := subPuIdxMax[1][0][1][0];
 		if(iLoop = puSizeChr[0]) then
 			iLoop := 0;
 			jLoop := jLoop + 1;
@@ -219,22 +225,60 @@ uint numMv;
 		end
 	end
 
-	getIntermPu.done: action ==>
+	checkInputChroma.done: action ==>
 	guard
 		compIdx = 3
 	end
 
+
+	forward.input1: action PredSampleIn1:[in1] ==> PredSampleOut:[in1]
+	guard
+		tokenToSend > 0
+	do
+		tokenToSend := tokenToSend - 1;
+	end
+
+	forward.input2: action PredSampleIn2:[in2] ==> PredSampleOut:[in2]
+	guard
+		tokenToSend > 0
+	do
+		tokenToSend := tokenToSend - 1;
+	end
+
+	forward.done: action ==>
+	guard
+		tokenToSend = 0
+	end
+
+
+
 	schedule fsm GetNewPred:
 		GetNewPred (getNewPred )--> GetMvInfo;
 
-		GetMvInfo (getMvInfo.launch )--> GetIntermPuLuma;
+		GetMvInfo (getMvInfo.launch )--> CheckInLuma;
 		GetMvInfo (getMvInfo.skip   )--> GetNewPred;
 		GetMvInfo (getMvInfo.done   )--> GetNewPred;
 
-		GetIntermPuLuma (getIntermPu.launch.lumaComp )--> GetIntermPuLuma;
-		GetIntermPuLuma (getIntermPu.launch.lumaDone )--> GetIntermPuChr;
 
-		GetIntermPuChr (getIntermPu.launch.chromaComp )--> GetIntermPuChr;
-		GetIntermPuChr (getIntermPu.done              )--> GetMvInfo;
+		CheckInLuma (checkInputLuma.input1 )--> ForwardIn1Luma;
+		CheckInLuma (checkInputLuma.input2 )--> ForwardIn2Luma;
+		CheckInLuma (checkInputLuma.done   )--> CheckInChroma;
+
+		ForwardIn1Luma (forward.input1 )--> ForwardIn1Luma;
+		ForwardIn1Luma (forward.done   )--> CheckInLuma;
+
+		ForwardIn2Luma (forward.input2 )--> ForwardIn2Luma;
+		ForwardIn2Luma (forward.done   )--> CheckInLuma;
+
+
+		CheckInChroma (checkInputChroma.input1 )--> ForwardIn1Chroma;
+		CheckInChroma (checkInputChroma.input2 )--> ForwardIn2Chroma;
+		CheckInChroma (checkInputChroma.done        )--> GetMvInfo;
+
+		ForwardIn1Chroma (forward.input1 )--> ForwardIn1Chroma;
+		ForwardIn1Chroma (forward.done   )--> CheckInChroma;
+
+		ForwardIn2Chroma (forward.input2 )--> ForwardIn2Chroma;
+		ForwardIn2Chroma (forward.done   )--> CheckInChroma;
 	end
 end
