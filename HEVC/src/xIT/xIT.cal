@@ -14,6 +14,13 @@ actor xIT()
 	int(size=16) Block  
 		:
  
+	uint(size= 8) qp_c[15] = [ 29, 30, 31, 32, 33, 33, 34, 34, 35, 35, 36, 36, 37, 37];
+	uint(size= 8) levelScale[6] = [ 40, 45, 51, 57, 64, 72 ];
+	uint(size= 8) sps_bit_depth_luma_minus8   = 0;
+	uint(size= 8) sps_bit_depth_chroma_minus8 = 0;
+	uint(size=16) qp_bd_offset_luma           = 6 * sps_bit_depth_luma_minus8;
+	uint(size=16) qp_bd_offset_chroma         = 6 * sps_bit_depth_chroma_minus8;
+
 	int 	MAX_TR_DYNAMIC_RANGE = 15; // Maximum transform dynamic range (excluding sign bit)
 	int 	BIT_DEPTH = 8; // assuming 8bits for samples
 
@@ -38,15 +45,9 @@ actor xIT()
 	)
 	var
 		uint(size= 8) sizeOfTU                    = 1 << log2TrafoSize,
-		uint(size= 8) sps_bit_depth_luma_minus8   = 0,
-		uint(size= 8) sps_bit_depth_chroma_minus8 = 0,
-		uint(size=16) qp_bd_offset_luma           = 6 * sps_bit_depth_luma_minus8,
-		uint(size=16) qp_bd_offset_chroma         = 6 * sps_bit_depth_chroma_minus8,
          int(size= 8) qp_y     = ((slice_qp + /*s->tu.cu_qp_delta +*/ 52 + 2 * qp_bd_offset_luma) mod (52 + qp_bd_offset_luma)) - qp_bd_offset_luma,
-        uint(size= 8) qp_c[15] = [ 29, 30, 31, 32, 33, 33, 34, 34, 35, 35, 36, 36, 37, 37],
 		 int(size=16) qp,
 		 int(size=16) qp_i,
-		uint(size= 8) levelScale[6] = [ 40, 45, 51, 57, 64, 72 ],
 		uint(size= 8) shift = if rc_cIdx = 0 then sps_bit_depth_luma_minus8 + 8 + log2TrafoSize - 5 else sps_bit_depth_chroma_minus8 + 8 + log2TrafoSize - 5 end
 	begin
         if rc_cIdx = 0 then
@@ -248,48 +249,32 @@ actor xIT()
 	                         ( input[j + 32*8] * g_aiT32[8][1] ) + ( input[j + 32*24] * g_aiT32[24][1] )
 	                        ];
 	
-			evenEvenEven := [ evenEvenEvenEven[0] + evenEvenEvenOdd[0],
-	                      evenEvenEvenEven[1] + evenEvenEvenOdd[1],                                  
-	                      evenEvenEvenEven[1] - evenEvenEvenOdd[1],
-	                      evenEvenEvenEven[0] - evenEvenEvenOdd[0]
-	                    ];
+			foreach int i in 0 .. 1
+			do
+				evenEvenEven[i]   := evenEvenEvenEven[i] + evenEvenEvenOdd[i];
+				evenEvenEven[3-i] := evenEvenEvenEven[i] - evenEvenEvenOdd[i];
+			end
 	
 			evenEvenOdd  := [ ( input[j + 32*4] * g_aiT32[4][i] ) + ( input[j + 32*12] * g_aiT32[12][i] ) + ( input[j + 32*20] * g_aiT32[20][i] ) + ( input[j + 32*28] * g_aiT32[28][i] )
 	    	              : for int i in 0 .. 3
 	                    ];
 	
-			evenEven := [ evenEvenEven[0] + evenEvenOdd[0],
-	                  evenEvenEven[1] + evenEvenOdd[1],
-	                  evenEvenEven[2] + evenEvenOdd[2],
-	                  evenEvenEven[3] + evenEvenOdd[3],
-	                  evenEvenEven[3] - evenEvenOdd[3],
-	                  evenEvenEven[2] - evenEvenOdd[2],                                    
-	                  evenEvenEven[1] - evenEvenOdd[1],
-	                  evenEvenEven[0] - evenEvenOdd[0]
-	                ];
+			foreach int i in 0 .. 3
+			do
+				evenEven[i]    := evenEvenEven[i] + evenEvenOdd[i];
+				evenEven[7-i]  := evenEvenEven[i] - evenEvenOdd[i];
+			end
 	
 			evenOdd  := [( input[j + 32*2]  * g_aiT32[2] [i] ) + ( input[j + 32*6]  * g_aiT32[6] [i] ) + ( input[j + 32*10] * g_aiT32[10][i] ) + ( input[j + 32*14] * g_aiT32[14][i] ) +
 	    	         ( input[j + 32*18] * g_aiT32[18][i] ) + ( input[j + 32*22] * g_aiT32[22][i] ) + ( input[j + 32*26] * g_aiT32[26][i] ) + ( input[j + 32*30] * g_aiT32[30][i] )
 	    	         : for int i in 0 .. 7
 	    	        ];
 	
-			even := [ evenEven[0] + evenOdd[0],
-	    	      evenEven[1] + evenOdd[1],
-	    	      evenEven[2] + evenOdd[2],
-	    	      evenEven[3] + evenOdd[3],
-	    	      evenEven[4] + evenOdd[4],
-	    	      evenEven[5] + evenOdd[5],
-	    	      evenEven[6] + evenOdd[6],
-	    	      evenEven[7] + evenOdd[7],
-	    	      evenEven[7] - evenOdd[7],
-	    	      evenEven[6] - evenOdd[6],
-	    	      evenEven[5] - evenOdd[5],
-	    	      evenEven[4] - evenOdd[4],    	      
-	    	      evenEven[3] - evenOdd[3],
-	    	      evenEven[2] - evenOdd[2],
-	    	      evenEven[1] - evenOdd[1],
-	    	      evenEven[0] - evenOdd[0]
-	            ];
+			foreach int i in 0 .. 7
+			do
+				even[i]    := evenEven[i] + evenOdd[i];
+				even[15-i] := evenEven[i] - evenOdd[i];
+			end
 	
 			odd  := [( input[j + 32*1]  * g_aiT32[1] [i] ) + ( input[j + 32*3]  * g_aiT32[3] [i] ) + ( input[j + 32*5]  * g_aiT32[5] [i] ) + ( input[j + 32*7]  * g_aiT32[7] [i] ) +
 	    	     ( input[j + 32*9]  * g_aiT32[9] [i] ) + ( input[j + 32*11] * g_aiT32[11][i] ) + ( input[j + 32*13] * g_aiT32[13][i] ) + ( input[j + 32*15] * g_aiT32[15][i] ) +
@@ -298,38 +283,11 @@ actor xIT()
 	    	     : for int i in 0 .. 15
 	    	    ];
 	
-			output[32*j +  0] := (even[0]  + odd[0] + rounding) >> shift;
-			output[32*j +  1] := (even[1]  + odd[1] + rounding) >> shift;
-			output[32*j +  2] := (even[2]  + odd[2] + rounding) >> shift;
-			output[32*j +  3] := (even[3]  + odd[3] + rounding) >> shift;
-			output[32*j +  4] := (even[4]  + odd[4] + rounding) >> shift;
-			output[32*j +  5] := (even[5]  + odd[5] + rounding) >> shift;
-			output[32*j +  6] := (even[6]  + odd[6] + rounding) >> shift;
-			output[32*j +  7] := (even[7]  + odd[7] + rounding) >> shift;
-			output[32*j +  8] := (even[8]  + odd[8] + rounding) >> shift;
-			output[32*j +  9] := (even[9]  + odd[9] + rounding) >> shift;
-			output[32*j +  10] := (even[10] + odd[10] + rounding) >> shift;
-			output[32*j +  11] := (even[11] + odd[11] + rounding) >> shift;
-			output[32*j +  12] := (even[12] + odd[12] + rounding) >> shift;
-			output[32*j +  13] := (even[13] + odd[13] + rounding) >> shift;
-			output[32*j +  14] := (even[14] + odd[14] + rounding) >> shift;
-			output[32*j +  15] := (even[15] + odd[15] + rounding) >> shift; 
-			output[32*j +  16] := (even[15] - odd[15] + rounding) >> shift;
-			output[32*j +  17] := (even[14] - odd[14] + rounding) >> shift;
-			output[32*j +  18] := (even[13] - odd[13] + rounding) >> shift;
-			output[32*j +  19] := (even[12] - odd[12] + rounding) >> shift;
-			output[32*j +  20] := (even[11] - odd[11] + rounding) >> shift;
-			output[32*j +  21] := (even[10] - odd[10] + rounding) >> shift;
-			output[32*j +  22] := (even[9]  - odd[9] + rounding) >> shift;
-			output[32*j +  23] := (even[8]  - odd[8] + rounding) >> shift;
-			output[32*j +  24] := (even[7]  - odd[7] + rounding) >> shift;
-			output[32*j +  25] := (even[6]  - odd[6] + rounding) >> shift;
-			output[32*j +  26] := (even[5]  - odd[5] + rounding) >> shift;
-			output[32*j +  27] := (even[4]  - odd[4] + rounding) >> shift;
-			output[32*j +  28] := (even[3]  - odd[3] + rounding) >> shift;
-			output[32*j +  29] := (even[2]  - odd[2] + rounding) >> shift;
-			output[32*j +  30] := (even[1]  - odd[1] + rounding) >> shift;
-			output[32*j +  31] := (even[0]  - odd[0] + rounding) >> shift;
+			foreach int i in 0 .. 15
+			do
+				output[32*j + i]    := (even[i] + odd[i] + rounding) >> shift;
+				output[32*j + 31-i] := (even[i] - odd[i] + rounding) >> shift;
+			end
 		end
 	end
 
@@ -363,8 +321,8 @@ actor xIT()
 				inBlkIdx := yPartIdx*4 *tuSize;
 				foreach uint xPartIdx in 0 .. tuSize/4 - 1
 				do
-					blkCoord := [xPartIdx*4, yPartIdx*4];
-					outPixIdx := absCoordToRasterScan(blkCoord);
+					blkCoord := [xPartIdx, yPartIdx];
+					outPixIdx := absCoordInBlkToZScan(blkCoord);
 					outPixIdx := outPixIdx * 16;
 	
 					inPixIdx := inBlkIdx + 4*xPartIdx;
@@ -385,8 +343,8 @@ actor xIT()
 				inBlkIdx := yPartIdx*2 *tuSize;
 				foreach uint xPartIdx in 0 .. tuSize/2 - 1
 				do
-					blkCoord := [xPartIdx*4, yPartIdx*4];
-					outPixIdx := absCoordToRasterScan(blkCoord);
+					blkCoord := [xPartIdx, yPartIdx];
+					outPixIdx := absCoordInBlkToZScan(blkCoord);
 					outPixIdx := outPixIdx * 4;
 	
 					inPixIdx := inBlkIdx + 2*xPartIdx;
@@ -559,25 +517,127 @@ actor xIT()
 	guard
 		sizeOfTU = 32 and RCskip = 0
 	var
-		int shift = MAX_TR_DYNAMIC_RANGE - BIT_DEPTH - 5,
-		int transformSkipShift = shift,
+				int(size=25) evenEvenEvenEven[2],
+				int(size=25) evenEvenEvenOdd[2],
+				int(size=26) evenEvenEven[4],
+				int(size=26) evenEvenOdd[4],
+				int(size=27) evenEven[8],
+				int(size=27) evenOdd[8],
+				int(size=28) even[16],
+				int(size=28) odd[16],
+
+		uint(size=10) inBlkIdx,
+		uint(size=10) inPixIdx,
+		uint(size=16) yBlk,
+		uint(size=16) blkCoord[2],
+		uint(size=10) outPixIdx[2],
+
+         int(size= 8) qp_y     = ((slcQp + /*s->tu.cu_qp_delta +*/ 52 + 2 * qp_bd_offset_luma) mod (52 + qp_bd_offset_luma)) - qp_bd_offset_luma,
+		 int(size=16) qp,
+		uint(size= 8) shift = sps_bit_depth_luma_minus8 + 8 + 5 - 5,
+
+		int transformSkipShift = MAX_TR_DYNAMIC_RANGE - BIT_DEPTH - 5,
 		int offset = (1 << (transformSkipShift -1))
 	do
-		block := [coeff[i]: for int i in 0 .. 32*32-1];
 
-		tabTransCoeffLevel_proc(slcQp, rcCIdx, qpOff, 5);
+        qp := qp_y + qp_bd_offset_luma;
+		foreach int i in 0 .. 32 * 32 - 1 do
+			block[i] := clip_i32(( ( coeff[i] * 16 * levelScale[ qp mod 6 ] << (qp/6)) + (1 << (shift - 1 )) ) >> shift, -32768, 32767 );
+		end
 
 		if(transfSkipFlag = 1) then
 			foreach int i in 0 .. 1023
 			do
 				block[i] := (block[i] + offset) >> transformSkipShift;
 			end
+			foreach uint yPartIdx in 0 .. 32/4 - 1
+			do
+				inBlkIdx := yPartIdx*4 *32;
+				foreach uint xPartIdx in 0 .. 32/4 - 1
+				do
+					blkCoord := [xPartIdx, yPartIdx];
+					outPixIdx[0] := absCoordInBlkToZScan(blkCoord);
+					outPixIdx[0] := outPixIdx[0] * 16;
+	
+					inPixIdx := inBlkIdx + 4*xPartIdx;
+					foreach uint y in 0 .. 3
+					do
+						foreach uint x in 0 .. 3
+						do
+							lumaBlk[outPixIdx[0]] := block[inPixIdx + x];
+							outPixIdx[0] := outPixIdx[0] + 1;
+						end
+						inPixIdx := inPixIdx + 32;
+					end
+				end
+			end
 		else
+			@inline
 			it32x32_1d(block, firstPassBlk, 7);
-			it32x32_1d(firstPassBlk, block, 12);
+			foreach int y in 0 .. 31
+			do
+				yBlk := y >> 2;
+				evenEvenEvenEven := [( firstPassBlk[y + 32*0] * g_aiT32[0][0] ) + ( firstPassBlk[y + 32*16] * g_aiT32[16][0] ),
+		                         ( firstPassBlk[y + 32*0] * g_aiT32[0][1] ) + ( firstPassBlk[y + 32*16] * g_aiT32[16][1] )
+		                        ];
+		
+				evenEvenEvenOdd  := [( firstPassBlk[y + 32*8] * g_aiT32[8][0] ) + ( firstPassBlk[y + 32*24] * g_aiT32[24][0] ),
+		                         ( firstPassBlk[y + 32*8] * g_aiT32[8][1] ) + ( firstPassBlk[y + 32*24] * g_aiT32[24][1] )
+		                        ];
+				foreach int i in 0 .. 1
+				do
+					evenEvenEven[i]   := evenEvenEvenEven[i] + evenEvenEvenOdd[i];
+					evenEvenEven[3-i] := evenEvenEvenEven[i] - evenEvenEvenOdd[i];
+				end
+		
+				evenEvenOdd  := [ ( firstPassBlk[y + 32*4] * g_aiT32[4][i] ) + ( firstPassBlk[y + 32*12] * g_aiT32[12][i] ) + ( firstPassBlk[y + 32*20] * g_aiT32[20][i] ) + ( firstPassBlk[y + 32*28] * g_aiT32[28][i] )
+		    	              : for int i in 0 .. 3
+		                    ];
+		
+				foreach int i in 0 .. 3
+				do
+					evenEven[i]    := evenEvenEven[i] + evenEvenOdd[i];
+					evenEven[7-i]  := evenEvenEven[i] - evenEvenOdd[i];
+				end
+		
+				evenOdd  := [( firstPassBlk[y + 32*2]  * g_aiT32[2] [i] ) + ( firstPassBlk[y + 32*6]  * g_aiT32[6] [i] ) + ( firstPassBlk[y + 32*10] * g_aiT32[10][i] ) + ( firstPassBlk[y + 32*14] * g_aiT32[14][i] ) +
+		    	         ( firstPassBlk[y + 32*18] * g_aiT32[18][i] ) + ( firstPassBlk[y + 32*22] * g_aiT32[22][i] ) + ( firstPassBlk[y + 32*26] * g_aiT32[26][i] ) + ( firstPassBlk[y + 32*30] * g_aiT32[30][i] )
+		    	         : for int i in 0 .. 7
+		    	        ];
+
+				foreach int i in 0 .. 7
+				do
+					even[i]    := evenEven[i] + evenOdd[i];
+					even[15-i] := evenEven[i] - evenOdd[i];
+				end
+		
+				odd  := [( firstPassBlk[y + 32*1]  * g_aiT32[1] [i] ) + ( firstPassBlk[y + 32*3]  * g_aiT32[3] [i] ) + ( firstPassBlk[y + 32*5]  * g_aiT32[5] [i] ) + ( firstPassBlk[y + 32*7]  * g_aiT32[7] [i] ) +
+		    	     ( firstPassBlk[y + 32*9]  * g_aiT32[9] [i] ) + ( firstPassBlk[y + 32*11] * g_aiT32[11][i] ) + ( firstPassBlk[y + 32*13] * g_aiT32[13][i] ) + ( firstPassBlk[y + 32*15] * g_aiT32[15][i] ) +
+		    	     ( firstPassBlk[y + 32*17] * g_aiT32[17][i] ) + ( firstPassBlk[y + 32*19] * g_aiT32[19][i] ) + ( firstPassBlk[y + 32*21] * g_aiT32[21][i] ) + ( firstPassBlk[y + 32*23] * g_aiT32[23][i] ) +
+		    	     ( firstPassBlk[y + 32*25] * g_aiT32[25][i] ) + ( firstPassBlk[y + 32*27] * g_aiT32[27][i] ) + ( firstPassBlk[y + 32*29] * g_aiT32[29][i] ) + ( firstPassBlk[y + 32*31] * g_aiT32[31][i] )
+		    	     : for int i in 0 .. 15
+		    	    ];
+
+				foreach int xBlk in 0 .. 3
+				do
+					blkCoord := [xBlk, yBlk];
+					outPixIdx[0] := absCoordInBlkToZScan(blkCoord);
+					outPixIdx[0] := outPixIdx[0] * 16;
+					outPixIdx[0] := outPixIdx[0] + (y&3)*4;
+
+					blkCoord := [(31-xBlk*4)/4, yBlk];
+					outPixIdx[1] := absCoordInBlkToZScan(blkCoord);
+					outPixIdx[1] := outPixIdx[1] * 16;
+					outPixIdx[1] := outPixIdx[1] + (y&3)*4 + 3;
+					foreach int x in 4*xBlk .. 4*xBlk + 3
+					do
+						lumaBlk[outPixIdx[0] + (x&3)] := (even[x] + odd[x] + (1 << (12 - 1))) >> 12;
+						lumaBlk[outPixIdx[1] - (x&3)] := (even[x] - odd[x] + (1 << (12 - 1))) >> 12;
+					end
+				end
+			end
 		end
 
-		reorderTu(sizeOfTU);
 		numPartToSend := 64;
 		incIdx(sizeOfTU);
 	end

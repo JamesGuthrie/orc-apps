@@ -221,7 +221,7 @@ actor SelectCu()
 				clip_i32(intraSample[sampIdx]+resSample[sampIdx], 0, 255);
 		end
 
-		rasterScanToAbsCoord(idxBlk, blkAddr);
+		zScanToAbsCoord(idxBlk, blkAddr);
 
 		bottomBlk := blkAddr[1]+4 >= neighbBlkSz;
 		if(blkAddr[0]+4 >= neighbBlkSz) then
@@ -272,8 +272,8 @@ actor SelectCu()
 		uint yOff = cuOff[numPartDecoded][1],
 		uint blkIdx
 	do
-		blkAddr := [xIdx+xOff << 2, yIdx+yOff << 2];
-		blkIdx := absCoordToRasterScan(blkAddr);
+		blkAddr := [xIdx+xOff, yIdx+yOff];
+		blkIdx := absCoordInBlkToZScan(blkAddr);
 		foreach int i in 0 .. SCU_SIZE-1
 		do
 			predSamp[24*blkIdx + i] := interSample[i];
@@ -313,7 +313,7 @@ actor SelectCu()
 		end
 
 
-		rasterScanToAbsCoord(idxBlk, blkAddr);
+		zScanToAbsCoord(idxBlk, blkAddr);
 
 		bottomBlk := blkAddr[1]+4 >= neighbBlkSz;
 		if(blkAddr[0]+4 >= 0) then

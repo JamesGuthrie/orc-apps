@@ -1066,7 +1066,7 @@ actor IntraPrediction(bool EnabSkipInPix)
 		uint(size=7) idxSample := 0,
 		uint(size=16) blkAddr[2]
 	do
-		rasterScanToAbsCoord(idxBlk, blkAddr);
+		zScanToAbsCoord(idxBlk, blkAddr);
 
 		foreach uint y in blkAddr[1] .. blkAddr[1]+3
 		do
