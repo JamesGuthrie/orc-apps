@@ -279,6 +279,77 @@ actor SaoFilter(bool DEBUG)
 		end
 	end
 
+	procedure saoFilterEdgeLuma_Diag(uint(size=16) rx, uint(size=16) ry,
+		uint(size=16) picSize[2], bool lcuIsPictBorder)
+	var
+		int (size=16) idxMin[2],
+		int (size=16) idxMax[2],
+		int (size=16) xMax,
+		int (size=16) xIdx,
+		int (size=16) yIdx,
+		uint(size=16) pixIdx[2][2],
+		uint(size=3)  edgeIdx,
+		int(size=2)  xOff[2],
+		int(size=2)  yOff[2]
+	begin
+		idxMax[0] := min(lcuSizeMax - 1, picSize[0] - rx - 1);
+		idxMax[1] := min(lcuSizeMax - 1, picSize[1] - ry - 1);
+		foreach uint k in 0 .. 1
+		do
+			xOff[k] := constHPos0[saoEoClass[xCuFilt][yCuFilt][0]][k];
+			yOff[k] := constVPos0[saoEoClass[xCuFilt][yCuFilt][0]][k];
+		end
+
+		idxMin[0] := if(rx = 0 || xOff[0] != -1) then 0 else -1 end;
+		xMax      := if(xOff[0]  = -1) then idxMax[0] else idxMax[0] + 1 end;
+		idxMin[1] := if(ry = 0) then 0 else -1 end;
+
+		pixIdx[1][1] := ry + yOff[1] + idxMin[1];
+		foreach int(size=16) y in idxMin[1] .. idxMax[1]
+		do
+			yIdx := ry + y;
+			pixIdx[1][0] := rx + xOff[1] + idxMin[0];
+			foreach int(size=16) x in idxMin[0] .. xMax
+			do
+				xIdx := rx + x;
+				signResult[0][(x+xOff[1])&127][(y+yOff[1])&127] :=
+					Sign3(OrigPict[0][pixIdx[1][0] & MASK_WIDTH][pixIdx[1][1]] -
+						OrigPict[0][xIdx][yIdx]);
+				pixIdx[1][0] := pixIdx[1][0] + 1;
+			end
+			pixIdx[1][1] := pixIdx[1][1] + 1;
+		end
+
+		idxMin[0] := 0;
+		idxMin[1] := 0;
+		if(lcuIsPictBorder) then
+			fillInBorderPix(rx, ry, idxMin, idxMax, picSize);
+		end
+		foreach int(size=16) y in idxMin[1] .. idxMax[1]
+		do
+			yIdx := ry + y;
+			foreach int(size=16) x in idxMin[0] .. idxMax[0]
+			do
+				xIdx := rx + x;
+				foreach uint k in 0 .. 1
+				do
+					pixIdx[k][0] := xIdx + xOff[k];
+					pixIdx[k][1] := yIdx + yOff[k];
+				end
+				edgeIdx := 2 + signResult[0][x][y]
+					- signResult[0][(x+xOff[1])&127][(y+yOff[1])&127];
+				edgeIdx := edgeIdxConv[edgeIdx];
+
+				FiltPict[0][xIdx][yIdx] :=
+					clip_i32(OrigPict[0][xIdx][yIdx] +
+					saoOffset[xCuFilt][yCuFilt][0][edgeIdx], 0, 255);
+			end
+		end
+		if(not filtAcrAllSlc || not filtAcrAllTiles) then
+			resetTilesOrSliceEdgeLuma(rx, ry, idxMin, idxMax, xOff, yOff);
+		end
+	end
+
 	procedure resetTilesOrSliceEdgeLuma(uint(size=16) rx, uint(size=16) ry, uint(size=16) idxMin[2], uint(size=16) idxMax[2],
 		int(size=2)  xOff[2], int(size=2)  yOff[2])
 	var
@@ -356,92 +427,30 @@ actor SaoFilter(bool DEBUG)
 	procedure codingTreeBlockModifLuma(uint(size=16) rx, uint(size=16) ry,
 		uint(size=16) picSize[2], bool lcuIsPictBorder)
 	var
-		int (size=16) idxMin[2],
 		int (size=16) idxMax[2],
-		int (size=16) xMax,
-		int (size=16) xIdx,
-		int (size=16) yIdx,
-		uint(size=16) pixIdx[2][2],
-		uint(size=3)  edgeIdx,
 		uint(size=3)  bandShift = BIT_DEPTH-5,
-		uint(size=3)  bandIdx,
-		int(size=2)  xOff[2],
-		int(size=2)  yOff[2]
+		uint(size=3)  bandIdx
 	begin
 		if(saoTypeIdx[xCuFilt][yCuFilt][0] = 2 and saoEoClass[xCuFilt][yCuFilt][0] = 0) then
 			saoFilterEdgeLuma_Horiz(rx,ry,picSize, lcuIsPictBorder);
 		else if(saoTypeIdx[xCuFilt][yCuFilt][0] = 2 and saoEoClass[xCuFilt][yCuFilt][0] = 1) then
 			saoFilterEdgeLuma_Vert(rx,ry,picSize, lcuIsPictBorder);
+		else if(saoTypeIdx[xCuFilt][yCuFilt][0] = 2) then
+			saoFilterEdgeLuma_Diag(rx,ry,picSize, lcuIsPictBorder);
 		else
-			foreach uint k in 0 .. 1
-			do
-				xOff[k] := constHPos0[saoEoClass[xCuFilt][yCuFilt][0]][k];
-				yOff[k] := constVPos0[saoEoClass[xCuFilt][yCuFilt][0]][k];
-			end
 			idxMax[0] := min(lcuSizeMax - 1, picSize[0] - rx - 1);
 			idxMax[1] := min(lcuSizeMax - 1, picSize[1] - ry - 1);
-			if(saoTypeIdx[xCuFilt][yCuFilt][0] = 2) then
-				idxMin[0] := if(rx = 0 || xOff[0] != -1) then 0 else -1 end;
-				xMax      := if(xOff[0]  = -1) then idxMax[0] else idxMax[0] + 1 end;
-				idxMin[1] := if(ry = 0) then 0 else -1 end;
-
-				pixIdx[1][1] := ry + yOff[1] + idxMin[1];
-				foreach int(size=16) y in idxMin[1] .. idxMax[1]
+			foreach int(size=16) y in ry .. ry + idxMax[1]
+			do
+				foreach int(size=16) x in rx .. rx + idxMax[0]
 				do
-					yIdx := ry + y;
-					pixIdx[1][0] := rx + xOff[1] + idxMin[0];
-					foreach int(size=16) x in idxMin[0] .. xMax
-					do
-						xIdx := rx + x;
-						signResult[0][(x+xOff[1])&127][(y+yOff[1])&127] :=
-							Sign3(OrigPict[0][pixIdx[1][0] & MASK_WIDTH][pixIdx[1][1]] -
-								OrigPict[0][xIdx][yIdx]);
-						pixIdx[1][0] := pixIdx[1][0] + 1;
-					end
-					pixIdx[1][1] := pixIdx[1][1] + 1;
-				end
-
-				idxMin[0] := 0;
-				idxMin[1] := 0;
-				if(lcuIsPictBorder) then
-					fillInBorderPix(rx, ry, idxMin, idxMax, picSize);
-				end
-				foreach int(size=16) y in idxMin[1] .. idxMax[1]
-				do
-					yIdx := ry + y;
-					foreach int(size=16) x in idxMin[0] .. idxMax[0]
-					do
-						xIdx := rx + x;
-						foreach uint k in 0 .. 1
-						do
-							pixIdx[k][0] := xIdx + xOff[k];
-							pixIdx[k][1] := yIdx + yOff[k];
-						end
-						edgeIdx := 2 + signResult[0][x][y]
-							- signResult[0][(x+xOff[1])&127][(y+yOff[1])&127];
-						edgeIdx := edgeIdxConv[edgeIdx];
-
-						FiltPict[0][xIdx][yIdx] :=
-							clip_i32(OrigPict[0][xIdx][yIdx] +
-							saoOffset[xCuFilt][yCuFilt][0][edgeIdx], 0, 255);
-					end
-				end
-				if(not filtAcrAllSlc || not filtAcrAllTiles) then
-					resetTilesOrSliceEdgeLuma(rx, ry, idxMin, idxMax, xOff, yOff);
-				end
-			else
-				foreach int(size=16) y in ry .. ry + idxMax[1]
-				do
-					foreach int(size=16) x in rx .. rx + idxMax[0]
-					do
-						bandIdx := bandTable[OrigPict[0][x][y]>>bandShift];
-						FiltPict[0][x][y] :=
-							clip_i32(OrigPict[0][x][y] +
-							saoOffset[xCuFilt][yCuFilt][0][bandIdx], 0, 255);
-					end
+					bandIdx := bandTable[OrigPict[0][x][y]>>bandShift];
+					FiltPict[0][x][y] :=
+						clip_i32(OrigPict[0][x][y] +
+						saoOffset[xCuFilt][yCuFilt][0][bandIdx], 0, 255);
 				end
 			end
-		end end
+		end end end
 	end
 
 
