@@ -150,8 +150,7 @@ actor SaoFilter(bool DEBUG)
 		uint(size=16) xPix2,
 		bool pixIsInPict,
 		uint(size=3) edgeIdx,
-		int (size=16) idxMin,
-		uint(size=16) pixIdx[2][2]
+		int (size=16) idxMin
 	begin
 		xMax := min(lcuSizeMax - 1, picSize[0] - rx - 1);
 		yMax := min(lcuSizeMax - 1, picSize[1] - ry - 1);
@@ -169,7 +168,6 @@ actor SaoFilter(bool DEBUG)
 					Sign3(OrigPict[0][xPix2 & MASK_WIDTH][yIdx] -
 						OrigPict[0][xIdx][yIdx]);
 			end
-			pixIdx[1][1] := pixIdx[1][1] + 1;
 		end
 		idxMin := 0;
 		if(lcuIsPictBorder) then
@@ -191,36 +189,50 @@ actor SaoFilter(bool DEBUG)
 			end
 		end
 
-		foreach uint(size=3) y in 0 .. yMax
+		foreach uint(size=3) x in idxMin .. xMax
 		do
-			yIdx := ry + y;
-			foreach uint(size=3) x in idxMin .. xMax
+			xIdx := rx + x;
+			xPix1 := xIdx - 1;
+			xPix2 := xIdx + 1;
+			foreach uint(size=3) y in 0 .. yMax
 			do
-				xIdx := rx + x;
-				xPix1 := xIdx - 1;
-				xPix2 := xIdx + 1;
+				yIdx := ry + y;
 
-				pixIsInPict := true;
-				if(not filtAcrSlc[xIdx/lcuSizeMax][yIdx/lcuSizeMax] &&
-					numSlc[xPix1/lcuSizeMax][yIdx/lcuSizeMax] !=
-					numSlc[xPix2/lcuSizeMax][yIdx/lcuSizeMax]) then
-					pixIsInPict := false;
-				else if(not filtAcrTile[xIdx/lcuSizeMax][yIdx/lcuSizeMax] &&
-					numTile[xPix1/lcuSizeMax][yIdx/lcuSizeMax] !=
-					numTile[xPix2/lcuSizeMax][yIdx/lcuSizeMax]) then
-					
-					pixIsInPict := false;
-				end end
-
-				edgeIdx := 0;
-				if(pixIsInPict) then
-					edgeIdx := 2 + signResult[0][x][y]
-						- signResult[0][x+1][y];
-					edgeIdx := edgeIdxConv[edgeIdx];
-				end
+				edgeIdx := 2 + signResult[0][x][y]
+					- signResult[0][x+1][y];
+				edgeIdx := edgeIdxConv[edgeIdx];
 				FiltPict[0][xIdx][yIdx] :=
 					clip_i32(OrigPict[0][xIdx][yIdx] +
 						saoOffset[xCuFilt][yCuFilt][0][edgeIdx], 0, 255);
+			end
+		end
+		if(not filtAcrAllSlc || not filtAcrAllTiles) then
+			foreach uint(size=3) y in 0 .. yMax
+			do
+				yIdx := ry + y;
+				foreach uint(size=3) x in idxMin .. xMax
+				do
+					xIdx := rx + x;
+					xPix1 := xIdx - 1;
+					xPix2 := xIdx + 1;
+	
+					pixIsInPict := true;
+					if(not filtAcrSlc[xIdx/lcuSizeMax][yIdx/lcuSizeMax] &&
+						numSlc[xPix1/lcuSizeMax][yIdx/lcuSizeMax] !=
+						numSlc[xPix2/lcuSizeMax][yIdx/lcuSizeMax]) then
+						pixIsInPict := false;
+					else if(not filtAcrTile[xIdx/lcuSizeMax][yIdx/lcuSizeMax] &&
+						numTile[xPix1/lcuSizeMax][yIdx/lcuSizeMax] !=
+						numTile[xPix2/lcuSizeMax][yIdx/lcuSizeMax]) then
+						
+						pixIsInPict := false;
+					end end
+
+					if( not pixIsInPict) then
+						FiltPict[0][xIdx][yIdx] :=
+							OrigPict[0][xIdx][yIdx];
+					end
+				end
 			end
 		end
 	end
@@ -228,68 +240,97 @@ actor SaoFilter(bool DEBUG)
 	procedure saoFilterEdgeLuma_Vert(uint(size=16) rx, uint(size=16) ry,
 		uint(size=16) picSize[2], bool lcuIsPictBorder)
 	var
+		int (size=16) idxMin,
 		uint(size=16) xMax,
 		uint(size=16) yMax,
 		uint(size=16) xIdx,
 		uint(size=16) yIdx,
 		uint(size=16) yPix1,
 		uint(size=16) yPix2,
-		bool pixIsInPict,
 		uint(size=3) edgeIdx,
-		int(size=2) sign3Result
+		bool pixIsInPict
 	begin
 		xMax := min(lcuSizeMax - 1, picSize[0] - rx - 1);
 		yMax := min(lcuSizeMax - 1, picSize[1] - ry - 1);
-		foreach uint(size=3) x in 0 .. xMax
+		idxMin := if(ry = 0) then 0 else -1 end;
+
+		foreach int(size=16) x in 0 .. xMax
 		do
 			xIdx := rx + x;
-			foreach uint(size=3) y in 0 .. yMax
+			foreach int(size=16) y in idxMin .. yMax
 			do
 				yIdx := ry + y;
-				yPix1 := yIdx - 1;
 				yPix2 := yIdx + 1;
 
-				pixIsInPict := true;
-				if(lcuIsPictBorder && (yPix1>=picSize[1] ||
-					yPix2>=picSize[1])) then
-					pixIsInPict := false;
-				//if yPix1 and yPix2 are in the same slice, then
-				//the 3 pixels used for the Sao are in the same slice.
-				else if(not filtAcrSlc[xIdx/lcuSizeMax][yIdx/lcuSizeMax] &&
-					numSlc[xIdx/lcuSizeMax][yPix1/lcuSizeMax] !=
-					numSlc[xIdx/lcuSizeMax][yPix2/lcuSizeMax]) then
-					pixIsInPict := false;
-				else if(not filtAcrTile[xIdx/lcuSizeMax][yIdx/lcuSizeMax] &&
-					numTile[xIdx/lcuSizeMax][yPix1/lcuSizeMax] !=
-					numTile[xIdx/lcuSizeMax][yPix2/lcuSizeMax]) then
-					pixIsInPict := false;
-				end end end
-
-				if(pixIsInPict) then
-					edgeIdx := 2;
-
-					//Check if the value has already been computed.
-					if(y=0) then
-						sign3Result := Sign3(OrigPict[0][xIdx][yIdx] -
-							OrigPict[0][xIdx][yPix1]);
-					end
-					edgeIdx := edgeIdx + sign3Result;
-
-					sign3Result := Sign3(OrigPict[0][xIdx][yIdx] -
-						OrigPict[0][xIdx][yPix2]);
-					edgeIdx := edgeIdx + sign3Result;
-
-					edgeIdx := edgeIdxConv[edgeIdx];
-					//Saving the value to avoid computing it again and Sign3(B-A) = -Sign3(A-B)
-					sign3Result := -sign3Result;
-				else
-					edgeIdx := 0;
-					sign3Result := Sign3(OrigPict[0][xIdx][yPix2] -
+				signResult[0][x][(y+1)&127] :=
+					Sign3(OrigPict[0][xIdx][yPix2 & MASK_HEIGHT] -
 						OrigPict[0][xIdx][yIdx]);
+			end
+		end
+		idxMin := 0;
+		if(lcuIsPictBorder) then
+			if(ry = 0) then
+				idxMin := 1;
+				foreach uint(size=16) x in rx .. rx + xMax
+				do
+					FiltPict[0][x][0] :=
+						OrigPict[0][x][0];
 				end
+			end
+			if(ry + yMax = picSize[1] - 1) then
+				yMax := yMax - 1;
+				foreach uint(size=16) x in rx .. rx + xMax
+				do
+					FiltPict[0][x][picSize[1] - 1] :=
+						OrigPict[0][x][picSize[1] - 1];
+				end
+			end
+		end
+
+		foreach uint(size=3) y in idxMin .. yMax
+		do
+			yIdx := ry + y;
+			yPix2 := yIdx + 1;
+			foreach uint(size=3) x in 0 .. xMax
+			do
+				xIdx := rx + x;
+
+				edgeIdx := 2 + signResult[0][x][y]
+					- signResult[0][x][y+1];
+				edgeIdx := edgeIdxConv[edgeIdx];
 				FiltPict[0][xIdx][yIdx] :=
 					clip_i32(OrigPict[0][xIdx][yIdx] +
-					saoOffset[xCuFilt][yCuFilt][0][edgeIdx], 0, 255);
+						saoOffset[xCuFilt][yCuFilt][0][edgeIdx], 0, 255);
+			end
+		end
+
+		if(not filtAcrAllSlc || not filtAcrAllTiles) then
+			foreach uint(size=3) x in 0 .. xMax
+			do
+				xIdx := rx + x;
+				foreach uint(size=3) y in idxMin .. yMax
+				do
+					yIdx := ry + y;
+	
+					yPix1 := yIdx - 1;
+					yPix2 := yIdx + 1;
+	
+					pixIsInPict := true;
+					if(not filtAcrSlc[xIdx/lcuSizeMax][yIdx/lcuSizeMax] &&
+						numSlc[xIdx/lcuSizeMax][yPix1/lcuSizeMax] !=
+						numSlc[xIdx/lcuSizeMax][yPix2/lcuSizeMax]) then
+						pixIsInPict := false;
+					else if(not filtAcrTile[xIdx/lcuSizeMax][yIdx/lcuSizeMax] &&
+						numTile[xIdx/lcuSizeMax][yPix1/lcuSizeMax] !=
+						numTile[xIdx/lcuSizeMax][yPix2/lcuSizeMax]) then
+						pixIsInPict := false;
+					end end
+	
+					if(not pixIsInPict) then
+						FiltPict[0][xIdx][yIdx] :=
+							OrigPict[0][xIdx][yIdx];
+					end
+				end
 			end
 		end
 	end
@@ -556,59 +597,88 @@ actor SaoFilter(bool DEBUG)
 		uint(size=16) xPix2,
 		bool pixIsInPict,
 		uint(size=3) edgeIdx,
-		int(size=2) sign3Result
+		int (size=16) idxMin
 	begin
 		xMax := min((lcuSizeMax - 1) >> 1, picSize[0] - rx - 1);
 		yMax := min((lcuSizeMax - 1) >> 1, picSize[1] - ry - 1);
-		foreach uint(size=3) y in 0 .. yMax
+
+		idxMin := if(rx = 0) then 0 else -1 end;
+		foreach int(size=16) y in 0 .. yMax
 		do
 			yIdx := ry + y;
-			foreach uint(size=3) x in 0 .. xMax
+			foreach int(size=16) x in idxMin .. xMax
 			do
 				xIdx := rx + x;
-				xPix1 := xIdx - 1;
 				xPix2 := xIdx + 1;
-
-				pixIsInPict := true;
-				if(lcuIsPictBorder && (xPix1 >= picSize[0] ||
-					xPix2 >= picSize[0])) then
-					pixIsInPict := false;
-				//if xPix1 and xPix2 are in the same slice, then
-				//the 3 pixels used for the Sao are in the same slice.
-				else if(not filtAcrSlc[xIdx / (lcuSizeMax >> 1)][yIdx / (lcuSizeMax >> 1)] &&
-					numSlc[xPix1 / (lcuSizeMax >> 1)][yIdx / (lcuSizeMax >> 1)] !=
-					numSlc[xPix2 / (lcuSizeMax >> 1)][yIdx / (lcuSizeMax >> 1)]) then
-					pixIsInPict := false;
-				else if(not filtAcrTile[xIdx / (lcuSizeMax >> 1)][yIdx / (lcuSizeMax >> 1)] &&
-					numTile[xPix1 / (lcuSizeMax >> 1)][yIdx / (lcuSizeMax >> 1)] !=
-					numTile[xPix2 / (lcuSizeMax >> 1)][yIdx / (lcuSizeMax >> 1)]) then
-					pixIsInPict := false;
-				end end end
-
-				if(pixIsInPict) then
-					edgeIdx := 2;
-					if(x=0) then
-
-						sign3Result := Sign3(OrigPict[cIdx][xIdx][yIdx] -
-							OrigPict[cIdx][xPix1][yIdx]);
-					end
-					edgeIdx := edgeIdx + sign3Result;
-
-					sign3Result := Sign3(OrigPict[cIdx][xIdx][yIdx] -
-							OrigPict[cIdx][xPix2][yIdx]);
-					edgeIdx := edgeIdx + sign3Result;
-
-					edgeIdx := edgeIdxConv[edgeIdx];
-					//Saving the value to avoid computing it again and Sign3(B-A) = -Sign3(A-B)
-					sign3Result := -sign3Result;
-				else
-					edgeIdx := 0;
-					sign3Result := Sign3(OrigPict[cIdx][xPix2][yIdx] -
+				signResult[cIdx][(x+1)&127][y] :=
+					Sign3(OrigPict[cIdx][xPix2 & MASK_WIDTH][yIdx] -
 						OrigPict[cIdx][xIdx][yIdx]);
+			end
+		end
+		idxMin := 0;
+		if(lcuIsPictBorder) then
+			if(rx = 0) then
+				idxMin := 1;
+				foreach uint(size=16) y in ry .. ry + yMax
+				do
+					FiltPict[cIdx][0][y] :=
+						OrigPict[cIdx][0][y];
 				end
+			end
+			if(rx + xMax = picSize[0] - 1) then
+				xMax := xMax - 1;
+				foreach uint(size=16) y in ry .. ry + yMax
+				do
+					FiltPict[cIdx][picSize[0] - 1][y] :=
+						OrigPict[cIdx][picSize[0] - 1][y];
+				end
+			end
+		end
+
+		foreach uint(size=3) x in idxMin .. xMax
+		do
+			xIdx := rx + x;
+			xPix1 := xIdx - 1;
+			xPix2 := xIdx + 1;
+			foreach uint(size=3) y in 0 .. yMax
+			do
+				yIdx := ry + y;
+
+				edgeIdx := 2 + signResult[cIdx][x][y]
+					- signResult[cIdx][x+1][y];
+				edgeIdx := edgeIdxConv[edgeIdx];
 				FiltPict[cIdx][xIdx][yIdx] :=
 					clip_i32(OrigPict[cIdx][xIdx][yIdx] +
-					saoOffset[xCuFilt][yCuFilt][cIdx][edgeIdx], 0, 255);
+						saoOffset[xCuFilt][yCuFilt][cIdx][edgeIdx], 0, 255);
+			end
+		end
+
+		if(not filtAcrAllSlc || not filtAcrAllTiles) then
+			foreach uint(size=3) y in 0 .. yMax
+			do
+				yIdx := ry + y;
+				foreach uint(size=3) x in idxMin .. xMax
+				do
+					xIdx := rx + x;
+					xPix1 := xIdx - 1;
+					xPix2 := xIdx + 1;
+	
+					pixIsInPict := true;
+					if(not filtAcrSlc[xIdx / (lcuSizeMax >> 1)][yIdx / (lcuSizeMax >> 1)] &&
+						numSlc[xPix1 / (lcuSizeMax >> 1)][yIdx / (lcuSizeMax >> 1)] !=
+						numSlc[xPix2 / (lcuSizeMax >> 1)][yIdx / (lcuSizeMax >> 1)]) then
+						pixIsInPict := false;
+					else if(not filtAcrTile[xIdx / (lcuSizeMax >> 1)][yIdx / (lcuSizeMax >> 1)] &&
+						numTile[xPix1 / (lcuSizeMax >> 1)][yIdx / (lcuSizeMax >> 1)] !=
+						numTile[xPix2 / (lcuSizeMax >> 1)][yIdx / (lcuSizeMax >> 1)]) then
+						pixIsInPict := false;
+					end end
+
+					if( not pixIsInPict) then
+						FiltPict[cIdx][xIdx][yIdx] :=
+							OrigPict[cIdx][xIdx][yIdx];
+					end
+				end
 			end
 		end
 	end
@@ -620,62 +690,94 @@ actor SaoFilter(bool DEBUG)
 		uint(size=16) yIdx,
 		uint(size=16) xMax,
 		uint(size=16) yMax,
-		uint(size=16) pixIdx[2][2],
 		bool pixIsInPict,
 		uint(size=3) edgeIdx,
-		int(size=2) sign3Result
+		int (size=16) idxMin,
+		uint(size=16) yPix1,
+		uint(size=16) yPix2
 	begin
 		xMax := min((lcuSizeMax - 1) >> 1, picSize[0] - rx - 1);
 		yMax := min((lcuSizeMax - 1) >> 1, picSize[1] - ry - 1);
-		foreach uint(size=3) x in 0 .. xMax
+		idxMin := if(ry = 0) then 0 else -1 end;
+
+		foreach int(size=16) x in 0 .. xMax
 		do
 			xIdx := rx + x;
-			foreach uint(size=3) y in 0 .. yMax
+			foreach int(size=16) y in idxMin .. yMax
 			do
 				yIdx := ry + y;
-				pixIdx[0][1] := yIdx - 1;
-				pixIdx[1][1] := yIdx + 1;
-
-				pixIsInPict := true;
-				if(lcuIsPictBorder && (pixIdx[0][1]>=picSize[1] ||
-					pixIdx[1][1]>=picSize[1])) then
-					pixIsInPict := false;
-				//if yPix1 and yPix2 are in the same slice, then
-				//the 3 pixels used for the Sao are in the same slice.
-				else if(not filtAcrSlc[xIdx / (lcuSizeMax >> 1)][yIdx / (lcuSizeMax >> 1)] &&
-					numSlc[xIdx / (lcuSizeMax >> 1)][pixIdx[0][1] / (lcuSizeMax >> 1)] !=
-					numSlc[xIdx / (lcuSizeMax >> 1)][pixIdx[1][1] / (lcuSizeMax >> 1)]) then
-					pixIsInPict := false;
-				else if(not filtAcrTile[xIdx / (lcuSizeMax >> 1)][yIdx / (lcuSizeMax >> 1)] &&
-					numTile[xIdx / (lcuSizeMax >> 1)][pixIdx[0][1] / (lcuSizeMax >> 1)] !=
-					numTile[xIdx / (lcuSizeMax >> 1)][pixIdx[1][1] / (lcuSizeMax >> 1)]) then
-					pixIsInPict := false;
-				end end end
-
-				if(pixIsInPict) then
-					edgeIdx := 2;
-					if(y=0) then
-						sign3Result := Sign3(OrigPict[cIdx][xIdx][yIdx] -
-							OrigPict[cIdx][xIdx][pixIdx[0][1]]);
-					end
-					edgeIdx := edgeIdx + sign3Result;
-
-					sign3Result := Sign3(OrigPict[cIdx][xIdx][yIdx] -
-							OrigPict[cIdx][xIdx][pixIdx[1][1]]);
-					edgeIdx := edgeIdx + sign3Result;
-
-					edgeIdx := edgeIdxConv[edgeIdx];
-					//Saving the value to avoid computing it again and Sign3(B-A) = -Sign3(A-B)
-					sign3Result := -sign3Result;
-				else
-					edgeIdx := 0;
-					sign3Result := Sign3(OrigPict[cIdx][xIdx][pixIdx[1][1]] -
+				yPix2 := yIdx + 1;
+				signResult[cIdx][x][(y+1)&127] :=
+					Sign3(OrigPict[cIdx][xIdx][yPix2 & MASK_HEIGHT] -
 						OrigPict[cIdx][xIdx][yIdx]);
+			end
+		end
+
+		idxMin := 0;
+		if(lcuIsPictBorder) then
+			if(ry = 0) then
+				idxMin := 1;
+				foreach uint(size=16) x in rx .. rx + xMax
+				do
+					FiltPict[cIdx][x][0] :=
+						OrigPict[cIdx][x][0];
 				end
+			end
+			if(ry + yMax = picSize[1] - 1) then
+				yMax := yMax - 1;
+				foreach uint(size=16) x in rx .. rx + xMax
+				do
+					FiltPict[cIdx][x][picSize[1] - 1] :=
+						OrigPict[cIdx][x][picSize[1] - 1];
+				end
+			end
+		end
+
+		foreach uint(size=3) y in idxMin .. yMax
+		do
+			yIdx := ry + y;
+			yPix2 := yIdx + 1;
+			foreach uint(size=3) x in 0 .. xMax
+			do
+				xIdx := rx + x;
+
+				edgeIdx := 2 + signResult[cIdx][x][y]
+					- signResult[cIdx][x][y+1];
+				edgeIdx := edgeIdxConv[edgeIdx];
 				FiltPict[cIdx][xIdx][yIdx] :=
 					clip_i32(OrigPict[cIdx][xIdx][yIdx] +
-					saoOffset[xCuFilt][yCuFilt][cIdx][edgeIdx], 0, 255);
-			end	
+						saoOffset[xCuFilt][yCuFilt][cIdx][edgeIdx], 0, 255);
+			end
+		end
+
+		if(not filtAcrAllSlc || not filtAcrAllTiles) then
+			foreach uint(size=3) x in 0 .. xMax
+			do
+				xIdx := rx + x;
+				foreach uint(size=3) y in idxMin .. yMax
+				do
+					yIdx := ry + y;
+
+					yPix1 := yIdx - 1;
+					yPix2 := yIdx + 1;
+
+					pixIsInPict := true;
+					if(not filtAcrSlc[xIdx / (lcuSizeMax >> 1)][yIdx / (lcuSizeMax >> 1)] &&
+						numSlc[xIdx / (lcuSizeMax >> 1)][yPix1 / (lcuSizeMax >> 1)] !=
+						numSlc[xIdx / (lcuSizeMax >> 1)][yPix2 / (lcuSizeMax >> 1)]) then
+						pixIsInPict := false;
+					else if(not filtAcrTile[xIdx / (lcuSizeMax >> 1)][yIdx / (lcuSizeMax >> 1)] &&
+						numTile[xIdx / (lcuSizeMax >> 1)][yPix1 / (lcuSizeMax >> 1)] !=
+						numTile[xIdx / (lcuSizeMax >> 1)][yPix2 / (lcuSizeMax >> 1)]) then
+						pixIsInPict := false;
+					end end
+
+					if(not pixIsInPict) then
+						FiltPict[cIdx][xIdx][yIdx] :=
+							OrigPict[cIdx][xIdx][yIdx];
+					end
+				end
+			end
 		end
 	end
 
