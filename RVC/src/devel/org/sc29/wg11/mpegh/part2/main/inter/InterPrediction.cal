@@ -1298,6 +1298,9 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 			idxMax1stPart := [puSize[0], fullPuSize[1]];
 		else
 			puIdxMax := [subPuSize[0][0], subPuSize[0][1]];
+			if(not IS_2ND_PART_PRED && subPuIdxMin[0][1] + subPuSize[0][1] > puSize[1]) then
+				puIdxMax[1] := puSize[1] - subPuIdxMin[0][1];
+			end
 			idxMax1stPart := [subPuSize[0][0], subPuSize[0][1]];
 		end
 
@@ -1309,6 +1312,9 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 					idxMax1stPart := [puSizeChr[0], fullPuSizeChr[1]];
 				else
 					puIdxMax := [subPuSize[1][0], subPuSize[1][1]];
+					if(not IS_2ND_PART_PRED && subPuIdxMin[1][1] + subPuSize[1][1] > puSizeChr[1]) then
+						puIdxMax[1] := puSizeChr[1] - subPuIdxMin[1][1];
+					end
 					idxMax1stPart := [subPuSize[1][0], subPuSize[1][1]];
 				end
 			end
