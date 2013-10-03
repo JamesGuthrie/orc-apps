@@ -307,10 +307,6 @@
     <Connection dst="InterpPreComput2" dst-port="RefList" src="" src-port="RefList"/>
     <Connection dst="InterpPreComput2" dst-port="SliceType" src="" src-port="SliceType"/>
     <Connection dst="InterpPreComput2" dst-port="WeightedPredSe" src="" src-port="WeightedPredSe"/>
-    <Connection dst="SubMuxPrecomp" dst-port="PredSampleIn1"
-        src="InterpPreComput1" src-port="PredSample"/>
-    <Connection dst="SubMuxPrecomp" dst-port="PredSampleIn2"
-        src="InterpPreComput2" src-port="PredSample"/>
     <Connection dst="SubMuxPrecomp" dst-port="IsBiPredOrLx" src="" src-port="IsBiPredOrLx"/>
     <Connection dst="SubMuxPrecomp" dst-port="Mv" src="" src-port="Mv"/>
     <Connection dst="SubMuxPrecomp" dst-port="PocRef" src="" src-port="PocRef"/>
@@ -325,4 +321,8 @@
     <Connection dst="SubDeMuxPrecomp" dst-port="Mv" src="" src-port="Mv"/>
     <Connection dst="SubDeMuxPrecomp" dst-port="PocRef" src="" src-port="PocRef"/>
     <Connection dst="SubDeMuxPrecomp" dst-port="PredCuSize" src="" src-port="PredCuSize"/>
+    <Connection dst="SubMuxPrecomp" dst-port="PredSampleIn_0_0"
+        src="InterpPreComput1" src-port="PredSample"/>
+    <Connection dst="SubMuxPrecomp" dst-port="PredSampleIn_1_0"
+        src="InterpPreComput2" src-port="PredSample"/>
 </XDF>

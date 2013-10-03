@@ -37,8 +37,8 @@ actor SubPuMuxPreComp(uint(size=3) LOG2_NUM_SUB_BLK[2])
 	int (size=32) Mv,
 	int (size=16) PocRef,
 	uint(size=7)  PredCuSize,
-	int (size=16) PredSampleIn1,
-	int (size=16) PredSampleIn2
+	int (size=16) PredSampleIn_0_0,
+	int (size=16) PredSampleIn_1_0
 		==>
 	int (size=16) PredSampleOut
 		:
@@ -149,7 +149,7 @@ uint numMv;
 		numPocRef = 0
 	end
 
-	checkInputLuma.input1: action ==>
+	checkInputLuma.input_0_0: action ==>
 	guard
 		jLoop < fullPuSize[1],
 		iLoop >= subPuIdxMin[0][0][0][0] && iLoop < subPuIdxMax[0][0][0][0] &&
@@ -163,7 +163,7 @@ uint numMv;
 		end
 	end
 
-	checkInputLuma.input2: action ==>
+	checkInputLuma.input_1_0: action ==>
 	guard
 		jLoop < fullPuSize[1],
 		iLoop >= subPuIdxMin[1][0][0][0] && iLoop < subPuIdxMax[1][0][0][0] &&
@@ -187,7 +187,7 @@ uint numMv;
 		compIdx := 1;
 	end
 
-	checkInputChroma.input1: action ==>
+	checkInputChroma.input_0_0: action ==>
 	guard
 		compIdx < 3,
 		iLoop >= subPuIdxMin[0][0][1][0] && iLoop < subPuIdxMax[0][0][1][0] &&
@@ -206,7 +206,7 @@ uint numMv;
 		end
 	end
 
-	checkInputChroma.input2: action ==>
+	checkInputChroma.input_1_0: action ==>
 	guard
 		compIdx < 3,
 		iLoop >= subPuIdxMin[1][0][1][0] && iLoop < subPuIdxMax[1][0][1][0] &&
@@ -231,14 +231,14 @@ uint numMv;
 	end
 
 
-	forward.input1: action PredSampleIn1:[in1] ==> PredSampleOut:[in1]
+	forward.input_0_0: action PredSampleIn_0_0:[in1] ==> PredSampleOut:[in1]
 	guard
 		tokenToSend > 0
 	do
 		tokenToSend := tokenToSend - 1;
 	end
 
-	forward.input2: action PredSampleIn2:[in2] ==> PredSampleOut:[in2]
+	forward.input_1_0: action PredSampleIn_1_0:[in2] ==> PredSampleOut:[in2]
 	guard
 		tokenToSend > 0
 	do
@@ -260,25 +260,25 @@ uint numMv;
 		GetMvInfo (getMvInfo.done   )--> GetNewPred;
 
 
-		CheckInLuma (checkInputLuma.input1 )--> ForwardIn1Luma;
-		CheckInLuma (checkInputLuma.input2 )--> ForwardIn2Luma;
-		CheckInLuma (checkInputLuma.done   )--> CheckInChroma;
+		CheckInLuma (checkInputLuma.input_0_0 )--> ForwardIn_0_0_Luma;
+		CheckInLuma (checkInputLuma.input_1_0 )--> ForwardIn_1_1_Luma;
+		CheckInLuma (checkInputLuma.done      )--> CheckInChroma;
 
-		ForwardIn1Luma (forward.input1 )--> ForwardIn1Luma;
-		ForwardIn1Luma (forward.done   )--> CheckInLuma;
+		ForwardIn_0_0_Luma (forward.input_0_0 )--> ForwardIn_0_0_Luma;
+		ForwardIn_0_0_Luma (forward.done      )--> CheckInLuma;
 
-		ForwardIn2Luma (forward.input2 )--> ForwardIn2Luma;
-		ForwardIn2Luma (forward.done   )--> CheckInLuma;
+		ForwardIn_1_1_Luma (forward.input_1_0 )--> ForwardIn_1_1_Luma;
+		ForwardIn_1_1_Luma (forward.done      )--> CheckInLuma;
 
 
-		CheckInChroma (checkInputChroma.input1 )--> ForwardIn1Chroma;
-		CheckInChroma (checkInputChroma.input2 )--> ForwardIn2Chroma;
-		CheckInChroma (checkInputChroma.done        )--> GetMvInfo;
+		CheckInChroma (checkInputChroma.input_0_0 )--> ForwardIn_0_0_Chroma;
+		CheckInChroma (checkInputChroma.input_1_0 )--> ForwardIn_1_0_Chroma;
+		CheckInChroma (checkInputChroma.done   )--> GetMvInfo;
 
-		ForwardIn1Chroma (forward.input1 )--> ForwardIn1Chroma;
-		ForwardIn1Chroma (forward.done   )--> CheckInChroma;
+		ForwardIn_0_0_Chroma (forward.input_0_0 )--> ForwardIn_0_0_Chroma;
+		ForwardIn_0_0_Chroma (forward.done   )--> CheckInChroma;
 
-		ForwardIn2Chroma (forward.input2 )--> ForwardIn2Chroma;
-		ForwardIn2Chroma (forward.done   )--> CheckInChroma;
+		ForwardIn_1_0_Chroma (forward.input_1_0 )--> ForwardIn_1_0_Chroma;
+		ForwardIn_1_0_Chroma (forward.done      )--> CheckInChroma;
 	end
 end
