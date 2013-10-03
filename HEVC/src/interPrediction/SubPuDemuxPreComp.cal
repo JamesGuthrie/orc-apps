@@ -40,7 +40,9 @@ actor SubPuDemuxPreComp(uint(size=8) LOG2_NUM_SUB_BLK[2])
 	uint(size=8) PredSampleIn
 		==>
 	uint(size=8) Samp_0_0,
-	uint(size=8) Samp_1_0
+	uint(size=8) Samp_1_0,
+	uint(size=8) Samp_0_1,
+	uint(size=8) Samp_1_1
 		:
 
 	uint(size=1)  numPocRef;
@@ -154,12 +156,17 @@ actor SubPuDemuxPreComp(uint(size=8) LOG2_NUM_SUB_BLK[2])
 		tokenGot < tokenToSend[0]
 	do
 		samp := sampIn;
-		forwardToken[0][0] :=
-		   iLoop >= subPuIdxMin[0][0][0][0] && jLoop >= subPuIdxMin[0][0][0][1] &&
-		   iLoop <  subPuIdxMax[0][0][0][0]+7 && jLoop <  subPuIdxMax[0][0][0][1];
-		forwardToken[1][0] :=
-		   iLoop >= subPuIdxMin[1][0][0][0] && jLoop >= subPuIdxMin[1][0][0][1] &&
-		   iLoop <  subPuIdxMax[1][0][0][0]+7 && jLoop <  subPuIdxMax[1][0][0][1];
+		foreach int xBlk in 0 .. (1 << LOG2_NUM_SUB_BLK[0]) - 1
+		do
+			foreach int yBlk in 0 .. (1 << LOG2_NUM_SUB_BLK[1]) - 1
+			do
+				forwardToken[xBlk][0] :=
+				   iLoop >= subPuIdxMin[xBlk][yBlk][0][0] &&
+				   jLoop >= subPuIdxMin[xBlk][yBlk][0][1] &&
+				   iLoop <  subPuIdxMax[xBlk][yBlk][0][0]+7 &&
+				   jLoop <  subPuIdxMax[xBlk][yBlk][0][1];
+			end
+		end
 		iLoop := iLoop + 1;
 		if(iLoop = fullPuSize[0]) then
 			iLoop := 0;
@@ -182,12 +189,17 @@ actor SubPuDemuxPreComp(uint(size=8) LOG2_NUM_SUB_BLK[2])
 		tokenGot < tokenToSend[1]
 	do
 		samp := in1;
-		forwardToken[0][0] :=
-			iLoop >= subPuIdxMin[0][0][1][0] && jLoop >= subPuIdxMin[0][0][1][1] &&
-			iLoop < subPuIdxMax[0][0][1][0]+3 && jLoop <  subPuIdxMax[0][0][1][1];
-		forwardToken[1][0] :=
-			iLoop >= subPuIdxMin[1][0][1][0] && jLoop >= subPuIdxMin[1][0][1][1] &&
-			iLoop < subPuIdxMax[1][0][1][0]+3 && jLoop <  subPuIdxMax[1][0][1][1];
+		foreach int xBlk in 0 .. (1 << LOG2_NUM_SUB_BLK[0]) - 1
+		do
+			foreach int yBlk in 0 .. (1 << LOG2_NUM_SUB_BLK[1]) - 1
+			do
+				forwardToken[xBlk][yBlk] :=
+					iLoop >= subPuIdxMin[xBlk][yBlk][1][0]   &&
+					jLoop >= subPuIdxMin[xBlk][yBlk][1][1]   &&
+					iLoop <  subPuIdxMax[xBlk][yBlk][1][0]+3 &&
+					jLoop <  subPuIdxMax[xBlk][yBlk][1][1];
+			end
+		end
 		iLoop := iLoop + 1;
 		if(iLoop = fullPuSizeChr[0]) then
 			iLoop := 0;
@@ -225,6 +237,26 @@ actor SubPuDemuxPreComp(uint(size=8) LOG2_NUM_SUB_BLK[2])
 		not forwardToken[1][0]
 	end
 
+	ForwardTo_0_1.launch: action ==> Samp_0_1:[samp]
+	guard
+		forwardToken[0][0]
+	end
+
+	ForwardTo_0_1.skip: action ==>
+	guard
+		not forwardToken[0][0]
+	end
+
+	ForwardTo_1_1.launch: action ==> Samp_1_1:[samp]
+	guard
+		forwardToken[1][0]
+	end
+
+	ForwardTo_1_1.skip: action ==>
+	guard
+		not forwardToken[1][0]
+	end
+
 
 	schedule fsm GetNewPred:
 		GetNewPred (getNewPred )--> GetMvInfo;
@@ -237,18 +269,24 @@ actor SubPuDemuxPreComp(uint(size=8) LOG2_NUM_SUB_BLK[2])
 		GetPixLuma (getSample.luma.done   )--> GetPixChr1;
 
 		ForwardLuma_0_0 (ForwardTo_0_0 )--> ForwardLuma_1_0;
-		ForwardLuma_1_0 (ForwardTo_1_0 )--> GetPixLuma;
+		ForwardLuma_1_0 (ForwardTo_1_0 )--> ForwardLuma_0_1;
+		ForwardLuma_0_1 (ForwardTo_0_1 )--> ForwardLuma_1_1;
+		ForwardLuma_1_1 (ForwardTo_1_1 )--> GetPixLuma;
 
 		GetPixChr1 (getSample.chroma.launch )--> ForwardChr1_0_0;
 		GetPixChr1 (getSample.chroma.done   )--> GetPixChr2;
 
 		ForwardChr1_0_0 (ForwardTo_0_0 )--> ForwardChr1_1_0;
-		ForwardChr1_1_0 (ForwardTo_1_0 )--> GetPixChr1;
+		ForwardChr1_1_0 (ForwardTo_1_0 )--> ForwardChr1_0_1;
+		ForwardChr1_0_1 (ForwardTo_0_1 )--> ForwardChr1_1_1;
+		ForwardChr1_1_1 (ForwardTo_1_1 )--> GetPixChr1;
 
 		GetPixChr2 (getSample.chroma.launch )--> ForwardChr2_0_0;
 		GetPixChr2 (getSample.chroma.done   )--> GetMvInfo;
 
 		ForwardChr2_0_0 (ForwardTo_0_0 )--> ForwardChr2_1_0;
-		ForwardChr2_1_0 (ForwardTo_1_0 )--> GetPixChr2;
+		ForwardChr2_1_0 (ForwardTo_1_0 )--> ForwardChr2_0_1;
+		ForwardChr2_0_1 (ForwardTo_0_1 )--> ForwardChr2_1_1;
+		ForwardChr2_1_1 (ForwardTo_1_1 )--> GetPixChr2;
 	end
 end
