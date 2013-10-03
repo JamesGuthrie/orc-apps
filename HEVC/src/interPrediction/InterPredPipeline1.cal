@@ -1203,7 +1203,11 @@ actor InterPredPipeline1(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 
 	getSamples.luma.launch: action Sample:[sample] ==>
 	guard
-		pixIdx  < numPixToGet
+		pixIdx  < numPixToGet,
+		(LOG2_NUM_SUB_BLK[0] = 0 && LOG2_NUM_SUB_BLK[1] = 0) ||
+		IS_2ND_PART_PRED ||
+		(iLoop >= subPuIdxMin[0][0] && jLoop >= subPuIdxMin[0][1] &&
+		 iLoop <  subPuIdxMax[0][0]+7 && jLoop < subPuIdxMax[0][1])
 	do
 		if(LOG2_NUM_SUB_BLK[0] = 0 && LOG2_NUM_SUB_BLK[1] = 0) then
 			predSampLuma[listIdx][iLoop][jLoop] := sample;
@@ -1215,6 +1219,29 @@ actor InterPredPipeline1(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 			end
 		end end
 
+		pixIdx := pixIdx + 1;
+		iLoop := iLoop + 1;
+		if((PROCESS_MODE_HALF_PIX & HALF_PIX_1ST_PART) != 0) then
+			if(iLoop = fullPuSize[0]) then
+				iLoop := 0;
+				jLoop := jLoop + 1;
+			end
+		else
+			if(iLoop = puSize[0]) then
+				iLoop := 0;
+				jLoop := jLoop + 1;
+			end
+		end
+	end
+
+	getSamples.luma.skip: action ==>
+	guard
+		pixIdx  < numPixToGet,
+		not((LOG2_NUM_SUB_BLK[0] = 0 && LOG2_NUM_SUB_BLK[1] = 0) ||
+		IS_2ND_PART_PRED ||
+		(iLoop >= subPuIdxMin[0][0] && jLoop >= subPuIdxMin[0][1] &&
+		 iLoop <  subPuIdxMax[0][0]+7 && jLoop < subPuIdxMax[0][1]))
+	do
 		pixIdx := pixIdx + 1;
 		iLoop := iLoop + 1;
 		if((PROCESS_MODE_HALF_PIX & HALF_PIX_1ST_PART) != 0) then
@@ -1242,7 +1269,11 @@ actor InterPredPipeline1(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 
 	getSamples.chroma.launch: action Sample:[sample] ==>
 	guard
-		compIdx < 3
+		compIdx < 3,
+		(LOG2_NUM_SUB_BLK[0] = 0 && LOG2_NUM_SUB_BLK[1] = 0) ||
+		IS_2ND_PART_PRED ||
+		(iLoop >= subPuIdxMin[1][0] && jLoop >= subPuIdxMin[1][1] &&
+		 iLoop < subPuIdxMax[1][0]+3 && jLoop < subPuIdxMax[1][1])
 	do
 		if((LOG2_NUM_SUB_BLK[0] = 0 && LOG2_NUM_SUB_BLK[1] = 0)) then
 			predSampChr[listIdx][compIdx-1][iLoop][jLoop] := sample;
@@ -1254,6 +1285,38 @@ actor InterPredPipeline1(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 			end
 		end end
 
+		iLoop := iLoop + 1;
+		if((PROCESS_MODE_HALF_PIX & HALF_PIX_1ST_PART) != 0) then
+			if(iLoop = fullPuSizeChr[0]) then
+ 				iLoop := 0;
+				jLoop := jLoop + 1;
+				if(jLoop = fullPuSizeChr[1]) then
+					iLoop := 0;
+					jLoop := 0;
+					compIdx := compIdx + 1;
+				end
+			end
+		else
+			if(iLoop = puSizeChr[0]) then
+				iLoop := 0;
+				jLoop := jLoop + 1;
+				if(jLoop = fullPuSizeChr[1]) then
+					iLoop := 0;
+					jLoop := 0;
+					compIdx := compIdx + 1;
+				end
+			end
+		end
+	end
+
+	getSamples.chroma.skip: action ==>
+	guard
+		compIdx < 3,
+		not((LOG2_NUM_SUB_BLK[0] = 0 && LOG2_NUM_SUB_BLK[1] = 0) ||
+		IS_2ND_PART_PRED ||
+		(iLoop >= subPuIdxMin[1][0] && jLoop >= subPuIdxMin[1][1] &&
+		 iLoop < subPuIdxMax[1][0]+3 && jLoop < subPuIdxMax[1][1]))
+	do
 		iLoop := iLoop + 1;
 		if((PROCESS_MODE_HALF_PIX & HALF_PIX_1ST_PART) != 0) then
 			if(iLoop = fullPuSizeChr[0]) then
@@ -1644,9 +1707,11 @@ actor InterPredPipeline1(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 		GetSamples (getSamples.done )--> SendPu;
 
 		GetLumaSamples (getSamples.luma.launch )--> GetLumaSamples;
+		GetLumaSamples (getSamples.luma.skip   )--> GetLumaSamples;
 		GetLumaSamples (getSamples.luma.done   )--> GetChromaSamples;
 
 		GetChromaSamples (getSamples.chroma.launch )--> GetChromaSamples;
+		GetChromaSamples (getSamples.chroma.skip )--> GetChromaSamples;
 		GetChromaSamples (getSamples.chroma.done   )--> InterpolateSamples;
 
 		InterpolateSamples (interpolateSamples )--> CheckSendIntermPu;

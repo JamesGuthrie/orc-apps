@@ -105,14 +105,14 @@
         <Parameter name="DECODE_COMP">
             <Expr kind="Literal" literal-kind="Integer" value="3"/>
         </Parameter>
-        <Parameter name="PROCESS_MODE_HALF_PIX">
-            <Expr kind="Literal" literal-kind="Integer" value="2"/>
-        </Parameter>
         <Parameter name="IDX_SUB_BLOCK">
             <Expr kind="List">
                 <Expr kind="Literal" literal-kind="Integer" value="0"/>
                 <Expr kind="Literal" literal-kind="Integer" value="0"/>
             </Expr>
+        </Parameter>
+        <Parameter name="PROCESS_MODE_HALF_PIX">
+            <Expr kind="Literal" literal-kind="Integer" value="2"/>
         </Parameter>
         <Parameter name="LOG2_NUM_SUB_BLK">
             <Expr kind="List">
@@ -126,14 +126,14 @@
         <Parameter name="DECODE_COMP">
             <Expr kind="Literal" literal-kind="Integer" value="3"/>
         </Parameter>
-        <Parameter name="PROCESS_MODE_HALF_PIX">
-            <Expr kind="Literal" literal-kind="Integer" value="2"/>
-        </Parameter>
         <Parameter name="IDX_SUB_BLOCK">
             <Expr kind="List">
                 <Expr kind="Literal" literal-kind="Integer" value="1"/>
                 <Expr kind="Literal" literal-kind="Integer" value="0"/>
             </Expr>
+        </Parameter>
+        <Parameter name="PROCESS_MODE_HALF_PIX">
+            <Expr kind="Literal" literal-kind="Integer" value="2"/>
         </Parameter>
         <Parameter name="LOG2_NUM_SUB_BLK">
             <Expr kind="List">
@@ -147,14 +147,14 @@
         <Parameter name="DECODE_COMP">
             <Expr kind="Literal" literal-kind="Integer" value="3"/>
         </Parameter>
-        <Parameter name="PROCESS_MODE_HALF_PIX">
-            <Expr kind="Literal" literal-kind="Integer" value="2"/>
-        </Parameter>
         <Parameter name="IDX_SUB_BLOCK">
             <Expr kind="List">
                 <Expr kind="Literal" literal-kind="Integer" value="0"/>
                 <Expr kind="Literal" literal-kind="Integer" value="1"/>
             </Expr>
+        </Parameter>
+        <Parameter name="PROCESS_MODE_HALF_PIX">
+            <Expr kind="Literal" literal-kind="Integer" value="2"/>
         </Parameter>
         <Parameter name="LOG2_NUM_SUB_BLK">
             <Expr kind="List">
@@ -168,14 +168,14 @@
         <Parameter name="DECODE_COMP">
             <Expr kind="Literal" literal-kind="Integer" value="3"/>
         </Parameter>
-        <Parameter name="PROCESS_MODE_HALF_PIX">
-            <Expr kind="Literal" literal-kind="Integer" value="2"/>
-        </Parameter>
         <Parameter name="IDX_SUB_BLOCK">
             <Expr kind="List">
                 <Expr kind="Literal" literal-kind="Integer" value="1"/>
                 <Expr kind="Literal" literal-kind="Integer" value="1"/>
             </Expr>
+        </Parameter>
+        <Parameter name="PROCESS_MODE_HALF_PIX">
+            <Expr kind="Literal" literal-kind="Integer" value="2"/>
         </Parameter>
         <Parameter name="LOG2_NUM_SUB_BLK">
             <Expr kind="List">
@@ -189,14 +189,14 @@
         <Parameter name="DECODE_COMP">
             <Expr kind="Literal" literal-kind="Integer" value="3"/>
         </Parameter>
-        <Parameter name="PROCESS_MODE_HALF_PIX">
-            <Expr kind="Literal" literal-kind="Integer" value="1"/>
-        </Parameter>
         <Parameter name="IDX_SUB_BLOCK">
             <Expr kind="List">
                 <Expr kind="Literal" literal-kind="Integer" value="1"/>
                 <Expr kind="Literal" literal-kind="Integer" value="0"/>
             </Expr>
+        </Parameter>
+        <Parameter name="PROCESS_MODE_HALF_PIX">
+            <Expr kind="Literal" literal-kind="Integer" value="1"/>
         </Parameter>
         <Parameter name="LOG2_NUM_SUB_BLK">
             <Expr kind="List">
@@ -210,14 +210,14 @@
         <Parameter name="DECODE_COMP">
             <Expr kind="Literal" literal-kind="Integer" value="3"/>
         </Parameter>
-        <Parameter name="PROCESS_MODE_HALF_PIX">
-            <Expr kind="Literal" literal-kind="Integer" value="1"/>
-        </Parameter>
         <Parameter name="IDX_SUB_BLOCK">
             <Expr kind="List">
                 <Expr kind="Literal" literal-kind="Integer" value="0"/>
                 <Expr kind="Literal" literal-kind="Integer" value="0"/>
             </Expr>
+        </Parameter>
+        <Parameter name="PROCESS_MODE_HALF_PIX">
+            <Expr kind="Literal" literal-kind="Integer" value="1"/>
         </Parameter>
         <Parameter name="LOG2_NUM_SUB_BLK">
             <Expr kind="List">
@@ -228,6 +228,15 @@
     </Instance>
     <Instance id="SubMuxPrecomp">
         <Class name="interPrediction.SubPuMuxPreComp"/>
+        <Parameter name="LOG2_NUM_SUB_BLK">
+            <Expr kind="List">
+                <Expr kind="Literal" literal-kind="Integer" value="1"/>
+                <Expr kind="Literal" literal-kind="Integer" value="0"/>
+            </Expr>
+        </Parameter>
+    </Instance>
+    <Instance id="SubDeMuxPrecomp">
+        <Class name="interPrediction.SubPuDemuxPreComp"/>
         <Parameter name="LOG2_NUM_SUB_BLK">
             <Expr kind="List">
                 <Expr kind="Literal" literal-kind="Integer" value="1"/>
@@ -283,7 +292,6 @@
     <Connection dst="InterpPreComput1" dst-port="Poc" src="" src-port="Poc"/>
     <Connection dst="InterpPreComput1" dst-port="RefIdx" src="" src-port="RefIdx"/>
     <Connection dst="InterpPreComput1" dst-port="RefList" src="" src-port="RefList"/>
-    <Connection dst="InterpPreComput1" dst-port="Sample" src="" src-port="Sample"/>
     <Connection dst="InterpPreComput1" dst-port="SliceType" src="" src-port="SliceType"/>
     <Connection dst="InterpPreComput1" dst-port="WeightedPredSe" src="" src-port="WeightedPredSe"/>
     <Connection dst="Interp_1_1" dst-port="Sample" src="SubMuxPrecomp" src-port="PredSampleOut"/>
@@ -297,7 +305,6 @@
     <Connection dst="InterpPreComput2" dst-port="Poc" src="" src-port="Poc"/>
     <Connection dst="InterpPreComput2" dst-port="RefIdx" src="" src-port="RefIdx"/>
     <Connection dst="InterpPreComput2" dst-port="RefList" src="" src-port="RefList"/>
-    <Connection dst="InterpPreComput2" dst-port="Sample" src="" src-port="Sample"/>
     <Connection dst="InterpPreComput2" dst-port="SliceType" src="" src-port="SliceType"/>
     <Connection dst="InterpPreComput2" dst-port="WeightedPredSe" src="" src-port="WeightedPredSe"/>
     <Connection dst="SubMuxPrecomp" dst-port="PredSampleIn1"
@@ -309,4 +316,13 @@
     <Connection dst="SubMuxPrecomp" dst-port="PocRef" src="" src-port="PocRef"/>
     <Connection dst="SubMuxPrecomp" dst-port="PredCuSize" src="" src-port="PredCuSize"/>
     <Connection dst="" dst-port="PredSample" src="SubPuMux" src-port="OutSample"/>
+    <Connection dst="InterpPreComput1" dst-port="Sample"
+        src="SubDeMuxPrecomp" src-port="Samp_0_0"/>
+    <Connection dst="InterpPreComput2" dst-port="Sample"
+        src="SubDeMuxPrecomp" src-port="Samp_1_0"/>
+    <Connection dst="SubDeMuxPrecomp" dst-port="PredSampleIn" src="" src-port="Sample"/>
+    <Connection dst="SubDeMuxPrecomp" dst-port="IsBiPredOrLx" src="" src-port="IsBiPredOrLx"/>
+    <Connection dst="SubDeMuxPrecomp" dst-port="Mv" src="" src-port="Mv"/>
+    <Connection dst="SubDeMuxPrecomp" dst-port="PocRef" src="" src-port="PocRef"/>
+    <Connection dst="SubDeMuxPrecomp" dst-port="PredCuSize" src="" src-port="PredCuSize"/>
 </XDF>

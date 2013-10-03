@@ -8,7 +8,7 @@
 		<vertex id="Mv" x="57" y="377"/>
 		<vertex id="PartMode" x="57" y="474"/>
 		<vertex id="Poc" x="57" y="571"/>
-		<vertex id="Sample" x="57" y="727"/>
+		<vertex id="Sample" x="-3" y="757"/>
 		<vertex id="RefIdx" x="57" y="883"/>
 		<vertex id="RefList" x="57" y="980"/>
 		<vertex id="SliceType" x="57" y="1077"/>
@@ -16,7 +16,8 @@
 		<vertex id="PredSample" x="1292" y="576"/>
 		<vertex id="Interp2ndPart" x="875" y="551"/>
 		<vertex id="SubMuxPrecomp" x="576" y="341"/>
-		<vertex id="InterpPreComput" x="260" y="911"/>
-		<vertex id="InterpPreComput2" x="281" y="592"/>
+		<vertex id="InterpPreComput" x="324" y="435"/>
+		<vertex id="InterpPreComput2" x="338" y="809"/>
+		<vertex id="SubPreMuxPrecomp" x="95" y="665"/>
 	</vertices>
 </layout>
