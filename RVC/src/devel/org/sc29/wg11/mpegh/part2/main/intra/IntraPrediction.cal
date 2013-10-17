@@ -811,14 +811,14 @@ actor IntraPrediction(bool EnabSkipInPix)
 		numPartDecoded < numPart,
 		EnabSkipInPix && cuInfo[0] = IN_SAMP
 	var
-		uint(size=7) nS = cuInfo[3]
+		uint(size=7) nS = (cuInfo[3] + cuInfo[4])/2
 	do
 		cuMode := cuInfo[0];
 		getInSamp := true;
 		treeAddr := [cuInfo[1], cuInfo[2]];
 		idxBlk := 0;
 		numBlkToSend := (nS*nS)/16;
-		neighbBlkSz  := nS;
+		neighbBlkSz  := cuInfo[4];
 		numPixNeighb := (nS * 2) - 1;
 		idxPixNeighb := 0;
 		compIdx := 0;
