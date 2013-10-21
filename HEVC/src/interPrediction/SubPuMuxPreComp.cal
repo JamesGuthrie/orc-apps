@@ -136,7 +136,10 @@ uint numMv;
 				end
 			end
 		end
-
+//		println("Sub 0 : subPuIdxMaxLuma " + subPuIdxMax[0][1][0][0] + " ; " + subPuIdxMax[0][1][0][1]);
+//		println("Sub 0 : subPuIdxMinLuma " + subPuIdxMin[0][1][0][0] + " ; " + subPuIdxMin[0][1][0][1]);
+//		println("Sub 0 : subPuIdxMaxChr "  + subPuIdxMax[0][1][1][0] + " ; " + subPuIdxMax[0][1][1][1]);
+//		println("Sub 0 : subPuIdxMinChr "  + subPuIdxMin[0][1][1][0] + " ; " + subPuIdxMin[0][1][1][1]);
 		numPocRef := numPocRef - 1;
 	end
 

@@ -1,0 +1,294 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<XDF name="InterpSubPu1stPart4Elem">
+    <Port kind="Input" name="PredCuSize">
+        <Type name="uint">
+            <Entry kind="Expr" name="size">
+                <Expr kind="Literal" literal-kind="Integer" value="7"/>
+            </Entry>
+        </Type>
+    </Port>
+    <Port kind="Input" name="CUInfo">
+        <Type name="uint">
+            <Entry kind="Expr" name="size">
+                <Expr kind="Literal" literal-kind="Integer" value="16"/>
+            </Entry>
+        </Type>
+    </Port>
+    <Port kind="Input" name="PocRef">
+        <Type name="int">
+            <Entry kind="Expr" name="size">
+                <Expr kind="Literal" literal-kind="Integer" value="16"/>
+            </Entry>
+        </Type>
+    </Port>
+    <Port kind="Input" name="PartMode">
+        <Type name="uint">
+            <Entry kind="Expr" name="size">
+                <Expr kind="Literal" literal-kind="Integer" value="4"/>
+            </Entry>
+        </Type>
+    </Port>
+    <Port kind="Input" name="Poc">
+        <Type name="uint">
+            <Entry kind="Expr" name="size">
+                <Expr kind="Literal" literal-kind="Integer" value="16"/>
+            </Entry>
+        </Type>
+    </Port>
+    <Port kind="Input" name="RefIdx">
+        <Type name="uint">
+            <Entry kind="Expr" name="size">
+                <Expr kind="Literal" literal-kind="Integer" value="3"/>
+            </Entry>
+        </Type>
+    </Port>
+    <Port kind="Input" name="Sample">
+        <Type name="uint">
+            <Entry kind="Expr" name="size">
+                <Expr kind="Literal" literal-kind="Integer" value="8"/>
+            </Entry>
+        </Type>
+    </Port>
+    <Port kind="Input" name="IsBiPredOrLx">
+        <Type name="uint">
+            <Entry kind="Expr" name="size">
+                <Expr kind="Literal" literal-kind="Integer" value="2"/>
+            </Entry>
+        </Type>
+    </Port>
+    <Port kind="Input" name="RefList">
+        <Type name="int">
+            <Entry kind="Expr" name="size">
+                <Expr kind="Literal" literal-kind="Integer" value="16"/>
+            </Entry>
+        </Type>
+    </Port>
+    <Port kind="Input" name="SliceType">
+        <Type name="uint">
+            <Entry kind="Expr" name="size">
+                <Expr kind="Literal" literal-kind="Integer" value="2"/>
+            </Entry>
+        </Type>
+    </Port>
+    <Port kind="Input" name="Mv">
+        <Type name="int">
+            <Entry kind="Expr" name="size">
+                <Expr kind="Literal" literal-kind="Integer" value="16"/>
+            </Entry>
+        </Type>
+    </Port>
+    <Port kind="Input" name="WeightedPredSe">
+        <Type name="int">
+            <Entry kind="Expr" name="size">
+                <Expr kind="Literal" literal-kind="Integer" value="16"/>
+            </Entry>
+        </Type>
+    </Port>
+    <Port kind="Output" name="PredSample">
+        <Type name="uint">
+            <Entry kind="Expr" name="size">
+                <Expr kind="Literal" literal-kind="Integer" value="8"/>
+            </Entry>
+        </Type>
+    </Port>
+    <Instance id="Interp2ndPart">
+        <Class name="interPrediction.InterPredPipeline2"/>
+        <Parameter name="DECODE_COMP">
+            <Expr kind="Literal" literal-kind="Integer" value="3"/>
+        </Parameter>
+        <Parameter name="PROCESS_MODE_HALF_PIX">
+            <Expr kind="Literal" literal-kind="Integer" value="2"/>
+        </Parameter>
+        <Parameter name="IDX_SUB_BLOCK">
+            <Expr kind="List">
+                <Expr kind="Literal" literal-kind="Integer" value="0"/>
+                <Expr kind="Literal" literal-kind="Integer" value="0"/>
+            </Expr>
+        </Parameter>
+        <Parameter name="LOG2_NUM_SUB_BLK">
+            <Expr kind="List">
+                <Expr kind="Literal" literal-kind="Integer" value="0"/>
+                <Expr kind="Literal" literal-kind="Integer" value="0"/>
+            </Expr>
+        </Parameter>
+    </Instance>
+    <Instance id="SubMuxPrecomp">
+        <Class name="interPrediction.SubPuMuxPreComp"/>
+        <Parameter name="LOG2_NUM_SUB_BLK">
+            <Expr kind="List">
+                <Expr kind="Literal" literal-kind="Integer" value="1"/>
+                <Expr kind="Literal" literal-kind="Integer" value="1"/>
+            </Expr>
+        </Parameter>
+    </Instance>
+    <Instance id="InterpPreComput_0_0">
+        <Class name="interPrediction.InterPredPipeline1"/>
+        <Parameter name="DECODE_COMP">
+            <Expr kind="Literal" literal-kind="Integer" value="3"/>
+        </Parameter>
+        <Parameter name="IDX_SUB_BLOCK">
+            <Expr kind="List">
+                <Expr kind="Literal" literal-kind="Integer" value="0"/>
+                <Expr kind="Literal" literal-kind="Integer" value="0"/>
+            </Expr>
+        </Parameter>
+        <Parameter name="LOG2_NUM_SUB_BLK">
+            <Expr kind="List">
+                <Expr kind="Literal" literal-kind="Integer" value="1"/>
+                <Expr kind="Literal" literal-kind="Integer" value="1"/>
+            </Expr>
+        </Parameter>
+        <Parameter name="PROCESS_MODE_HALF_PIX">
+            <Expr kind="Literal" literal-kind="Integer" value="1"/>
+        </Parameter>
+    </Instance>
+    <Instance id="SubPreMuxPrecomp">
+        <Class name="interPrediction.SubPuDemuxPreComp"/>
+        <Parameter name="LOG2_NUM_SUB_BLK">
+            <Expr kind="List">
+                <Expr kind="Literal" literal-kind="Integer" value="1"/>
+                <Expr kind="Literal" literal-kind="Integer" value="1"/>
+            </Expr>
+        </Parameter>
+    </Instance>
+    <Instance id="InterpPreComput_0_1">
+        <Class name="interPrediction.InterPredPipeline1"/>
+        <Parameter name="DECODE_COMP">
+            <Expr kind="Literal" literal-kind="Integer" value="3"/>
+        </Parameter>
+        <Parameter name="IDX_SUB_BLOCK">
+            <Expr kind="List">
+                <Expr kind="Literal" literal-kind="Integer" value="0"/>
+                <Expr kind="Literal" literal-kind="Integer" value="1"/>
+            </Expr>
+        </Parameter>
+        <Parameter name="LOG2_NUM_SUB_BLK">
+            <Expr kind="List">
+                <Expr kind="Literal" literal-kind="Integer" value="1"/>
+                <Expr kind="Literal" literal-kind="Integer" value="1"/>
+            </Expr>
+        </Parameter>
+        <Parameter name="PROCESS_MODE_HALF_PIX">
+            <Expr kind="Literal" literal-kind="Integer" value="1"/>
+        </Parameter>
+    </Instance>
+    <Instance id="InterpPreComput_1_0">
+        <Class name="interPrediction.InterPredPipeline1"/>
+        <Parameter name="DECODE_COMP">
+            <Expr kind="Literal" literal-kind="Integer" value="3"/>
+        </Parameter>
+        <Parameter name="IDX_SUB_BLOCK">
+            <Expr kind="List">
+                <Expr kind="Literal" literal-kind="Integer" value="1"/>
+                <Expr kind="Literal" literal-kind="Integer" value="0"/>
+            </Expr>
+        </Parameter>
+        <Parameter name="LOG2_NUM_SUB_BLK">
+            <Expr kind="List">
+                <Expr kind="Literal" literal-kind="Integer" value="1"/>
+                <Expr kind="Literal" literal-kind="Integer" value="1"/>
+            </Expr>
+        </Parameter>
+        <Parameter name="PROCESS_MODE_HALF_PIX">
+            <Expr kind="Literal" literal-kind="Integer" value="1"/>
+        </Parameter>
+    </Instance>
+    <Instance id="InterpPreComput_1_1">
+        <Class name="interPrediction.InterPredPipeline1"/>
+        <Parameter name="DECODE_COMP">
+            <Expr kind="Literal" literal-kind="Integer" value="3"/>
+        </Parameter>
+        <Parameter name="IDX_SUB_BLOCK">
+            <Expr kind="List">
+                <Expr kind="Literal" literal-kind="Integer" value="1"/>
+                <Expr kind="Literal" literal-kind="Integer" value="1"/>
+            </Expr>
+        </Parameter>
+        <Parameter name="LOG2_NUM_SUB_BLK">
+            <Expr kind="List">
+                <Expr kind="Literal" literal-kind="Integer" value="1"/>
+                <Expr kind="Literal" literal-kind="Integer" value="1"/>
+            </Expr>
+        </Parameter>
+        <Parameter name="PROCESS_MODE_HALF_PIX">
+            <Expr kind="Literal" literal-kind="Integer" value="1"/>
+        </Parameter>
+    </Instance>
+    <Connection dst="Interp2ndPart" dst-port="IsBiPredOrLx" src="" src-port="IsBiPredOrLx"/>
+    <Connection dst="Interp2ndPart" dst-port="CUInfo" src="" src-port="CUInfo"/>
+    <Connection dst="Interp2ndPart" dst-port="Mv" src="" src-port="Mv"/>
+    <Connection dst="Interp2ndPart" dst-port="PartMode" src="" src-port="PartMode"/>
+    <Connection dst="Interp2ndPart" dst-port="Poc" src="" src-port="Poc"/>
+    <Connection dst="Interp2ndPart" dst-port="RefIdx" src="" src-port="RefIdx"/>
+    <Connection dst="Interp2ndPart" dst-port="RefList" src="" src-port="RefList"/>
+    <Connection dst="Interp2ndPart" dst-port="SliceType" src="" src-port="SliceType"/>
+    <Connection dst="Interp2ndPart" dst-port="WeightedPredSe" src="" src-port="WeightedPredSe"/>
+    <Connection dst="" dst-port="PredSample" src="Interp2ndPart" src-port="PredSample"/>
+    <Connection dst="SubMuxPrecomp" dst-port="PredCuSize" src="" src-port="PredCuSize"/>
+    <Connection dst="SubMuxPrecomp" dst-port="PocRef" src="" src-port="PocRef"/>
+    <Connection dst="SubMuxPrecomp" dst-port="Mv" src="" src-port="Mv"/>
+    <Connection dst="SubMuxPrecomp" dst-port="IsBiPredOrLx" src="" src-port="IsBiPredOrLx"/>
+    <Connection dst="Interp2ndPart" dst-port="Sample"
+        src="SubMuxPrecomp" src-port="PredSampleOut"/>
+    <Connection dst="InterpPreComput_0_0" dst-port="IsBiPredOrLx" src="" src-port="IsBiPredOrLx"/>
+    <Connection dst="InterpPreComput_0_0" dst-port="CUInfo" src="" src-port="CUInfo"/>
+    <Connection dst="InterpPreComput_0_0" dst-port="Mv" src="" src-port="Mv"/>
+    <Connection dst="InterpPreComput_0_0" dst-port="PartMode" src="" src-port="PartMode"/>
+    <Connection dst="InterpPreComput_0_0" dst-port="Poc" src="" src-port="Poc"/>
+    <Connection dst="InterpPreComput_0_0" dst-port="RefIdx" src="" src-port="RefIdx"/>
+    <Connection dst="InterpPreComput_0_0" dst-port="RefList" src="" src-port="RefList"/>
+    <Connection dst="InterpPreComput_0_0" dst-port="SliceType" src="" src-port="SliceType"/>
+    <Connection dst="InterpPreComput_0_0" dst-port="WeightedPredSe"
+        src="" src-port="WeightedPredSe"/>
+    <Connection dst="SubPreMuxPrecomp" dst-port="PredCuSize" src="" src-port="PredCuSize"/>
+    <Connection dst="SubPreMuxPrecomp" dst-port="PocRef" src="" src-port="PocRef"/>
+    <Connection dst="SubPreMuxPrecomp" dst-port="Mv" src="" src-port="Mv"/>
+    <Connection dst="SubPreMuxPrecomp" dst-port="IsBiPredOrLx" src="" src-port="IsBiPredOrLx"/>
+    <Connection dst="SubPreMuxPrecomp" dst-port="PredSampleIn" src="" src-port="Sample"/>
+    <Connection dst="InterpPreComput_0_0" dst-port="Sample"
+        src="SubPreMuxPrecomp" src-port="Samp_0_0"/>
+    <Connection dst="SubMuxPrecomp" dst-port="PredSampleIn_0_0"
+        src="InterpPreComput_0_0" src-port="PredSample"/>
+    <Connection dst="InterpPreComput_0_1" dst-port="IsBiPredOrLx" src="" src-port="IsBiPredOrLx"/>
+    <Connection dst="InterpPreComput_0_1" dst-port="CUInfo" src="" src-port="CUInfo"/>
+    <Connection dst="InterpPreComput_0_1" dst-port="Mv" src="" src-port="Mv"/>
+    <Connection dst="InterpPreComput_0_1" dst-port="PartMode" src="" src-port="PartMode"/>
+    <Connection dst="InterpPreComput_0_1" dst-port="Poc" src="" src-port="Poc"/>
+    <Connection dst="InterpPreComput_0_1" dst-port="RefIdx" src="" src-port="RefIdx"/>
+    <Connection dst="InterpPreComput_0_1" dst-port="RefList" src="" src-port="RefList"/>
+    <Connection dst="InterpPreComput_0_1" dst-port="SliceType" src="" src-port="SliceType"/>
+    <Connection dst="InterpPreComput_0_1" dst-port="WeightedPredSe"
+        src="" src-port="WeightedPredSe"/>
+    <Connection dst="InterpPreComput_0_1" dst-port="Sample"
+        src="SubPreMuxPrecomp" src-port="Samp_0_1"/>
+    <Connection dst="SubMuxPrecomp" dst-port="PredSampleIn_0_1"
+        src="InterpPreComput_0_1" src-port="PredSample"/>
+    <Connection dst="InterpPreComput_1_0" dst-port="IsBiPredOrLx" src="" src-port="IsBiPredOrLx"/>
+    <Connection dst="InterpPreComput_1_0" dst-port="CUInfo" src="" src-port="CUInfo"/>
+    <Connection dst="InterpPreComput_1_0" dst-port="Mv" src="" src-port="Mv"/>
+    <Connection dst="InterpPreComput_1_0" dst-port="PartMode" src="" src-port="PartMode"/>
+    <Connection dst="InterpPreComput_1_0" dst-port="Poc" src="" src-port="Poc"/>
+    <Connection dst="InterpPreComput_1_0" dst-port="RefIdx" src="" src-port="RefIdx"/>
+    <Connection dst="InterpPreComput_1_0" dst-port="RefList" src="" src-port="RefList"/>
+    <Connection dst="InterpPreComput_1_0" dst-port="SliceType" src="" src-port="SliceType"/>
+    <Connection dst="InterpPreComput_1_0" dst-port="WeightedPredSe"
+        src="" src-port="WeightedPredSe"/>
+    <Connection dst="InterpPreComput_1_0" dst-port="Sample"
+        src="SubPreMuxPrecomp" src-port="Samp_1_0"/>
+    <Connection dst="SubMuxPrecomp" dst-port="PredSampleIn_1_0"
+        src="InterpPreComput_1_0" src-port="PredSample"/>
+    <Connection dst="InterpPreComput_1_1" dst-port="IsBiPredOrLx" src="" src-port="IsBiPredOrLx"/>
+    <Connection dst="InterpPreComput_1_1" dst-port="CUInfo" src="" src-port="CUInfo"/>
+    <Connection dst="InterpPreComput_1_1" dst-port="Mv" src="" src-port="Mv"/>
+    <Connection dst="InterpPreComput_1_1" dst-port="PartMode" src="" src-port="PartMode"/>
+    <Connection dst="InterpPreComput_1_1" dst-port="Poc" src="" src-port="Poc"/>
+    <Connection dst="InterpPreComput_1_1" dst-port="RefIdx" src="" src-port="RefIdx"/>
+    <Connection dst="InterpPreComput_1_1" dst-port="RefList" src="" src-port="RefList"/>
+    <Connection dst="InterpPreComput_1_1" dst-port="SliceType" src="" src-port="SliceType"/>
+    <Connection dst="InterpPreComput_1_1" dst-port="WeightedPredSe"
+        src="" src-port="WeightedPredSe"/>
+    <Connection dst="InterpPreComput_1_1" dst-port="Sample"
+        src="SubPreMuxPrecomp" src-port="Samp_1_1"/>
+    <Connection dst="SubMuxPrecomp" dst-port="PredSampleIn_1_1"
+        src="InterpPreComput_1_1" src-port="PredSample"/>
+</XDF>

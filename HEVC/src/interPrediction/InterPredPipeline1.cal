@@ -1207,17 +1207,16 @@ actor InterPredPipeline1(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 		(LOG2_NUM_SUB_BLK[0] = 0 && LOG2_NUM_SUB_BLK[1] = 0) ||
 		IS_2ND_PART_PRED ||
 		(iLoop >= subPuIdxMin[0][0] && jLoop >= subPuIdxMin[0][1] &&
-		 iLoop <  subPuIdxMax[0][0]+7 && jLoop < subPuIdxMax[0][1])
+		 iLoop <  subPuIdxMax[0][0]+7 && jLoop < subPuIdxMax[0][1]+3)
 	do
 		if(LOG2_NUM_SUB_BLK[0] = 0 && LOG2_NUM_SUB_BLK[1] = 0) then
 			predSampLuma[listIdx][iLoop][jLoop] := sample;
-		else if(iLoop >= subPuIdxMin[0][0] && jLoop >= subPuIdxMin[0][1] &&
-			    iLoop <  subPuIdxMax[0][0]+7) then
-			 if(not IS_2ND_PART_PRED && jLoop <  subPuIdxMax[0][1] ||
-			        IS_2ND_PART_PRED && jLoop <  subPuIdxMax[0][1]+7) then
+		else if(not IS_2ND_PART_PRED) then
 				predSampLuma[listIdx][iLoop - subPuIdxMin[0][0]][jLoop - subPuIdxMin[0][1]] := sample;
-			end
-		end end
+		else if(iLoop >= subPuIdxMin[0][0] && jLoop >= subPuIdxMin[0][1] &&
+			    iLoop <  subPuIdxMax[0][0]+7 && jLoop <  subPuIdxMax[0][1]+7) then
+				predSampLuma[listIdx][iLoop - subPuIdxMin[0][0]][jLoop - subPuIdxMin[0][1]] := sample;
+		end end end
 
 		pixIdx := pixIdx + 1;
 		iLoop := iLoop + 1;
@@ -1240,7 +1239,7 @@ actor InterPredPipeline1(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 		not((LOG2_NUM_SUB_BLK[0] = 0 && LOG2_NUM_SUB_BLK[1] = 0) ||
 		IS_2ND_PART_PRED ||
 		(iLoop >= subPuIdxMin[0][0] && jLoop >= subPuIdxMin[0][1] &&
-		 iLoop <  subPuIdxMax[0][0]+7 && jLoop < subPuIdxMax[0][1]))
+		 iLoop <  subPuIdxMax[0][0]+7 && jLoop < subPuIdxMax[0][1]+3))
 	do
 		pixIdx := pixIdx + 1;
 		iLoop := iLoop + 1;
@@ -1273,17 +1272,16 @@ actor InterPredPipeline1(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 		(LOG2_NUM_SUB_BLK[0] = 0 && LOG2_NUM_SUB_BLK[1] = 0) ||
 		IS_2ND_PART_PRED ||
 		(iLoop >= subPuIdxMin[1][0] && jLoop >= subPuIdxMin[1][1] &&
-		 iLoop < subPuIdxMax[1][0]+3 && jLoop < subPuIdxMax[1][1])
+		 iLoop < subPuIdxMax[1][0]+3 && jLoop < subPuIdxMax[1][1]+1)
 	do
 		if((LOG2_NUM_SUB_BLK[0] = 0 && LOG2_NUM_SUB_BLK[1] = 0)) then
 			predSampChr[listIdx][compIdx-1][iLoop][jLoop] := sample;
+		else if(not IS_2ND_PART_PRED) then
+			predSampChr[listIdx][compIdx-1][iLoop - subPuIdxMin[1][0]][jLoop - subPuIdxMin[1][1]] := sample;
 		else if(iLoop >= subPuIdxMin[1][0] && jLoop >= subPuIdxMin[1][1] &&
-			    iLoop < subPuIdxMax[1][0]+3) then
-			if(not IS_2ND_PART_PRED && jLoop <  subPuIdxMax[1][1] ||
-			       IS_2ND_PART_PRED && jLoop < subPuIdxMax[1][1]+3) then
-				predSampChr[listIdx][compIdx-1][iLoop - subPuIdxMin[1][0]][jLoop - subPuIdxMin[1][1]] := sample;
-			end
-		end end
+			    iLoop < subPuIdxMax[1][0]+3 && jLoop < subPuIdxMax[1][1]+3) then
+			predSampChr[listIdx][compIdx-1][iLoop - subPuIdxMin[1][0]][jLoop - subPuIdxMin[1][1]] := sample;
+		end end end
 
 		iLoop := iLoop + 1;
 		if((PROCESS_MODE_HALF_PIX & HALF_PIX_1ST_PART) != 0) then
@@ -1315,7 +1313,7 @@ actor InterPredPipeline1(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 		not((LOG2_NUM_SUB_BLK[0] = 0 && LOG2_NUM_SUB_BLK[1] = 0) ||
 		IS_2ND_PART_PRED ||
 		(iLoop >= subPuIdxMin[1][0] && jLoop >= subPuIdxMin[1][1] &&
-		 iLoop < subPuIdxMax[1][0]+3 && jLoop < subPuIdxMax[1][1]))
+		 iLoop < subPuIdxMax[1][0]+3 && jLoop < subPuIdxMax[1][1]+1))
 	do
 		iLoop := iLoop + 1;
 		if((PROCESS_MODE_HALF_PIX & HALF_PIX_1ST_PART) != 0) then

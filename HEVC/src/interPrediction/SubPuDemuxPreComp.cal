@@ -160,11 +160,11 @@ actor SubPuDemuxPreComp(uint(size=8) LOG2_NUM_SUB_BLK[2])
 		do
 			foreach int yBlk in 0 .. (1 << LOG2_NUM_SUB_BLK[1]) - 1
 			do
-				forwardToken[xBlk][0] :=
+				forwardToken[xBlk][yBlk] :=
 				   iLoop >= subPuIdxMin[xBlk][yBlk][0][0] &&
 				   jLoop >= subPuIdxMin[xBlk][yBlk][0][1] &&
 				   iLoop <  subPuIdxMax[xBlk][yBlk][0][0]+7 &&
-				   jLoop <  subPuIdxMax[xBlk][yBlk][0][1];
+				   jLoop <  subPuIdxMax[xBlk][yBlk][0][1]+3;
 			end
 		end
 		iLoop := iLoop + 1;
@@ -197,7 +197,7 @@ actor SubPuDemuxPreComp(uint(size=8) LOG2_NUM_SUB_BLK[2])
 					iLoop >= subPuIdxMin[xBlk][yBlk][1][0]   &&
 					jLoop >= subPuIdxMin[xBlk][yBlk][1][1]   &&
 					iLoop <  subPuIdxMax[xBlk][yBlk][1][0]+3 &&
-					jLoop <  subPuIdxMax[xBlk][yBlk][1][1];
+					jLoop <  subPuIdxMax[xBlk][yBlk][1][1]+1;
 			end
 		end
 		iLoop := iLoop + 1;
@@ -239,22 +239,22 @@ actor SubPuDemuxPreComp(uint(size=8) LOG2_NUM_SUB_BLK[2])
 
 	ForwardTo_0_1.launch: action ==> Samp_0_1:[samp]
 	guard
-		forwardToken[0][0]
+		forwardToken[0][1]
 	end
 
 	ForwardTo_0_1.skip: action ==>
 	guard
-		not forwardToken[0][0]
+		not forwardToken[0][1]
 	end
 
 	ForwardTo_1_1.launch: action ==> Samp_1_1:[samp]
 	guard
-		forwardToken[1][0]
+		forwardToken[1][1]
 	end
 
 	ForwardTo_1_1.skip: action ==>
 	guard
-		not forwardToken[1][0]
+		not forwardToken[1][1]
 	end
 
 
