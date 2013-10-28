@@ -83,11 +83,11 @@ actor GenerateBs()
 	uint(size=16) tilesBeg[MAX_NUM_TILES][2];
 	uint(size=16) tilesEnd[MAX_NUM_TILES][2];
 
-	uint(size=5) predModeTab[PICT_WIDTH/4][PICT_HEIGHT/4];//
-	bool cbfTab[PICT_WIDTH/4][PICT_HEIGHT/4];//
-	bool isBiPredTab[PICT_WIDTH/4][PICT_HEIGHT/4];//
-	int(size=16) refPocTab[PICT_WIDTH/4][PICT_HEIGHT/4][2];//
-	int(size=32) mvTab[PICT_WIDTH/4][PICT_HEIGHT/4][2][2];//
+	uint(size=5) predModeTab[PICT_WIDTH_POW_2/4][PICT_HEIGHT_POW_2/4];//
+	bool cbfTab[PICT_WIDTH_POW_2/4][PICT_HEIGHT_POW_2/4];//
+	bool isBiPredTab[PICT_WIDTH_POW_2/4][PICT_HEIGHT_POW_2/4];//
+	int(size=16) refPocTab[PICT_WIDTH_POW_2/4][PICT_HEIGHT_POW_2/4][2];//
+	int(size=32) mvTab[PICT_WIDTH_POW_2/4][PICT_HEIGHT_POW_2/4][2][2];//
 	bool isBiPred[2];
 	int(size=16) refPoc[2][2];
 	int(size=32) mv[2][2][2];
@@ -115,8 +115,8 @@ actor GenerateBs()
 	procedure savePredInfo(uint(size=16) addr[2], uint(size=8) puSize[2],
 		uint(size=1) tabIdx)
 	var
-		uint(size=16) xMin = (addr[0]>>2)&(PICT_WIDTH/4-1),
-		uint(size=16) xMax = ((addr[0]+puSize[0])/4)&(PICT_WIDTH/4-1),
+		uint(size=16) xMin = (addr[0]>>2)&(PICT_WIDTH_POW_2/4-1),
+		uint(size=16) xMax = ((addr[0]+puSize[0])/4)&(PICT_WIDTH_POW_2/4-1),
 		uint(size=16) yMin = addr[1]/4,
 		uint(size=16) yMax = (addr[1]+puSize[1])/4,
 		uint(size=16) y
@@ -234,7 +234,7 @@ actor GenerateBs()
 
 	procedure genBoundFilterStrength(uint(size=2) bS[1], uint(size=16) addr[2], bool isVerticalEdge, uint(size=2) cIdx, bool isTUEdge)
 	var
-		uint(size=16) q0[2] = [(addr[0]/4)&(PICT_WIDTH/4-1), addr[1]/4],
+		uint(size=16) q0[2] = [(addr[0]/4)&(PICT_WIDTH_POW_2/4-1), addr[1]/4],
 		uint(size=16) p0[2] := if(isVerticalEdge) then [q0[0]-1, q0[1]]
 			else [q0[0], q0[1]-1] end,
 		int(size=16) tmpRefPoc,
@@ -509,8 +509,8 @@ actor GenerateBs()
 			end
 		end
 
-		xMin := (treeAddr[0] & PICT_WIDTH-1) >>2;
-		xMax := (xMin+(treeNS>>2))&(PICT_WIDTH/4-1);
+		xMin := (treeAddr[0] & PICT_WIDTH_POW_2-1) >>2;
+		xMax := (xMin+(treeNS>>2))&(PICT_WIDTH_POW_2/4-1);
 		yMin := treeAddr[1]/4;
 		yMax := (treeAddr[1]+treeNS)/4;
 		foreach int x in xMin .. xMax-1

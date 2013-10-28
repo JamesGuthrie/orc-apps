@@ -7,10 +7,12 @@ unit CommonConstantHEVC :
     /**************************************************************************
      * GLOBAL
      *************************************************************************/
-    int PICT_WIDTH                              = 4096;
-    int PICT_HEIGHT                             = 2048;
-    int MASK_WIDTH                              = PICT_WIDTH-1;
-    int MASK_HEIGHT                             = PICT_HEIGHT-1;
+	int PICT_WIDTH        = 2560;
+	int PICT_HEIGHT       = 1600;
+	int PICT_WIDTH_POW_2  = 4096;
+	int PICT_HEIGHT_POW_2 = 2048;
+	int MASK_WIDTH_POW_2  = PICT_WIDTH_POW_2-1;
+	int MASK_HEIGHT_POW_2 = PICT_HEIGHT_POW_2-1;
 
 	uint(size=16) MAX_NUM_TILES                 = 1000;
 

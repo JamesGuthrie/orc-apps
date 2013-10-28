@@ -149,8 +149,8 @@ actor MvComponentPred(bool FIX_TMVP_REFIDX0)
 	uint(size=16) numSlcPerPict[17];
 	int(size=16)  pocRefList[17][MAX_NUM_SLICE][2][16];
 	uint(size=16) slcAddrRef[17][MAX_NUM_SLICE][2];
-	int(size=4)   refIdxRef[17][PICT_WIDTH/4][PICT_HEIGHT/4][2];
-	int(size=16)  mvRef[17][PICT_WIDTH/4][PICT_HEIGHT/4][2][2];
+	int(size=4)   refIdxRef[17][PICT_WIDTH_POW_2/4][PICT_HEIGHT_POW_2/4][2];
+	int(size=16)  mvRef[17][PICT_WIDTH_POW_2/4][PICT_HEIGHT_POW_2/4][2][2];
 	int           neighbLocation[2];
 	int           nPSH;
 	int           nPSW;
@@ -223,10 +223,10 @@ actor MvComponentPred(bool FIX_TMVP_REFIDX0)
 		int yNOrig = orig[1],
 		int xNNeighb = neighb[0],
 		int yNNeighb = neighb[1],
-		int xNOrigMasked = orig[0] & (MASK_WIDTH>>2),
-		int yNOrigMasked = orig[1] & (MASK_HEIGHT>>2),
-		int xNNeighbMasked = neighb[0] & (MASK_WIDTH>>2),
-		int yNNeighbMasked = neighb[1] & (MASK_HEIGHT>>2),
+		int xNOrigMasked = orig[0] & (MASK_WIDTH_POW_2>>2),
+		int yNOrigMasked = orig[1] & (MASK_HEIGHT_POW_2>>2),
+		int xNNeighbMasked = neighb[0] & (MASK_WIDTH_POW_2>>2),
+		int yNNeighbMasked = neighb[1] & (MASK_HEIGHT_POW_2>>2),
 		int refIdxCurrCu[2] = [refIdxRef[currIdx][xNOrigMasked]
 			[yNOrigMasked][i]:for int i in 0 .. 1],
 		int refIdxNeighb[2] = [refIdxRef[currIdx][xNNeighbMasked]
@@ -803,7 +803,7 @@ actor MvComponentPred(bool FIX_TMVP_REFIDX0)
 			slcAddrRef[currIdx][0] := [slcAddr[i]: for int i in 0 .. 1];
 
 			refIdxRef[currIdx]:= [[[-1:for int i in 0 .. 1]:
-				for int j in 0 .. PICT_HEIGHT/4-1]:for int k in 0 .. PICT_WIDTH/4-1];
+				for int j in 0 .. PICT_HEIGHT_POW_2/4-1]:for int k in 0 .. PICT_WIDTH_POW_2/4-1];
 		end
 
 		isRef[currIdx] := true;

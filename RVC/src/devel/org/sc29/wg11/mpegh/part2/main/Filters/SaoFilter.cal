@@ -61,15 +61,15 @@ actor SaoFilter(bool DEBUG)
 
 	bool          slcSaoCompEn[3];
 
-	uint(size=8) OrigPict[3][PICT_WIDTH][PICT_HEIGHT];
-	uint(size=8) FiltPict[3][PICT_WIDTH][PICT_HEIGHT];
+	uint(size=8) OrigPict[3][PICT_WIDTH_POW_2][PICT_HEIGHT_POW_2];
+	uint(size=8) FiltPict[3][PICT_WIDTH_POW_2][PICT_HEIGHT_POW_2];
 
 	
 	uint(size=2)  cIdx;
-	uint(size=2)  saoTypeIdx[PICT_WIDTH/64][PICT_HEIGHT/64][3];
-	int (size=9)  saoOffset[PICT_WIDTH/64][PICT_HEIGHT/64][3][5];
-	uint(size=2)  saoEoClass[PICT_WIDTH/64][PICT_HEIGHT/64][3];
-	uint(size=5)  saoLeftClass[PICT_WIDTH/64][PICT_HEIGHT/64][3];
+	uint(size=2)  saoTypeIdx[PICT_WIDTH_POW_2/64][PICT_HEIGHT_POW_2/64][3];
+	int (size=9)  saoOffset[PICT_WIDTH_POW_2/64][PICT_HEIGHT_POW_2/64][3][5];
+	uint(size=2)  saoEoClass[PICT_WIDTH_POW_2/64][PICT_HEIGHT_POW_2/64][3];
+	uint(size=5)  saoLeftClass[PICT_WIDTH_POW_2/64][PICT_HEIGHT_POW_2/64][3];
 	uint(size=3)  bandTable[32];
 	uint(size=8)  lcuSizeMax;
 	uint(size=6)  picSizeInCu[2];
@@ -88,14 +88,14 @@ actor SaoFilter(bool DEBUG)
 	uint(size=16) lcuTileIdx;
 	uint(size=16) tilesBeg[MAX_NUM_TILES][2];
 	uint(size=16) tilesEnd[MAX_NUM_TILES][2];
-	bool         filtAcrSlc[PICT_WIDTH/64][PICT_HEIGHT/64];
-	bool         filtAcrTile[PICT_WIDTH/64][PICT_HEIGHT/64];
+	bool         filtAcrSlc[PICT_WIDTH_POW_2/64][PICT_HEIGHT_POW_2/64];
+	bool         filtAcrTile[PICT_WIDTH_POW_2/64][PICT_HEIGHT_POW_2/64];
 	bool         filtAcrAllSlc;
 	bool         filtAcrAllTiles;
 	bool         filtAcrCurrSlc;
 	bool         filtAcrCurrTile;
-	uint(size=8) numSlc[PICT_WIDTH/64][PICT_HEIGHT/64];
-	uint(size=8) numTile[PICT_WIDTH/64][PICT_HEIGHT/64];
+	uint(size=8) numSlc[PICT_WIDTH_POW_2/64][PICT_HEIGHT_POW_2/64];
+	uint(size=8) numTile[PICT_WIDTH_POW_2/64][PICT_HEIGHT_POW_2/64];
 	uint(size=8) numCurrSlc;
 
 	procedure nextLcuAddress()
@@ -165,7 +165,7 @@ actor SaoFilter(bool DEBUG)
 				xIdx := rx + x;
 				xPix2 := xIdx + 1;
 				signResult[0][(x+1)&127][y] :=
-					Sign3(OrigPict[0][xPix2 & MASK_WIDTH][yIdx] -
+					Sign3(OrigPict[0][xPix2 & MASK_WIDTH_POW_2][yIdx] -
 						OrigPict[0][xIdx][yIdx]);
 			end
 		end
@@ -263,7 +263,7 @@ actor SaoFilter(bool DEBUG)
 				yPix2 := yIdx + 1;
 
 				signResult[0][x][(y+1)&127] :=
-					Sign3(OrigPict[0][xIdx][yPix2 & MASK_HEIGHT] -
+					Sign3(OrigPict[0][xIdx][yPix2 & MASK_HEIGHT_POW_2] -
 						OrigPict[0][xIdx][yIdx]);
 			end
 		end
@@ -369,7 +369,7 @@ actor SaoFilter(bool DEBUG)
 			do
 				xIdx := rx + x;
 				signResult[0][(x+xOff[1])&127][(y+yOff[1])&127] :=
-					Sign3(OrigPict[0][pixIdx[1][0] & MASK_WIDTH][pixIdx[1][1]] -
+					Sign3(OrigPict[0][pixIdx[1][0] & MASK_WIDTH_POW_2][pixIdx[1][1]] -
 						OrigPict[0][xIdx][yIdx]);
 				pixIdx[1][0] := pixIdx[1][0] + 1;
 			end
@@ -611,7 +611,7 @@ actor SaoFilter(bool DEBUG)
 				xIdx := rx + x;
 				xPix2 := xIdx + 1;
 				signResult[cIdx][(x+1)&127][y] :=
-					Sign3(OrigPict[cIdx][xPix2 & MASK_WIDTH][yIdx] -
+					Sign3(OrigPict[cIdx][xPix2 & MASK_WIDTH_POW_2][yIdx] -
 						OrigPict[cIdx][xIdx][yIdx]);
 			end
 		end
@@ -708,7 +708,7 @@ actor SaoFilter(bool DEBUG)
 				yIdx := ry + y;
 				yPix2 := yIdx + 1;
 				signResult[cIdx][x][(y+1)&127] :=
-					Sign3(OrigPict[cIdx][xIdx][yPix2 & MASK_HEIGHT] -
+					Sign3(OrigPict[cIdx][xIdx][yPix2 & MASK_HEIGHT_POW_2] -
 						OrigPict[cIdx][xIdx][yIdx]);
 			end
 		end
@@ -815,7 +815,7 @@ actor SaoFilter(bool DEBUG)
 			do
 				xIdx := rx + x;
 				signResult[cIdx][(x+xOff[1])&127][(y+yOff[1])&127] :=
-					Sign3(OrigPict[cIdx][pixIdx[1][0] & MASK_WIDTH][pixIdx[1][1]] -
+					Sign3(OrigPict[cIdx][pixIdx[1][0] & MASK_WIDTH_POW_2][pixIdx[1][1]] -
 						OrigPict[cIdx][xIdx][yIdx]);
 				pixIdx[1][0] := pixIdx[1][0] + 1;
 			end

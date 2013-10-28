@@ -99,9 +99,9 @@ actor DeblockingFilter(bool FILT_VERT_EDGES, bool FILT_HOR_EDGES, bool DEBUG)
 	bool          disDbf := false;
 
 	uint(size=8)  pictureBuffer[3][PICT_WIDTH][PICT_HEIGHT];
-	int (size=8)  qpTab[PICT_WIDTH/4][PICT_HEIGHT/4];
+	int (size=8)  qpTab[PICT_WIDTH_POW_2/4][PICT_HEIGHT_POW_2/4];
 	uint(size=2)  bSTableVert[256];
-	uint(size=2)  bSTableHoriz[PICT_WIDTH/64][PICT_HEIGHT/64][256];
+	uint(size=2)  bSTableHoriz[(PICT_WIDTH + 63)/64][(PICT_HEIGHT + 63)/64][256];
 
 	int           betaOffset;
 	uint(size=2)  dE;
@@ -135,7 +135,7 @@ actor DeblockingFilter(bool FILT_VERT_EDGES, bool FILT_HOR_EDGES, bool DEBUG)
 
 	procedure decisionProcessLumaBlkEdge(uint(size=16) addr[2], bool isVertical, uint(size=8) bS)
 	var
-		uint(size=16) q0X = (addr[0]/4) & (PICT_WIDTH/4-1),
+		uint(size=16) q0X = (addr[0]/4) & (PICT_WIDTH_POW_2/4-1),
 		uint(size=16) q0Y = addr[1]/4,
 		uint(size=16) p0X, uint(size=16) p0Y,
 		int Q,
@@ -511,7 +511,7 @@ actor DeblockingFilter(bool FILT_VERT_EDGES, bool FILT_HOR_EDGES, bool DEBUG)
 			end
 		end
 
-		qpTab[(pixAddr[0] & PICT_WIDTH-1) >>2][pixAddr[1]/4] := qp;
+		qpTab[(pixAddr[0] & PICT_WIDTH_POW_2-1) >>2][pixAddr[1]/4] := qp;
 		bSTableVert[blkIdx] := bs[0];
 		bSTableHoriz[xAddrVert/lcuSizeMax][yAddrVert/lcuSizeMax][blkIdx] := bs[1];
 
@@ -576,7 +576,7 @@ actor DeblockingFilter(bool FILT_VERT_EDGES, bool FILT_HOR_EDGES, bool DEBUG)
 		blkIdx < numPartition && pixAddr[0] < picSize[0] && pixAddr[1] < picSize[1]
 	do
 
-		qpTab[(pixAddr[0] & PICT_WIDTH-1) >>2][pixAddr[1]/4] := qp;
+		qpTab[(pixAddr[0] & PICT_WIDTH_POW_2-1) >>2][pixAddr[1]/4] := qp;
 		bSTableVert[blkIdx] := bs[0];
 		bSTableHoriz[xAddrVert/lcuSizeMax][yAddrVert/lcuSizeMax][blkIdx] := bs[1];
 
