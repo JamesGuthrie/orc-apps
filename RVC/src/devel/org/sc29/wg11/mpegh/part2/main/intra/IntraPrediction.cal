@@ -75,8 +75,6 @@ actor IntraPrediction(bool EnabSkipInPix)
 	uint(size=8) PredSample
 		:
 
-	uint(size=16) NEIGHB_TAB_SZ   = PICT_WIDTH + PICT_HEIGHT + 1;
-
 	uint(size=6) INTRA_PLANAR = 0;
 	uint(size=6) INTRA_DC = 1;
 

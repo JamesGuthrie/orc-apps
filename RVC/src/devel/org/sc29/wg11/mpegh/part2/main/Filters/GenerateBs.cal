@@ -83,11 +83,12 @@ actor GenerateBs()
 	uint(size=16) tilesBeg[MAX_NUM_TILES][2];
 	uint(size=16) tilesEnd[MAX_NUM_TILES][2];
 
-	uint(size=5) predModeTab[PICT_WIDTH_POW_2/4][PICT_HEIGHT_POW_2/4];//
+	uint(size=5) predModeTab[PICT_WIDTH_POW_2/4][128/4];//
 	bool cbfTab[PICT_WIDTH_POW_2/4][PICT_HEIGHT_POW_2/4];//
 	bool isBiPredTab[PICT_WIDTH_POW_2/4][PICT_HEIGHT_POW_2/4];//
 	int(size=16) refPocTab[PICT_WIDTH_POW_2/4][PICT_HEIGHT_POW_2/4][2];//
 	int(size=32) mvTab[PICT_WIDTH_POW_2/4][PICT_HEIGHT_POW_2/4][2][2];//
+//	int(size=16) mvTabNeighb[NEIGHB_TAB_SZ][2][2];//
 	bool isBiPred[2];
 	int(size=16) refPoc[2][2];
 	int(size=32) mv[2][2][2];
@@ -126,7 +127,7 @@ actor GenerateBs()
 			y := yMin;
 			while(y!=yMax)
 			do
-				predModeTab[x][y] := cuMode;
+				predModeTab[x][y&(127/4)] := cuMode;
 				isBiPredTab[x][y] := isBiPred[tabIdx];
 				foreach int i in 0 .. 1
 				do
@@ -246,7 +247,7 @@ actor GenerateBs()
 			bS[0] := 0;
 		else if(not isVerticalEdge && ((addr[1]>>2)&1)=1) then
 			bS[0] := 0;
-		else if(predModeTab[p0[0]][p0[1]] = INTRA || predModeTab[q0[0]][q0[1]] = INTRA) then
+		else if(predModeTab[p0[0]][p0[1]&(127/4)] = INTRA || predModeTab[q0[0]][q0[1]&(127/4)] = INTRA) then
 			bS[0] := 2;
 		else if(cIdx=0 && isTUEdge && (cbfTab[p0[0]][p0[1]] || cbfTab[q0[0]][q0[1]])) then
 			bS[0] := 1;
@@ -491,7 +492,11 @@ actor GenerateBs()
 		uint(size=16) xMax,
 		uint(size=16) yMin,
 		uint(size=16) yMax,
-		uint(size=16) y
+		uint(size=16) y,
+
+		uint(size=2) bS[1],
+		uint(size=16) addrBlk[2],
+		uint(size=16) rasterIdx
 	do
 		processTUBoundaries();
 
@@ -523,37 +528,13 @@ actor GenerateBs()
 			end
 		end
 
-		trafoTreeIdx[trafoTreeDepth] := trafoTreeIdx[trafoTreeDepth] + 1;
-		/* Replace by (trafoTreeDepth > -1 && trafoTreeIdx[trafoTreeDepth] = 4) when orcc's simulator
-		 * support short-circuit evaluation.
-		 */
-		while(if trafoTreeDepth > -1 then trafoTreeIdx[trafoTreeDepth] = 4 else false end)
-		do
-			trafoTreeDepth := trafoTreeDepth - 1;
-			if(trafoTreeDepth>-1) then
-				trafoTreeIdx[trafoTreeDepth] :=
-					trafoTreeIdx[trafoTreeDepth] + 1;
-			end
-		end
-	end
-
-	getSplitTrafo.done: action ==>
-	guard
-		trafoTreeDepth = -1
-	end
-
-	generateBS: action ==>
-	var
-		int(size=16) xMin = (cuAddr[0] & (lcuSizeMax - 1))>>2,
-		int(size=16) xMax = xMin+(nS>>2),
-		int(size=16) yMin = (cuAddr[1] & (lcuSizeMax - 1))>>2,
-		int(size=16) yMax = yMin + (nS>>2),
-		uint(size=2) bS[1],
-		uint(size=16) addrBlk[2],
-		uint(size=16) rasterIdx
-	do
-		addrBlk := cuAddr;
-		foreach int y in yMin .. yMax - 1
+		xMin := (treeAddr[0] & (lcuSizeMax - 1))>>2;
+		xMax := xMin+(treeNS>>2);
+		yMin := (treeAddr[1] & (lcuSizeMax - 1))>>2;
+		yMax := yMin + (treeNS>>2);
+		addrBlk := treeAddr;
+		y := yMin;
+		while(y < yMax)
 		do
 			foreach int x in xMin .. xMax - 1
 			do
@@ -573,10 +554,35 @@ actor GenerateBs()
 				addrBlk[0] := addrBlk[0] + 4;
 			end
 			addrBlk[1] := addrBlk[1] + 4;
-			addrBlk[0] := cuAddr[0];
+			addrBlk[0] := treeAddr[0];
+			y := y + 1;
 		end
-		currIdx := absCoordToZScan(cuAddr);
+		addrBlk := [treeAddr[0]+treeNS-1, treeAddr[1]+treeNS-1];
+		currIdx := absCoordToZScan(treeAddr);
+		maxRasterScanIdx := absCoordToZScan(addrBlk);
+
+		trafoTreeIdx[trafoTreeDepth] := trafoTreeIdx[trafoTreeDepth] + 1;
+		/* Replace by (trafoTreeDepth > -1 && trafoTreeIdx[trafoTreeDepth] = 4) when orcc's simulator
+		 * support short-circuit evaluation.
+		 */
+		while(if trafoTreeDepth > -1 then trafoTreeIdx[trafoTreeDepth] = 4 else false end)
+		do
+			trafoTreeDepth := trafoTreeDepth - 1;
+			if(trafoTreeDepth>-1) then
+				trafoTreeIdx[trafoTreeDepth] :=
+					trafoTreeIdx[trafoTreeDepth] + 1;
+			end
+		end
+	end
+
+	getSplitTrafo.done: action ==>
+	guard
+		trafoTreeDepth = -1
+	var
+		uint(size=16) addrBlk[2]
+	do
 		addrBlk := [cuAddr[0]+nS-1, cuAddr[1]+nS-1];
+		currIdx := absCoordToZScan(cuAddr);
 		maxRasterScanIdx := absCoordToZScan(addrBlk);
 	end
 
@@ -611,18 +617,17 @@ actor GenerateBs()
 		GetCuInfo (getCuInfo.launch )--> GetCuMode;
 		GetCuInfo (getCuInfo.done   )--> GetPartMode;
 
-		GetCuMode (getCuMode.isNotOther )--> GetRefPictInfo2;
+		GetCuMode (getCuMode.isNotOther )--> GetRefPictInfo;
 		GetCuMode (getCuMode.isOther    )--> GetCuInfo;
 
-		GetRefPictInfo2 (getRefPictInfo.launch )--> GetRefPictInfo2;
-		GetRefPictInfo2 (getRefPictInfo.done   )--> GetSplitTrafo;
+		GetRefPictInfo (getRefPictInfo.launch )--> GetRefPictInfo;
+		GetRefPictInfo (getRefPictInfo.done   )--> GetSplitTrafo;
 
-		GetSplitTrafo (getSplitTrafo.launch )--> GetSplitTrafo;
-		GetSplitTrafo (getSplitTrafo.done   )--> GenerateBS;
-
-		GenerateBS (generateBS )--> SendBS;
+		GetSplitTrafo (getSplitTrafo.launch.isTrue )--> GetSplitTrafo;
+		GetSplitTrafo (getSplitTrafo.launch.isFalse )--> SendBS;
+		GetSplitTrafo (getSplitTrafo.done   )--> GetCuInfo;
 
 		SendBS (sendBS.launch )--> SendBS;
-		SendBS (sendBS.done   )--> GetCuInfo;
+		SendBS (sendBS.done   )--> GetSplitTrafo;
 	end
 end
