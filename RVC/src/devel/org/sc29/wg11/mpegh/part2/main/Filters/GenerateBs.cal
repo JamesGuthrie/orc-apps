@@ -84,11 +84,11 @@ actor GenerateBs()
 	uint(size=16) tilesEnd[MAX_NUM_TILES][2];
 
 	uint(size=5) predModeTab[PICT_WIDTH_POW_2/4][128/4];//
-	bool cbfTab[PICT_WIDTH_POW_2/4][PICT_HEIGHT_POW_2/4];//
+	bool cbfUpNeighb[PICT_WIDTH_POW_2/4];//
+	bool cbfLeftNeighb[PICT_HEIGHT_POW_2/4];//
 	bool isBiPredTab[PICT_WIDTH_POW_2/4][PICT_HEIGHT_POW_2/4];//
 	int(size=16) refPocTab[PICT_WIDTH_POW_2/4][PICT_HEIGHT_POW_2/4][2];//
 	int(size=32) mvTab[PICT_WIDTH_POW_2/4][PICT_HEIGHT_POW_2/4][2][2];//
-//	int(size=16) mvTabNeighb[NEIGHB_TAB_SZ][2][2];//
 	bool isBiPred[2];
 	int(size=16) refPoc[2][2];
 	int(size=32) mv[2][2][2];
@@ -233,11 +233,12 @@ actor GenerateBs()
 		end
 	end
 
-	procedure genBoundFilterStrength(uint(size=2) bS[1], uint(size=16) addr[2], bool isVerticalEdge, uint(size=2) cIdx, bool isTUEdge)
+	procedure genBoundFilterStrength(uint(size=2) bS[1], uint(size=16) addr[2], bool isVerticalEdge, uint(size=2) cIdx, bool isTUEdge, bool cbfQ0)
 	var
 		uint(size=16) q0[2] = [(addr[0]/4)&(PICT_WIDTH_POW_2/4-1), addr[1]/4],
 		uint(size=16) p0[2] := if(isVerticalEdge) then [q0[0]-1, q0[1]]
 			else [q0[0], q0[1]-1] end,
+		bool cbfP0 = if(isVerticalEdge) then cbfLeftNeighb[q0[1]] else cbfUpNeighb[q0[0]] end,
 		int(size=16) tmpRefPoc,
 		int(size=32) tmpMv,
 		int(size=32) absMv[2][2],
@@ -249,7 +250,7 @@ actor GenerateBs()
 			bS[0] := 0;
 		else if(predModeTab[p0[0]][p0[1]&(127/4)] = INTRA || predModeTab[q0[0]][q0[1]&(127/4)] = INTRA) then
 			bS[0] := 2;
-		else if(cIdx=0 && isTUEdge && (cbfTab[p0[0]][p0[1]] || cbfTab[q0[0]][q0[1]])) then
+		else if(cIdx=0 && isTUEdge && (cbfP0 || cbfQ0)) then
 			bS[0] := 1;
 		else
 			if(isBiPredTab[p0[0]][p0[1]] && isBiPredTab[q0[0]][q0[1]] && refPocTab[p0[0]][p0[1]][0] = refPocTab[q0[0]][q0[1]][1]) then
@@ -514,20 +515,6 @@ actor GenerateBs()
 			end
 		end
 
-		xMin := (treeAddr[0] & PICT_WIDTH_POW_2-1) >>2;
-		xMax := (xMin+(treeNS>>2))&(PICT_WIDTH_POW_2/4-1);
-		yMin := treeAddr[1]/4;
-		yMax := (treeAddr[1]+treeNS)/4;
-		foreach int x in xMin .. xMax-1
-		do
-			y := yMin;
-			while(y!=yMax)
-			do
-				cbfTab[x][y] := cbf;
-				y:= y+1;
-			end
-		end
-
 		xMin := (treeAddr[0] & (lcuSizeMax - 1))>>2;
 		xMax := xMin+(treeNS>>2);
 		yMin := (treeAddr[1] & (lcuSizeMax - 1))>>2;
@@ -540,23 +527,30 @@ actor GenerateBs()
 			do
 				rasterIdx := absCoordToZScan(addrBlk);
 				if(edgeFlag[VERT][x][y]) then
-					genBoundFilterStrength(bS, addrBlk, true, 0, isTUEdge[VERT][x][y]);
+					genBoundFilterStrength(bS, addrBlk, true, 0, isTUEdge[VERT][x][y], cbf);
 					bsTable[0][rasterIdx] := bS[0];
 				else				
 					bsTable[0][rasterIdx] := 0;
 				end
 				if(edgeFlag[HORIZ][x][y]) then
-					genBoundFilterStrength(bS, addrBlk, false, 0, isTUEdge[HORIZ][x][y]);
+					genBoundFilterStrength(bS, addrBlk, false, 0, isTUEdge[HORIZ][x][y], cbf);
 					bsTable[1][rasterIdx] := bS[0];
 				else
 					bsTable[1][rasterIdx] := 0;
 				end
+				cbfLeftNeighb[(treeAddr[1]>>2) + y - yMin] := cbf;
 				addrBlk[0] := addrBlk[0] + 4;
+			end
+			foreach int x in treeAddr[0]>>2 .. (treeAddr[0] >> 2) + (treeNS>>2) - 1
+			do
+				cbfUpNeighb[x] := cbf;
 			end
 			addrBlk[1] := addrBlk[1] + 4;
 			addrBlk[0] := treeAddr[0];
 			y := y + 1;
 		end
+
+
 		addrBlk := [treeAddr[0]+treeNS-1, treeAddr[1]+treeNS-1];
 		currIdx := absCoordToZScan(treeAddr);
 		maxRasterScanIdx := absCoordToZScan(addrBlk);
