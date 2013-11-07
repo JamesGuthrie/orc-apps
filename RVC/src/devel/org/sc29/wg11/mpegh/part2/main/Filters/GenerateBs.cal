@@ -87,8 +87,12 @@ actor GenerateBs()
 	bool cbfUpNeighb[PICT_WIDTH_POW_2/4];//
 	bool cbfLeftNeighb[PICT_HEIGHT_POW_2/4];//
 	bool isBiPredTab[PICT_WIDTH_POW_2/4][PICT_HEIGHT_POW_2/4];//
-	int(size=16) refPocTab[PICT_WIDTH_POW_2/4][PICT_HEIGHT_POW_2/4][2];//
-	int(size=32) mvTab[PICT_WIDTH_POW_2/4][PICT_HEIGHT_POW_2/4][2][2];//
+	int(size=16) refPocUpNeighb[PICT_WIDTH_POW_2/4][2];//
+	int(size=16) refPocLeftNeighb[PICT_HEIGHT_POW_2/4][2];//
+	int(size=16) mvUpNeighb[PICT_WIDTH_POW_2/4][2][2];//
+	int(size=16) mvLeftNeighb[PICT_HEIGHT_POW_2/4][2][2];//
+	int(size=16) coordMax1stPu[2];
+	int(size=16) xMax1stPu;
 	bool isBiPred[2];
 	int(size=16) refPoc[2][2];
 	int(size=32) mv[2][2][2];
@@ -129,12 +133,6 @@ actor GenerateBs()
 			do
 				predModeTab[x][y&(127/4)] := cuMode;
 				isBiPredTab[x][y] := isBiPred[tabIdx];
-				foreach int i in 0 .. 1
-				do
-					refPocTab[x][y][i] := refPoc[tabIdx][i];
-					mvTab[x][y][i][0] := mv[tabIdx][i][0]-(addr[0]<<2);
-					mvTab[x][y][i][1] := mv[tabIdx][i][1]-(addr[1]<<2);
-				end
 				y := y+1;
 			end
 		end
@@ -233,12 +231,22 @@ actor GenerateBs()
 		end
 	end
 
-	procedure genBoundFilterStrength(uint(size=2) bS[1], uint(size=16) addr[2], bool isVerticalEdge, uint(size=2) cIdx, bool isTUEdge, bool cbfQ0)
+	procedure genBoundFilterStrength(uint(size=2) bS[1], uint(size=16) addr[2],
+		bool isVerticalEdge, uint(size=2) cIdx, bool isTUEdge, bool cbfQ0,
+		int(size=16) mvQ0 [2][2], int(size=16) refPocQ0[2])
 	var
 		uint(size=16) q0[2] = [(addr[0]/4)&(PICT_WIDTH_POW_2/4-1), addr[1]/4],
 		uint(size=16) p0[2] := if(isVerticalEdge) then [q0[0]-1, q0[1]]
 			else [q0[0], q0[1]-1] end,
 		bool cbfP0 = if(isVerticalEdge) then cbfLeftNeighb[q0[1]] else cbfUpNeighb[q0[0]] end,
+		int(size=16) mvP0 [2][2] := if(isVerticalEdge) then
+			[[mvLeftNeighb[q0[1]][i][j]: for int j in 0 .. 1]: for int i in 0 .. 1]
+				else
+			[[mvUpNeighb[q0[0]][i][j]: for int j in 0 .. 1]: for int i in 0 .. 1] end,
+		int(size=16) refPocP0 [2] := if(isVerticalEdge) then
+			[refPocLeftNeighb[q0[1]][i]: for int i in 0 .. 1]
+				else
+			[refPocUpNeighb[q0[0]][i]: for int i in 0 .. 1] end,
 		int(size=16) tmpRefPoc,
 		int(size=32) tmpMv,
 		int(size=32) absMv[2][2],
@@ -253,41 +261,46 @@ actor GenerateBs()
 		else if(cIdx=0 && isTUEdge && (cbfP0 || cbfQ0)) then
 			bS[0] := 1;
 		else
-			if(isBiPredTab[p0[0]][p0[1]] && isBiPredTab[q0[0]][q0[1]] && refPocTab[p0[0]][p0[1]][0] = refPocTab[q0[0]][q0[1]][1]) then
-				tmpRefPoc := refPocTab[q0[0]][q0[1]][1];
-				refPocTab[q0[0]][q0[1]][1] := refPocTab[q0[0]][q0[1]][0];
-				refPocTab[q0[0]][q0[1]][0] := tmpRefPoc;
-				tmpMv := mvTab[q0[0]][q0[1]][0][0];
-				mvTab[q0[0]][q0[1]][0][0] := mvTab[q0[0]][q0[1]][1][0];
-				mvTab[q0[0]][q0[1]][1][0] := tmpMv;
-				tmpMv := mvTab[q0[0]][q0[1]][0][1];
-				mvTab[q0[0]][q0[1]][0][1] := mvTab[q0[0]][q0[1]][1][1];
-				mvTab[q0[0]][q0[1]][1][1] := tmpMv;
+			if(isBiPredTab[p0[0]][p0[1]] && isBiPredTab[q0[0]][q0[1]] && refPocP0[0] = refPocQ0[1] && 
+				not(refPocP0[0] = refPocQ0[0] && mvP0[0][0] = mvQ0[0][0] &&
+					mvP0[0][1] = mvQ0[0][1])) then
+				tmpRefPoc := refPocP0[1];
+				refPocP0[1] := refPocP0[0];
+				refPocP0[0] := tmpRefPoc;
+
+				tmpMv := mvP0[0][0];
+				mvP0[0][0] := mvP0[1][0];
+				mvP0[1][0] := tmpMv;
+
+				tmpMv := mvP0[0][1];
+				mvP0[0][1] := mvP0[1][1];
+				mvP0[1][1] := tmpMv;
+
 			end
 			if(isBiPredTab[p0[0]][p0[1]] != isBiPredTab[q0[0]][q0[1]] ||
-			   refPocTab[p0[0]][p0[1]][0] != refPocTab[q0[0]][q0[1]][0] ||
+			   refPocP0[0] != refPocQ0[0] ||
 			   isBiPredTab[p0[0]][p0[1]] && //L1
-			   (refPocTab[p0[0]][p0[1]][1] != refPocTab[q0[0]][q0[1]][1])) then
+			   (refPocP0[1] != refPocQ0[1])) then
 				bS[0] := 1;
 			else
-				absMv[0][0] := abs(mvTab[p0[0]][p0[1]][0][0]- mvTab[q0[0]][q0[1]][0][0]);
-				absMv[0][1] := abs(mvTab[p0[0]][p0[1]][0][1]- mvTab[q0[0]][q0[1]][0][1]);
+				absMv[0][0] := abs(mvP0[0][0]- mvQ0[0][0]);
+				absMv[0][1] := abs(mvP0[0][1]- mvQ0[0][1]);
 				if(not isBiPredTab[p0[0]][p0[1]] && (absMv[0][0]>=4 || absMv[0][1]>=4))then
 					bS[0] := 1;
 				else
-					absMv[1][0] := abs(mvTab[p0[0]][p0[1]][1][0]- mvTab[q0[0]][q0[1]][1][0]);
-					absMv[1][1] := abs(mvTab[p0[0]][p0[1]][1][1]- mvTab[q0[0]][q0[1]][1][1]);
+					absMv[1][0] := abs(mvP0[1][0]- mvQ0[1][0]);
+					absMv[1][1] := abs(mvP0[1][1]- mvQ0[1][1]);
 					if(isBiPredTab[p0[0]][p0[1]] &&
-					   refPocTab[p0[0]][p0[1]][0] != refPocTab[p0[0]][p0[1]][1] &&
+					   refPocP0[0] != refPocP0[1] &&
 					   (absMv[0][0]>=4 || absMv[0][1]>=4 || absMv[1][0]>=4 || absMv[1][1]>=4)) then
 						bS[0] := 1;
 					else
 						if(isBiPredTab[p0[0]][p0[1]] &&
-						   refPocTab[p0[0]][p0[1]][0] = refPocTab[p0[0]][p0[1]][1]) then
-							absMvQP[0][0] := abs(mvTab[p0[0]][p0[1]][0][0]- mvTab[q0[0]][q0[1]][1][0]);
-							absMvQP[0][1] := abs(mvTab[p0[0]][p0[1]][0][1]- mvTab[q0[0]][q0[1]][1][1]);
-							absMvQP[1][0] := abs(mvTab[p0[0]][p0[1]][1][0]- mvTab[q0[0]][q0[1]][0][0]);
-							absMvQP[1][1] := abs(mvTab[p0[0]][p0[1]][1][1]- mvTab[q0[0]][q0[1]][0][1]);
+						   refPocP0[0] = refPocP0[1]) then
+							absMvQP[0][0] := abs(mvP0[0][0]- mvQ0[1][0]);
+							absMvQP[0][1] := abs(mvP0[0][1]- mvQ0[1][1]);
+							absMvQP[1][0] := abs(mvP0[1][0]- mvQ0[0][0]);
+							absMvQP[1][1] := abs(mvP0[1][1]- mvQ0[0][1]);
 							if((absMv[0][0]>=4 || absMv[0][1]>=4 || absMv[1][0]>=4 || absMv[1][1]>=4) &&
 							   (absMvQP[0][0]>=4 || absMvQP[0][1]>=4 || absMvQP[1][0]>=4
 							   || absMvQP[1][1]>=4)) then
@@ -413,6 +426,8 @@ actor GenerateBs()
 			rstEdgeTables([cuInfo[1], cuInfo[2]]);
 		end
 		cuAddr := [cuInfo[1], cuInfo[2]];
+		coordMax1stPu[0] := (cuAddr[0] & (lcuSizeMax - 1)) + cuInfo[3] >>2;
+		coordMax1stPu[1] := (cuAddr[1] & (lcuSizeMax - 1)) + cuInfo[4] >>2;
 		numPartDecoded := numPartDecoded + 1;
 	end
 
@@ -443,7 +458,10 @@ actor GenerateBs()
 		numPartDecoded := 2;
 		trafoTreeDepth  := 0;
 		trafoTreeIdx[0] := 3;
-		
+
+		coordMax1stPu[0] := (cuAddr[0] & (lcuSizeMax - 1)) + cuInfo[3] >>2;
+		xMax1stPu        := cuAddr[0] + cuInfo[3];
+		coordMax1stPu[1] := (cuAddr[1] & (lcuSizeMax - 1)) + cuInfo[4] >>2;
 	end
 
 	getCuInfo.done: action ==>
@@ -497,13 +515,19 @@ actor GenerateBs()
 
 		uint(size=2) bS[1],
 		uint(size=16) addrBlk[2],
-		uint(size=16) rasterIdx
+		uint(size=16) rasterIdx,
+		int(size=16) mvQ0Pu1 [2][2] := [[mv[0][i][j]: for int j in 0 .. 1]: for int i in 0 .. 1],
+		int(size=16) mvQ0Pu2 [2][2] := [[mv[1][i][j]: for int j in 0 .. 1]: for int i in 0 .. 1],
+		int(size=16) refPocQ0Pu1[2] := [refPoc[0][i]: for int i in 0 .. 1],
+		int(size=16) refPocQ0Pu2[2] := [refPoc[1][i]: for int i in 0 .. 1]
 	do
 		processTUBoundaries();
 
 		/* Computing the size and the address of the current block. */
 		treeNS := nS;
 		treeAddr := [cuAddr[i]: for int i in 0 .. 1];
+//		println("treeAddr : " + treeAddr[0] + " ; " + treeAddr[1]);
+//		println("treeNS : " + treeNS);
 		foreach uint idx in 1 .. trafoTreeDepth
 		do
 			treeNS := treeNS >> 1;
@@ -514,6 +538,8 @@ actor GenerateBs()
 				treeAddr[1] := treeAddr[1] + treeNS;
 			end
 		end
+		mvQ0Pu1 := [[mv[0][i][j] - (cuAddr[j] << 2): for int j in 0 .. 1]: for int i in 0 .. 1];
+		mvQ0Pu2 := [[mv[1][i][j] - (cuAddrNQT[j] << 2): for int j in 0 .. 1]: for int i in 0 .. 1];
 
 		xMin := (treeAddr[0] & (lcuSizeMax - 1))>>2;
 		xMax := xMin+(treeNS>>2);
@@ -527,24 +553,57 @@ actor GenerateBs()
 			do
 				rasterIdx := absCoordToZScan(addrBlk);
 				if(edgeFlag[VERT][x][y]) then
-					genBoundFilterStrength(bS, addrBlk, true, 0, isTUEdge[VERT][x][y], cbf);
+					if(x < coordMax1stPu[0] && y < coordMax1stPu[1]) then
+						genBoundFilterStrength(bS, addrBlk, true, 0, isTUEdge[VERT][x][y], cbf, mvQ0Pu1, refPocQ0Pu1);
+					else
+						genBoundFilterStrength(bS, addrBlk, true, 0, isTUEdge[VERT][x][y], cbf, mvQ0Pu2, refPocQ0Pu2);
+					end
 					bsTable[0][rasterIdx] := bS[0];
 				else				
 					bsTable[0][rasterIdx] := 0;
 				end
 				if(edgeFlag[HORIZ][x][y]) then
-					genBoundFilterStrength(bS, addrBlk, false, 0, isTUEdge[HORIZ][x][y], cbf);
+					if(x < coordMax1stPu[0] && y < coordMax1stPu[1]) then
+						genBoundFilterStrength(bS, addrBlk, false, 0, isTUEdge[HORIZ][x][y], cbf, mvQ0Pu1, refPocQ0Pu1);
+					else
+						genBoundFilterStrength(bS, addrBlk, false, 0, isTUEdge[HORIZ][x][y], cbf, mvQ0Pu2, refPocQ0Pu2);
+					end
 					bsTable[1][rasterIdx] := bS[0];
 				else
 					bsTable[1][rasterIdx] := 0;
 				end
 				cbfLeftNeighb[(treeAddr[1]>>2) + y - yMin] := cbf;
+				foreach int i in 0 .. 1
+				do
+					if(x < coordMax1stPu[0] && y < coordMax1stPu[1]) then
+						mvLeftNeighb[(treeAddr[1]>>2) + y - yMin][i][0] := mv[0][i][0]-(cuAddr[0]<<2);
+						mvLeftNeighb[(treeAddr[1]>>2) + y - yMin][i][1] := mv[0][i][1]-(cuAddr[1]<<2);
+						refPocLeftNeighb[(treeAddr[1]>>2) + y - yMin][i] := refPoc[0][i];
+					else
+						mvLeftNeighb[(treeAddr[1]>>2) + y - yMin][i][0] := mv[1][i][0]-(cuAddrNQT[0]<<2);
+						mvLeftNeighb[(treeAddr[1]>>2) + y - yMin][i][1] := mv[1][i][1]-(cuAddrNQT[1]<<2);
+						refPocLeftNeighb[(treeAddr[1]>>2) + y - yMin][i] := refPoc[1][i];
+					end
+				end
 				addrBlk[0] := addrBlk[0] + 4;
 			end
 			foreach int x in treeAddr[0]>>2 .. (treeAddr[0] >> 2) + (treeNS>>2) - 1
 			do
 				cbfUpNeighb[x] := cbf;
+				foreach int i in 0 .. 1
+				do
+					if(numMvInfo = 1 || x < (xMax1stPu>>2) && y < coordMax1stPu[1]) then
+						mvUpNeighb[x][i][0] := mv[0][i][0]-(cuAddr[0]<<2);
+						mvUpNeighb[x][i][1] := mv[0][i][1]-(cuAddr[1]<<2);
+						refPocUpNeighb[x][i] := refPoc[0][i];
+					else
+						mvUpNeighb[x][i][0] := mv[1][i][0]-(cuAddrNQT[0]<<2);
+						mvUpNeighb[x][i][1] := mv[1][i][1]-(cuAddrNQT[1]<<2);
+						refPocUpNeighb[x][i] := refPoc[1][i];
+					end
+				end
 			end
+			
 			addrBlk[1] := addrBlk[1] + 4;
 			addrBlk[0] := treeAddr[0];
 			y := y + 1;
