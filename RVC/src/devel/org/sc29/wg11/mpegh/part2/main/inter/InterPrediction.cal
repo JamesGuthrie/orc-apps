@@ -314,7 +314,7 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 			pixVal >> finalShift;
 	end
 
-	procedure horizInterp(uint(size=7) fullPuIdxMax[2], uint(size=7) puIdxMax[2], int mvQuartPix[2],
+	procedure horizInterp(uint(size=7) fullPuIdxMax[2], int(size=8) puIdxMax[2], int mvQuartPix[2],
 		uint(size=2) cIdx)
 	var
 		int(size=32) coord[2],
@@ -470,7 +470,7 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 		end
 	end
 
-	procedure vertInterpLuma(int mvQuartPix[2], uint(size=7) puIdxMax[2])
+	procedure vertInterpLuma(int mvQuartPix[2], int(size=8) puIdxMax[2])
 	var
 		int(size=32) coord[2],
 		int(size=32) pixValue
@@ -527,7 +527,7 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 		end
 	end
 
-	procedure vertInterpChr(int mvQuartPix[2], uint(size=7) puIdxMax[2],
+	procedure vertInterpChr(int mvQuartPix[2], int(size=8) puIdxMax[2],
 		uint(size=2) cIdx)
 	var
 		int(size=32) coord[2],
@@ -568,7 +568,7 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 		end
 	end
 
-	procedure vertInterp(int mvQuartPix[2], uint(size=7) puIdxMax[2], uint(size=2) cIdx)
+	procedure vertInterp(int mvQuartPix[2], int(size=8) puIdxMax[2], uint(size=2) cIdx)
 	begin
 		if(cIdx = 0) then	
 			vertInterpLuma(mvQuartPix, puIdxMax);
@@ -1349,8 +1349,8 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 		uint maskMv[3] = [3, 7, 7],
 		int mvQuartPix[2],
 		uint(size=2) COMP_MIN = if((DECODE_COMP & LUMA_COMP) = 0) then 1 else 0 end,
-		uint(size=2) COMP_MAX = if((DECODE_COMP & CHROMA_COMP) != 0) then 2 else 1 end,
-		uint(size=7) puIdxMax[2],
+		uint(size=2) COMP_MAX = if((DECODE_COMP & CHROMA_COMP) != 0) then 2 else 0 end,
+		int (size=8) puIdxMax[2],
 		uint(size=7) idxMax1stPart[2]
 	do
 
