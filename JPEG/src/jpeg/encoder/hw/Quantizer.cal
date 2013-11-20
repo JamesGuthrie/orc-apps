@@ -31,12 +31,12 @@
 
 package jpeg.encoder.hw;
 
+import jpeg.encoder.common.Tables.inv_zigzag;
 import jpeg.encoder.common.Tables.QT;
-import jpeg.encoder.common.Tables.zigzag;
 import jpeg.encoder.common.Tables.DivTab;
 
 actor Quantizer()
-	int(size=13) In
+	int(size=32) In
 		==> 
 			int(size=24) Out:		
 	int(size=4) Block_Type := 0; // Block_Type = 0,1,2,3 (Luma), Block_Type = 4,5 (Chroma)
@@ -44,6 +44,7 @@ actor Quantizer()
 	int(size=13) data[64];
 	
 	int(size=9) Counter := 0;
+	
 	
 	read: action In:[token] ==>
 	do
@@ -66,7 +67,7 @@ actor Quantizer()
 	send: action ==> 
 	do
 		qt := QT[Block_Type >> 2][Counter];
-		dataCounter := data[zigzag[Counter]];
+		dataCounter := data[inv_zigzag[Counter]];
 		if dataCounter > 0 then
 			dataCounter := dataCounter + (qt >> 2);
 			negative := false;
