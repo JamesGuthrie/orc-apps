@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<XDF name="HEVCDecoderInter">
+<XDF name="HEVCDecoderInter_tiles">
+    <Port kind="Input" name="SAO_sample">
+        <Type name="int">
+            <Entry kind="Expr" name="size">
+                <Expr kind="Literal" literal-kind="Integer" value="8"/>
+            </Entry>
+        </Type>
+    </Port>
     <Port kind="Input" name="BYTE">
         <Type name="int">
             <Entry kind="Expr" name="size">
@@ -21,24 +28,17 @@
             </Entry>
         </Type>
     </Port>
-    <Port kind="Output" name="MD5">
+    <Port kind="Output" name="OUT">
         <Type name="uint">
             <Entry kind="Expr" name="size">
                 <Expr kind="Literal" literal-kind="Integer" value="8"/>
             </Entry>
         </Type>
     </Port>
-    <Port kind="Output" name="pictSize">
+    <Port kind="Output" name="realSize">
         <Type name="uint">
             <Entry kind="Expr" name="size">
                 <Expr kind="Literal" literal-kind="Integer" value="16"/>
-            </Entry>
-        </Type>
-    </Port>
-    <Port kind="Output" name="VID">
-        <Type name="int">
-            <Entry kind="Expr" name="size">
-                <Expr kind="Literal" literal-kind="Integer" value="32"/>
             </Entry>
         </Type>
     </Port>
@@ -86,18 +86,6 @@
     <Instance id="generateInfo">
         <Class name="devel.org.sc29.wg11.mpegh.part2.main.inter.GenerateInterInformation"/>
     </Instance>
-    <Instance id="QpGen">
-        <Class name="devel.org.sc29.wg11.mpegh.part2.main.Filters.QpGen"/>
-    </Instance>
-    <Instance id="DBFilter">
-        <Class name="devel.org.sc29.wg11.mpegh.part2.main.Filters.Dbf"/>
-    </Instance>
-    <Instance id="SAO">
-        <Class name="devel.org.sc29.wg11.mpegh.part2.main.Filters.SaoFilter"/>
-        <Parameter name="DEBUG">
-            <Expr kind="Literal" literal-kind="Boolean" value="true"/>
-        </Parameter>
-    </Instance>
     <Connection dst="xIT" dst-port="Size" src="Algo_Parser" src-port="TUSize"/>
     <Connection dst="xIT" dst-port="Coeff" src="Algo_Parser" src-port="Coeff"/>
     <Connection dst="IntraPrediction" dst-port="CUInfo"
@@ -124,8 +112,6 @@
     <Connection dst="SelectCU" dst-port="ResidualSample" src="xIT" src-port="Block"/>
     <Connection dst="DecodingPictureBuffer" dst-port="Poc"
         src="Algo_Parser" src-port="Poc"/>
-    <Connection dst="DecodingPictureBuffer" dst-port="PicSize"
-        src="Algo_Parser" src-port="PictSize"/>
     <Connection dst="DecodingPictureBuffer" dst-port="RpsPoc"
         src="Algo_Parser" src-port="RefPoc"/>
     <Connection dst="InterPrediction" dst-port="CUInfo"
@@ -186,39 +172,9 @@
         src="Algo_Parser" src-port="TilesCoord"/>
     <Connection dst="IntraPrediction" dst-port="TilesCoord"
         src="Algo_Parser" src-port="TilesCoord"/>
-    <Connection dst="QpGen" dst-port="TuSize" src="Algo_Parser" src-port="TUSize"/>
-    <Connection dst="DBFilter" dst-port="Qp" src="QpGen" src-port="Qp"/>
-    <Connection dst="DBFilter" dst-port="CuInfo" src="Algo_Parser" src-port="CUInfo"/>
-    <Connection dst="DBFilter" dst-port="Cbf" src="Algo_Parser" src-port="Cbf"/>
-    <Connection dst="DBFilter" dst-port="Mv" src="generateInfo" src-port="Mv"/>
-    <Connection dst="DBFilter" dst-port="IsBiPredOrLx"
-        src="generateInfo" src-port="IsBiPredOrLx"/>
-    <Connection dst="DBFilter" dst-port="SplitTransf" src="Algo_Parser" src-port="SplitTransform"/>
-    <Connection dst="DBFilter" dst-port="PartMode" src="Algo_Parser" src-port="PartMode"/>
-    <Connection dst="DBFilter" dst-port="RefPoc" src="generateInfo" src-port="PocRef"/>
-    <Connection dst="DBFilter" dst-port="SlcAddr" src="Algo_Parser" src-port="SliceAddr"/>
-    <Connection dst="DBFilter" dst-port="PicSize" src="Algo_Parser" src-port="PictSize"/>
-    <Connection dst="DBFilter" dst-port="IsPicSlcLcu" src="Algo_Parser" src-port="IsPicSlcLcu"/>
-    <Connection dst="DBFilter" dst-port="DBFDisable" src="Algo_Parser" src-port="DBFDisable"/>
-    <Connection dst="DBFilter" dst-port="SampleIn" src="SelectCU" src-port="Sample"/>
-    <Connection dst="DBFilter" dst-port="LFAcrossSlcTile"
-        src="Algo_Parser" src-port="LFAcrossSlcTile"/>
-    <Connection dst="DBFilter" dst-port="LcuSizeMax" src="Algo_Parser" src-port="LcuSizeMax"/>
-    <Connection dst="DBFilter" dst-port="TilesCoord" src="Algo_Parser" src-port="TilesCoord"/>
-    <Connection dst="DBFilter" dst-port="DbfSe" src="Algo_Parser" src-port="DbfSe"/>
-    <Connection dst="SAO" dst-port="SampleIn" src="DBFilter" src-port="FiltSample"/>
-    <Connection dst="SAO" dst-port="TilesCoord" src="Algo_Parser" src-port="TilesCoord"/>
-    <Connection dst="SAO" dst-port="LcuSizeMax" src="Algo_Parser" src-port="LcuSizeMax"/>
-    <Connection dst="SAO" dst-port="LFAcrossSlcTile" src="Algo_Parser" src-port="LFAcrossSlcTile"/>
-    <Connection dst="SAO" dst-port="PicSize" src="Algo_Parser" src-port="PictSize"/>
-    <Connection dst="SAO" dst-port="IsPicSlcLcu" src="Algo_Parser" src-port="IsPicSlcLcu"/>
-    <Connection dst="SAO" dst-port="SaoSe" src="Algo_Parser" src-port="SaoSe">
-        <Attribute kind="Value" name="bufferSize">
-            <Expr kind="Literal" literal-kind="Integer" value="16384"/>
-        </Attribute>
-    </Connection>
-    <Connection dst="DecodingPictureBuffer" dst-port="Sample" src="SAO" src-port="FiltSample"/>
-    <Connection dst="" dst-port="VID" src="SAO" src-port="FiltSample"/>
-    <Connection dst="" dst-port="MD5" src="Algo_Parser" src-port="SEI_MD5"/>
-    <Connection dst="" dst-port="pictSize" src="Algo_Parser" src-port="PictSize"/>
+    <Connection dst="" dst-port="OUT" src="SelectCU" src-port="Sample"/>
+    <Connection dst="DecodingPictureBuffer" dst-port="Sample" src="" src-port="SAO_sample"/>
+    <Connection dst="" dst-port="realSize" src="Algo_Parser" src-port="realPictSize"/>
+    <Connection dst="DecodingPictureBuffer" dst-port="PicSize"
+        src="Algo_Parser" src-port="realPictSize"/>
 </XDF>
