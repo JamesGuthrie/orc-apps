@@ -129,12 +129,6 @@
     <Connection dst="" dst-port="VID" src="SAO" src-port="FiltSample"/>
     <Connection dst="DecodingPictureBuffer" dst-port="Sample" src="SAO" src-port="FiltSample"/>
     <Connection dst="QpGen" dst-port="TuSize" src="Algo_Parser" src-port="TUSize"/>
-    <Connection dst="InterPrediction" dst-port="WeightedPredSe"
-        src="Algo_Parser" src-port="weightedPred">
-        <Attribute kind="Value" name="bufferSize">
-            <Expr kind="Literal" literal-kind="Integer" value="16384"/>
-        </Attribute>
-    </Connection>
     <Connection dst="" dst-port="PictSize" src="Algo_Parser" src-port="PictSize"/>
     <Connection dst="" dst-port="SEI_MD5" src="Algo_Parser" src-port="SEI_MD5"/>
     <Connection dst="SAO" dst-port="SampleIn" src="DBFilter" src-port="FiltSample"/>
@@ -208,4 +202,6 @@
         src="generateInfo" src-port="PredCuSize"/>
     <Connection dst="InterPrediction" dst-port="PocRef"
         src="generateInfo" src-port="PocRef"/>
+    <Connection dst="InterPrediction" dst-port="WeightedPredSe"
+        src="Algo_Parser" src-port="WeightedPred"/>
 </XDF>
