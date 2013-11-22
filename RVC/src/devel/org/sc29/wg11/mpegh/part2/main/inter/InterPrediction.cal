@@ -751,7 +751,7 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 		uint(size=3) idxL0 = refIdxL0+1,
 		uint(size=3) idxL1 = refIdxL1+1,
 		uint(size=2) COMP_MIN = if((DECODE_COMP & LUMA_COMP) = 0) then 1 else 0 end,
-		uint(size=2) COMP_MAX = if((DECODE_COMP & CHROMA_COMP) != 0) then 2 else 1 end
+		uint(size=2) COMP_MAX = if((DECODE_COMP & CHROMA_COMP) != 0) then 2 else 0 end
 	begin
 		/*Implicit weighted prediction : we compute the weights thanks the the
 		 * poc value of the reference pictures
@@ -1133,7 +1133,7 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 		uint idxL0,
 		uint idxL1,
 		uint(size=2) COMP_MIN = if((DECODE_COMP & LUMA_COMP) = 0) then 1 else 0 end,
-		uint(size=2) COMP_MAX = if((DECODE_COMP & CHROMA_COMP) != 0) then 2 else 1 end
+		uint(size=2) COMP_MAX = if((DECODE_COMP & CHROMA_COMP) != 0) then 2 else 0 end
 	do
 		if(isBiPredOrLx = PRED_L0) then
 			mvLx[0] := [mv[i]:for int i in 0 .. 1];
@@ -1169,7 +1169,7 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 		uint idxL0,
 		uint idxL1,
 		uint(size=2) COMP_MIN = if((DECODE_COMP & LUMA_COMP) = 0) then 1 else 0 end,
-		uint(size=2) COMP_MAX = if((DECODE_COMP & CHROMA_COMP) != 0) then 2 else 1 end
+		uint(size=2) COMP_MAX = if((DECODE_COMP & CHROMA_COMP) != 0) then 2 else 0 end
 	do
 		mvLx := [[mv[2*i+j]:for uint j in 0 ..1]: for int i in 0 .. 1];
 		refIdxLx := [refIndexLx[i]: for uint i in 0 .. 1];
@@ -1437,7 +1437,7 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 	var
 		uint(size=7) puIdxMax[2],
 		uint(size=2) COMP_MIN = if((DECODE_COMP & LUMA_COMP) = 0) then 1 else 0 end,
-		uint(size=2) COMP_MAX = if((DECODE_COMP & CHROMA_COMP) != 0) then 2 else 1 end
+		uint(size=2) COMP_MAX = if((DECODE_COMP & CHROMA_COMP) != 0) then 2 else 0 end
 	do
 		puIdxMax := 
 			if(not IS_2ND_PART_PRED || (LOG2_NUM_SUB_BLK[0] = 0 && LOG2_NUM_SUB_BLK[1] = 0)) then
