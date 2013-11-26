@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<layout>
+	<vertices>
+		<vertex id="IsBiPredOrLx" x="-197" y="147"/>
+		<vertex id="CUInfo" x="-180" y="175"/>
+		<vertex id="Mv" x="-171" y="205"/>
+		<vertex id="PartMode" x="-201" y="241"/>
+		<vertex id="Poc" x="-180" y="274"/>
+		<vertex id="RefIdx" x="-190" y="304"/>
+		<vertex id="RefList" x="-193" y="333"/>
+		<vertex id="Sample" x="-194" y="363"/>
+		<vertex id="SliceType" x="-202" y="394"/>
+		<vertex id="WeightedPredSe" x="-228" y="425"/>
+		<vertex id="PocRef" x="-377" y="1258"/>
+		<vertex id="PredCuSize" x="-295" y="1296"/>
+		<vertex id="PredSample" x="1492" y="293"/>
+		<vertex id="SubPuMux" x="1294" y="272"/>
+		<vertex id="Interp_2_0_0" x="978" y="-89"/>
+		<vertex id="Interp_2_1_0" x="976" y="163"/>
+		<vertex id="Interp_2_0_1" x="974" y="413"/>
+		<vertex id="Interp_2_1_1" x="970" y="665"/>
+		<vertex id="Interp_1_1_0" x="150" y="869"/>
+		<vertex id="Interp_1_0_0" x="156" y="593"/>
+		<vertex id="SubMuxPrecomp" x="518" y="822"/>
+		<vertex id="SubDeMuxPrecomp" x="-151" y="1042"/>
+		<vertex id="Interp_1_0_1" x="142" y="1161"/>
+		<vertex id="Interp_1_1_1" x="134" y="1432"/>
+	</vertices>
+</layout>
