@@ -6,7 +6,7 @@
 		<vertex id="DispCoord" x="401" y="184"/>
 		<vertex id="PictSize" x="401" y="281"/>
 		<vertex id="SEI_MD5" x="401" y="378"/>
-		<vertex id="VID" x="1059" y="1327"/>
+		<vertex id="VID" x="1177" y="1261"/>
 		<vertex id="Algo_Parser" x="171" y="936"/>
 		<vertex id="xIT" x="401" y="601"/>
 		<vertex id="IntraPrediction" x="1752" y="432"/>

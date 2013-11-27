@@ -61,7 +61,7 @@
         <Class name="devel.org.sc29.wg11.mpegh.part2.main.inter.DecodingPictureBuffer"/>
     </Instance>
     <Instance id="InterPrediction">
-        <Class name="interPrediction.InterpSubPu1stPart4Elem"/>
+        <Class name="devel.org.sc29.wg11.mpegh.part2.inter.InterPredictionBase"/>
     </Instance>
     <Instance id="SAO">
         <Class name="devel.org.sc29.wg11.mpegh.part2.main.Filters.SaoFilter"/>
@@ -198,10 +198,6 @@
         src="Algo_Parser" src-port="SplitTransform"/>
     <Connection dst="IntraPrediction" dst-port="NeighbVal"
         src="SelectCU" src-port="IntraNeighb"/>
-    <Connection dst="InterPrediction" dst-port="PredCuSize"
-        src="generateInfo" src-port="PredCuSize"/>
-    <Connection dst="InterPrediction" dst-port="PocRef"
-        src="generateInfo" src-port="PocRef"/>
     <Connection dst="InterPrediction" dst-port="WeightedPredSe"
         src="Algo_Parser" src-port="WeightedPred"/>
 </XDF>
