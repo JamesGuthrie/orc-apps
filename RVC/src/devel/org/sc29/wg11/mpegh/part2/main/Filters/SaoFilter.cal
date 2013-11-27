@@ -45,8 +45,7 @@ actor SaoFilter(bool DEBUG)
 	int (size=9)  SaoSe,
 	uint(size=16) TilesCoord
 		==>
-	uint(size=8)  FiltSample,
-	uint(size=8)  FiltSampleBis
+	uint(size=8)  FiltSample
 		:
 		
 	bool DEBUG_Trace = false;
@@ -137,15 +136,6 @@ actor SaoFilter(bool DEBUG)
 	end
 
 	procedure nextMbAddr()
-	begin
-		xCu := xCu + 1;
-		if(xCu = picSizeInMb[0]) then
-			xCu := 0;
-			yCu := yCu + 1;
-		end
-	end
-
-	procedure nextMbAddrBis()
 	begin
 		xMbSent := xMbSent + 1;
 		if(xMbSent = picSizeInMb[0]) then
@@ -1321,7 +1311,7 @@ uint numPict;
 	end
 	
 
-	sendSamplesBis.launch: action ==> FiltSampleBis:[filtSamp] repeat 16*16 + 2 * 8*8 
+	sendSamples.launch: action ==> FiltSample:[filtSamp] repeat 16*16 + 2 * 8*8 
 	guard
 		mbFiltered[0][xMbSent][yMbSent] &&
 		mbFiltered[1][xMbSent][yMbSent] &&
@@ -1400,105 +1390,15 @@ uint numPict;
 			end
 		end
 
-		nextMbAddrBis();
-	end
-
-	sendSamplesBis.done: action ==>
-	guard
-		not mbFiltered[0][xMbSent][yMbSent] ||
-		not mbFiltered[1][xMbSent][yMbSent] ||
-		not mbFiltered[2][xMbSent][yMbSent] ||
-		yMbSent = picSizeInMb[1]
-	end
-	
-
-	sendSamples.launch: action ==> FiltSample:[filtSamp] repeat 16*16 + 2 * 8*8 
-	guard
-		yCu < picSizeInMb[1]
-	var
-		uint tokenOffset,
-		uint(size=8) filtSamp[16*16+2*8*8],
-		uint(size=16) blkAddrX, uint(size=16) blkAddrY,
-		uint(size=16) xMax, uint(size=16) yMax
-	do
-		blkAddrX := xCu*16;
-		blkAddrY := yCu*16;
-		xMax := min(15, picSize[0][0] - blkAddrX - 1);
-		yMax := min(15, picSize[0][1] - blkAddrY - 1);
-		foreach uint y in 0 .. yMax
-		do
-			foreach uint x in 0 .. xMax
-			do
-				filtSamp[x+y*16] := FiltPict[0][blkAddrX+x][blkAddrY+y];
-			end
-		end
-		if(DEBUG) then
-			foreach uint y in 0 .. 15
-			do
-				foreach uint x in xMax + 1 .. 15
-				do
-					filtSamp[x+y*16] := 0;
-				end
-			end
-			foreach uint x in 0 .. 15
-			do
-				foreach uint y in yMax + 1 .. 15
-				do
-					filtSamp[x+y*16] := 0;
-				end
-			end
-		end
-
-		blkAddrX := blkAddrX>>1;
-		blkAddrY := blkAddrY>>1;
-		tokenOffset:= 16*16;
-		xMax := min(7, picSize[0][0]/2 - blkAddrX - 1);
-		yMax := min(7, picSize[0][1]/2 - blkAddrY - 1);
-		foreach uint comp in 1 .. 2
-		do
-			foreach uint y in 0 .. yMax
-			do
-				foreach uint x in 0 .. xMax
-				do
-					filtSamp[x+y*8 + tokenOffset] := FiltPict[comp][blkAddrX+x][blkAddrY+y];
-				end
-			end
-			tokenOffset:= tokenOffset + 8*8;
-		end
-
-		if(DEBUG) then
-			tokenOffset:= 16*16;
-			foreach uint comp in 1 .. 2
-			do
-				foreach uint y in yMax + 1 .. 7
-				do
-					foreach uint x in 0 .. 7
-					do
-						filtSamp[x+y*8 + tokenOffset] := 0;
-					end
-				end
-				foreach uint x in xMax + 1 .. 7
-				do
-					foreach uint y in 0 .. 7
-					do
-						filtSamp[x+y*8 + tokenOffset] := 0;
-					end
-				end
-				tokenOffset:= tokenOffset + 8*8;
-			end
-		end
-
 		nextMbAddr();
 	end
 
 	sendSamples.done: action ==>
 	guard
-		yCu = picSizeInMb[1]
-	do
-		xCuFilt := 0;
-		yCuFilt := 0;
-		xCu := 0;
-		yCu := 0;
+		not mbFiltered[0][xMbSent][yMbSent] ||
+		not mbFiltered[1][xMbSent][yMbSent] ||
+		not mbFiltered[2][xMbSent][yMbSent] ||
+		yMbSent = picSizeInMb[1]
 	end
 
 	schedule fsm IsNewPict:
@@ -1506,7 +1406,7 @@ uint numPict;
 
 		GetCuPix (isNewSlice           )--> GetNumTiles;
 		GetCuPix (getCuPix.launch.init )--> GetCuPixLuma;
-		GetCuPix (getCuPix.done        )--> SendSamplesBisEnd;
+		GetCuPix (getCuPix.done        )--> SendLastSamples;
 
 		GetCuPixLuma (getCuPix.launch.luma     )--> GetCuPixLuma;
 		GetCuPixLuma (getCuPix.launch.lumaDone )--> GetCuPixChr;
@@ -1516,22 +1416,19 @@ uint numPict;
 
 		GetNumTiles   (getNumTiles          )--> GetTilesCoord;
 		GetTilesCoord (getTilesCoord.launch )--> GetTilesCoord;
-		GetTilesCoord (getTilesCoord.done   )--> SendSamplesBis;
+		GetTilesCoord (getTilesCoord.done   )--> SendSamples;
 
-		GetSaoMerge (getSaoMerge.skip    )--> SendSamplesBis;
-		GetSaoMerge (getSaoMerge.merge   )--> SendSamplesBis;
+		GetSaoMerge (getSaoMerge.skip    )--> SendSamples;
+		GetSaoMerge (getSaoMerge.merge   )--> SendSamples;
 		GetSaoMerge (getSaoMerge.noMerge )--> GetSaoTypeIdx;
 
 		GetSaoTypeIdx(getSaoTypeIdx     )--> GetSaoTypeIdx;
-		GetSaoTypeIdx(getSaoTypeIdxDone )--> SendSamplesBis;
-
-		SendSamplesBis (sendSamplesBis.launch )--> SendSamplesBis;
-		SendSamplesBis (sendSamplesBis.done   )--> GetCuPix;
-
-		SendSamplesBisEnd (sendSamplesBis.launch )--> SendSamplesBisEnd;
-		SendSamplesBisEnd (sendSamplesBis.done   )--> SendSamples;
+		GetSaoTypeIdx(getSaoTypeIdxDone )--> SendSamples;
 
 		SendSamples (sendSamples.launch )--> SendSamples;
-		SendSamples (sendSamples.done   )--> IsNewPict;
+		SendSamples (sendSamples.done   )--> GetCuPix;
+
+		SendLastSamples (sendSamples.launch )--> SendLastSamples;
+		SendLastSamples (sendSamples.done   )--> IsNewPict;
 	end
 end
