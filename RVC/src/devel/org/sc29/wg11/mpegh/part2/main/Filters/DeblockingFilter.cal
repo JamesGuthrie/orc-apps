@@ -526,7 +526,6 @@ actor DeblockingFilter(bool FILT_VERT_EDGES, bool FILT_HOR_EDGES, bool DEBUG)
 	do
 		/*lastXIdx := xIdx;
 		lastYIdx := yIdx;*/
-		println("addr Got : " + xIdx + " ; " + yIdx);
 		computeNextLcuAddr();
 	end
 
@@ -622,7 +621,6 @@ actor DeblockingFilter(bool FILT_VERT_EDGES, bool FILT_HOR_EDGES, bool DEBUG)
 	do
 		/*lastXIdx := xIdx;
 		lastYIdx := yIdx;*/
-		println("addr Got : " + xIdx + " ; " + yIdx);
 		computeNextLcuAddr();
 	end
 
@@ -661,7 +659,6 @@ actor DeblockingFilter(bool FILT_VERT_EDGES, bool FILT_HOR_EDGES, bool DEBUG)
 	do
 		/*lastXIdx := xIdx;
 		lastYIdx := yIdx;*/
-		println("addr Got : " + xIdx + " ; " + yIdx);
 		computeNextLcuAddr();
 	end
 
@@ -830,7 +827,6 @@ actor DeblockingFilter(bool FILT_VERT_EDGES, bool FILT_HOR_EDGES, bool DEBUG)
 		compIdx = 3
 	do
 		tokenSent := 0;
-		println("addr Sent : " + xIdxBis + " ; " + yIdxBis);
 		computeNextLcuAddrBis();
 	end
 
