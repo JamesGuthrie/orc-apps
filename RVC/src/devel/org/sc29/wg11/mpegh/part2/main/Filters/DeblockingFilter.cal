@@ -84,6 +84,8 @@ actor DeblockingFilter(bool FILT_VERT_EDGES, bool FILT_HOR_EDGES, bool DEBUG)
 	uint(size=16) tilesEndSamp[MAX_NUM_TILES][2];
 	int (size=5)  qpChrOff[2];
 	uint(size=8)  lcuSizeMax;
+	uint(size=8)  log2LcuSizeMax;
+	uint          nbBlkPerLcu;
 	uint(size=16) picSize[2];
 	uint(size=6)  picSizeInMb[2];
 	uint(size=16) xIdx;
@@ -107,7 +109,7 @@ actor DeblockingFilter(bool FILT_VERT_EDGES, bool FILT_HOR_EDGES, bool DEBUG)
 	int (size=8)  qpTab[PICT_WIDTH_POW_2/4][PICT_HEIGHT_POW_2/4];
 	uint(size=2)  bSTableVert[256];
 	uint(size=2)  bSTableHoriz[(PICT_WIDTH + 63)/64][(PICT_HEIGHT + 63)/64][256];
-	bool          mbFiltered[(PICT_WIDTH + 15)/16 + 1][(PICT_HEIGHT + 15)/16];
+	bool          mbFiltered[(PICT_WIDTH + 63)/64][(PICT_HEIGHT + 63)/64];
 
 	int           betaOffset;
 	uint(size=2)  dE;
@@ -128,13 +130,13 @@ actor DeblockingFilter(bool FILT_VERT_EDGES, bool FILT_HOR_EDGES, bool DEBUG)
 	procedure computeNextLcuAddrBis()
 	begin
 		xIdxBis := xIdxBis + lcuSizeMax;
-		if(xIdxBis >= tilesEndSamp[tileIdx][0]) then
-			xIdxBis := tilesBegSamp[tileIdx][0];
+		if(xIdxBis >= tilesEndSamp[tileIdxBis][0]) then
+			xIdxBis := tilesBegSamp[tileIdxBis][0];
 			yIdxBis := yIdxBis + lcuSizeMax;
-			if(yIdxBis >= tilesEndSamp[tileIdx][1]) then
+			if(yIdxBis >= tilesEndSamp[tileIdxBis][1]) then
 				tileIdxBis := tileIdxBis + 1;
-				xIdxBis := tilesBegSamp[tileIdx][0];
-				yIdxBis := tilesBegSamp[tileIdx][1];
+				xIdxBis := tilesBegSamp[tileIdxBis][0];
+				yIdxBis := tilesBegSamp[tileIdxBis][1];
 			end
 		end
 	end
@@ -154,23 +156,8 @@ actor DeblockingFilter(bool FILT_VERT_EDGES, bool FILT_HOR_EDGES, bool DEBUG)
 	end
 
 	procedure sendFilteredLcu(uint xIdx, uint yIdx)
-	var
-		uint nbBlkPerLcu =
-			if(lcuSizeMax = 64) then
-				4
-			else if(lcuSizeMax = 32) then
-				2
-			else
-				1
-			end end
 	begin
-		foreach int x in 0 .. nbBlkPerLcu - 1
-		do
-			foreach int y in 0 .. nbBlkPerLcu - 1
-			do
-				mbFiltered[(xIdx>>4) + x][(yIdx>>4) + y] := true;
-			end
-		end
+		mbFiltered[xIdx >> log2LcuSizeMax][yIdx >> log2LcuSizeMax] := true;
 	end
 
 	procedure decisionProcessLumaBlkEdge(uint(size=16) addr[2], bool isVertical, uint(size=8) bS)
@@ -434,6 +421,22 @@ actor DeblockingFilter(bool FILT_VERT_EDGES, bool FILT_HOR_EDGES, bool DEBUG)
 		isNewPicSlcLcu = NEW_PIC
 	do
 		lcuSizeMax := lcuSz;
+		nbBlkPerLcu :=
+			if(lcuSz = 64) then
+				4
+			else if(lcuSz = 32) then
+				2
+			else
+				1
+			end end;
+		log2LcuSizeMax :=
+			if(lcuSz = 64) then
+				6
+			else if(lcuSz = 32) then
+				5
+			else
+				4
+			end end;
 		numPartition := (lcuSz * lcuSz) / 16;
 		numTokenPerLcu[0] := lcuSizeMax * lcuSizeMax;
 		numTokenPerLcu[1] := numTokenPerLcu[0] >> 2;
@@ -453,9 +456,9 @@ actor DeblockingFilter(bool FILT_VERT_EDGES, bool FILT_HOR_EDGES, bool DEBUG)
 		betaOffset := betaOff;
 		tcOffset := tcOff;
 		qpChrOff := [qpUOff, qpVOff];
-		foreach int i in 0 .. picSizeInMb[0] - 1
+		foreach int i in 0 .. (picSize[0] >> log2LcuSizeMax) - 1
 		do
-			foreach int j in 0 .. picSizeInMb[1] - 1
+			foreach int j in 0 .. (picSize[1] >> log2LcuSizeMax) - 1
 			do
 				mbFiltered[i][j] := false;
 			end
@@ -523,6 +526,7 @@ actor DeblockingFilter(bool FILT_VERT_EDGES, bool FILT_HOR_EDGES, bool DEBUG)
 	do
 		/*lastXIdx := xIdx;
 		lastYIdx := yIdx;*/
+		println("addr Got : " + xIdx + " ; " + yIdx);
 		computeNextLcuAddr();
 	end
 
@@ -618,6 +622,7 @@ actor DeblockingFilter(bool FILT_VERT_EDGES, bool FILT_HOR_EDGES, bool DEBUG)
 	do
 		/*lastXIdx := xIdx;
 		lastYIdx := yIdx;*/
+		println("addr Got : " + xIdx + " ; " + yIdx);
 		computeNextLcuAddr();
 	end
 
@@ -656,6 +661,7 @@ actor DeblockingFilter(bool FILT_VERT_EDGES, bool FILT_HOR_EDGES, bool DEBUG)
 	do
 		/*lastXIdx := xIdx;
 		lastYIdx := yIdx;*/
+		println("addr Got : " + xIdx + " ; " + yIdx);
 		computeNextLcuAddr();
 	end
 
@@ -709,14 +715,21 @@ actor DeblockingFilter(bool FILT_VERT_EDGES, bool FILT_HOR_EDGES, bool DEBUG)
 			end
 		end
 		if(FILT_HOR_EDGES) then
-			if(xAddrVert > 0) then
-				xAddrHor := xAddrVert - lcuSizeMax;
-				yAddrHor := yAddrVert;
-				sendFilteredLcu(xAddrHor, yAddrHor);
-			end
-			if(xAddrVert + lcuSizeMax >= picSize[0]) then
-				xAddrHor := xAddrVert;
-				sendFilteredLcu(xAddrHor, yAddrHor);
+			if(yAddrVert > 0) then
+				if(xAddrVert > 0) then
+					sendFilteredLcu(xAddrVert - lcuSizeMax, yAddrVert - lcuSizeMax);
+				end
+				if(xAddrVert + lcuSizeMax >= picSize[0]) then
+					sendFilteredLcu(xAddrVert, yAddrVert - lcuSizeMax);
+				end
+				if(yAddrVert + lcuSizeMax >= picSize[1]) then
+					if(xAddrVert > 0) then
+						sendFilteredLcu(xAddrVert - lcuSizeMax, yAddrVert);
+					end
+					if(xAddrVert + lcuSizeMax >= picSize[0]) then
+						sendFilteredLcu(xAddrVert, yAddrVert);
+					end
+				end
 			end
 		end
 		xAddrHor := xAddrVert;
@@ -736,9 +749,21 @@ actor DeblockingFilter(bool FILT_VERT_EDGES, bool FILT_HOR_EDGES, bool DEBUG)
 	uint(size=16) xOff;
 	uint(size=16) yOff;
 
+	sendSamples.ready: action ==>
+	guard
+		 mbFiltered[xIdxBis >> log2LcuSizeMax][yIdxBis >> log2LcuSizeMax] && tileIdxBis < numTiles//,
+//		FILT_HOR_EDGES || xIdx != lastXIdx || yIdx != lastYIdx
+	end
+
+	sendSamples.notReady: action ==>
+	guard
+		 not(mbFiltered[xIdxBis >> log2LcuSizeMax][yIdxBis >> log2LcuSizeMax] && tileIdxBis < numTiles)//,
+//		FILT_HOR_EDGES || xIdx != lastXIdx || yIdx != lastYIdx
+	end
+
 	sendSamplesBis.launch.luma: action ==> FiltSample:[filtSamp] repeat 16
 	guard
-		 mbFiltered[(xIdx + xOff)>>4][yIdx + yOff>>4] && tileIdxBis < numTiles && tokenSent < numTokenPerLcu[0]//,
+		 tokenSent < numTokenPerLcu[0]//,
 //		FILT_HOR_EDGES || xIdx != lastXIdx || yIdx != lastYIdx
 	var
 		uint(size=8) filtSamp[16]
@@ -805,12 +830,13 @@ actor DeblockingFilter(bool FILT_VERT_EDGES, bool FILT_HOR_EDGES, bool DEBUG)
 		compIdx = 3
 	do
 		tokenSent := 0;
+		println("addr Sent : " + xIdxBis + " ; " + yIdxBis);
 		computeNextLcuAddrBis();
 	end
 
 	sendSamplesBis.done: action ==>
 	guard
-		not mbFiltered[(xIdx + xOff)>>4][yIdx + yOff>>4]  || tileIdxBis = numTiles
+		not mbFiltered[xIdxBis >> log2LcuSizeMax][yIdxBis >> log2LcuSizeMax]  || tileIdxBis = numTiles
 	end
 
 	schedule fsm IsNewPict:
@@ -820,7 +846,7 @@ actor DeblockingFilter(bool FILT_VERT_EDGES, bool FILT_HOR_EDGES, bool DEBUG)
 		GetCuPix  (getCuPix.launch.pict              )--> GetPartition;
 		GetCuPix  (getCuPix.launch.lastColOrRow.vert )--> GetBlk;
 //		GetCuPix  (getCuPix.launch.lastColOrRow.hor  )--> GetBs4Blk;
-		GetCuPix  (getCuPix.done                     )--> SendSamplesBis;
+		GetCuPix  (getCuPix.done                     )--> CheckSendSamples;
 
 		GetPartition (getCuPix.launch.getPart     )--> GetPartition;
 		GetPartition (getCuPix.launch.getPartDone )--> FilterEdges;
@@ -840,10 +866,23 @@ actor DeblockingFilter(bool FILT_VERT_EDGES, bool FILT_HOR_EDGES, bool DEBUG)
 		FilterEdges (filterEdges  )--> CheckEdgeFiltered;
 
 		//CheckEdgeFiltered (filteringOnlyVertEdge.isTrue  )--> SendSamplesVert;
-		CheckEdgeFiltered (filteringOnlyVertEdge.isFalse )--> GetCuPix;
+		CheckEdgeFiltered (filteringOnlyVertEdge.isFalse )--> CheckSendSamples2;
 
 		/*SendSamplesVert (sendSamples.launch )--> GetCuPix;
 		SendSamplesVert (sendSamples.skip   )--> GetCuPix;*/
+
+		CheckSendSamples2 (sendSamples.ready    )--> SendSamplesLuma;
+		CheckSendSamples2 (sendSamples.notReady )--> GetCuPix;
+
+		SendSamplesLuma (sendSamplesBis.launch.luma     )--> SendSamplesLuma;
+		SendSamplesLuma (sendSamplesBis.launch.lumaDone )--> SendSamplesChr;
+
+		SendSamplesChr (sendSamplesBis.launch.chroma     )--> SendSamplesChr;
+		SendSamplesChr (sendSamplesBis.launch.chromaDone )--> GetCuPix;
+
+
+		CheckSendSamples (sendSamples.ready    )--> SendSamplesBis;
+		CheckSendSamples (sendSamples.notReady )--> IsNewPict;
 
 		SendSamplesBis (sendSamplesBis.launch.luma )--> SendSamplesLumaBis;
 		SendSamplesBis (sendSamplesBis.done        )--> IsNewPict;
@@ -852,6 +891,6 @@ actor DeblockingFilter(bool FILT_VERT_EDGES, bool FILT_HOR_EDGES, bool DEBUG)
 		SendSamplesLumaBis (sendSamplesBis.launch.lumaDone )--> SendSamplesChrBis;
 
 		SendSamplesChrBis (sendSamplesBis.launch.chroma     )--> SendSamplesChrBis;
-		SendSamplesChrBis (sendSamplesBis.launch.chromaDone )--> SendSamplesBis;
+		SendSamplesChrBis (sendSamplesBis.launch.chromaDone )--> CheckSendSamples;
 	end
 end
