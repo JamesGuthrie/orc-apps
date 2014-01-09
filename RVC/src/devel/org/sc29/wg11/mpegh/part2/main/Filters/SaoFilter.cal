@@ -72,6 +72,7 @@ actor SaoFilter(bool DEBUG)
 	uint(size=5)  saoLeftClass[PICT_WIDTH_POW_2/64][PICT_HEIGHT_POW_2/64][3];
 	uint(size=3)  bandTable[32];
 	uint(size=8)  lcuSizeMax;
+	uint(size=8)  log2LcuSizeMax;
 	uint(size=6)  picSizeInCu[2];
 	uint(size=6)  picSizeInMb[2];
 	uint(size=16) picSize[3][2];
@@ -154,9 +155,9 @@ actor SaoFilter(bool DEBUG)
 	procedure copyCu(uint(size=16) addrBeg[2], uint(size=16) addrEnd[2], uint(size=2) cIdx)
 	begin
 		if(cIdx = 0) then
-			sendFilteredLcu(xCu*lcuSizeMax, yCu*lcuSizeMax, 0);
+			sendFilteredLcu(xCu << log2LcuSizeMax, yCu << log2LcuSizeMax, 0);
 		else
-			sendFilteredLcu(xCu*lcuSizeMax, yCu*lcuSizeMax, cIdx);
+			sendFilteredLcu(xCu << log2LcuSizeMax, yCu << log2LcuSizeMax, cIdx);
 		end
 		foreach uint x in addrBeg[0] .. addrEnd[0]
 		do
@@ -245,12 +246,12 @@ actor SaoFilter(bool DEBUG)
 					xPix2 := xIdx + 1;
 	
 					pixIsInPict := true;
-					if(not filtAcrSlc[xIdx/lcuSizeMax][yIdx/lcuSizeMax] &&
-						numSlc[xPix1/lcuSizeMax][yIdx/lcuSizeMax] !=
-						numSlc[xPix2/lcuSizeMax][yIdx/lcuSizeMax]) then
+					if(not filtAcrSlc[xIdx >> log2LcuSizeMax][yIdx >> log2LcuSizeMax] &&
+						numSlc[xPix1 >> log2LcuSizeMax][yIdx >> log2LcuSizeMax] !=
+						numSlc[xPix2 >> log2LcuSizeMax][yIdx >> log2LcuSizeMax]) then
 						pixIsInPict := false;
-					else if(not filtAcrTile[xIdx/lcuSizeMax][yIdx/lcuSizeMax] &&
-						numTile[xPix1/lcuSizeMax][yIdx/lcuSizeMax] !=
+					else if(not filtAcrTile[xIdx >> log2LcuSizeMax][yIdx >> log2LcuSizeMax] &&
+						numTile[xPix1 >> log2LcuSizeMax][yIdx >> log2LcuSizeMax] !=
 						numTile[xPix2/lcuSizeMax][yIdx/lcuSizeMax]) then
 						
 						pixIsInPict := false;
@@ -972,6 +973,14 @@ uint numPict;
 //		println("Pict num : " + numPict + ". Pic size : {" + picWidthInPix + " ; " + picHeightInPix + "}");
 		numPict := numPict + 1;
 		lcuSizeMax := lcuSz;
+		log2LcuSizeMax :=
+			if(lcuSz = 64) then
+				6
+			else if (lcuSz = 32) then
+				5
+			else
+				4
+			end end;
 		picSizeInCu := [(picWidthInPix+(lcuSizeMax - 1))/lcuSizeMax, (picHeightInPix+(lcuSizeMax - 1))/lcuSizeMax];
 		picSizeInMb := [(picWidthInPix+15)/16, (picHeightInPix+15)/16];
 		picSize[0]  := [picWidthInPix   , picHeightInPix];
@@ -1022,6 +1031,14 @@ uint numPict;
 		filtAcrAllTiles := filtAcrAllTiles && filtAcrCurrTile;
 		numCurrSlc := numCurrSlc + 1;
 		lcuSizeMax := lcuSz;
+		log2LcuSizeMax :=
+			if(lcuSz = 64) then
+				6
+			else if (lcuSz = 32) then
+				5
+			else
+				4
+			end end;
 	end
 
 	getNumTiles: action TilesCoord:[valNumTiles] ==>
