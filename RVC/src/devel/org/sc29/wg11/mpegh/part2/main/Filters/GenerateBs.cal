@@ -89,8 +89,8 @@ actor GenerateBs()
 	bool isBiPredTab[PICT_WIDTH_POW_2/4][PICT_HEIGHT_POW_2/4];//
 	int(size=16) refPocUpNeighb[PICT_WIDTH_POW_2/4][2];//
 	int(size=16) refPocLeftNeighb[PICT_HEIGHT_POW_2/4][2];//
-	int(size=16) mvUpNeighb[PICT_WIDTH_POW_2/4][2][2];//
-	int(size=16) mvLeftNeighb[PICT_HEIGHT_POW_2/4][2][2];//
+	int(size=32) mvUpNeighb[PICT_WIDTH_POW_2/4][2][2];//
+	int(size=32) mvLeftNeighb[PICT_HEIGHT_POW_2/4][2][2];//
 	int(size=16) coordMax1stPu[2];
 	int(size=16) xMax1stPu;
 	bool isBiPred[2];
