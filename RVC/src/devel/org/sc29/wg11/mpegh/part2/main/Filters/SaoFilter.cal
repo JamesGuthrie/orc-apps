@@ -252,7 +252,7 @@ actor SaoFilter(bool DEBUG)
 						pixIsInPict := false;
 					else if(not filtAcrTile[xIdx >> log2LcuSizeMax][yIdx >> log2LcuSizeMax] &&
 						numTile[xPix1 >> log2LcuSizeMax][yIdx >> log2LcuSizeMax] !=
-						numTile[xPix2/lcuSizeMax][yIdx/lcuSizeMax]) then
+						numTile[xPix2 >> log2LcuSizeMax][yIdx >> log2LcuSizeMax]) then
 						
 						pixIsInPict := false;
 					end end
@@ -345,13 +345,13 @@ actor SaoFilter(bool DEBUG)
 					yPix2 := yIdx + 1;
 	
 					pixIsInPict := true;
-					if(not filtAcrSlc[xIdx/lcuSizeMax][yIdx/lcuSizeMax] &&
-						numSlc[xIdx/lcuSizeMax][yPix1/lcuSizeMax] !=
-						numSlc[xIdx/lcuSizeMax][yPix2/lcuSizeMax]) then
+					if(not filtAcrSlc[xIdx >> log2LcuSizeMax][yIdx >> log2LcuSizeMax] &&
+						numSlc[xIdx >> log2LcuSizeMax][yPix1 >> log2LcuSizeMax] !=
+						numSlc[xIdx >> log2LcuSizeMax][yPix2 >> log2LcuSizeMax]) then
 						pixIsInPict := false;
-					else if(not filtAcrTile[xIdx/lcuSizeMax][yIdx/lcuSizeMax] &&
-						numTile[xIdx/lcuSizeMax][yPix1/lcuSizeMax] !=
-						numTile[xIdx/lcuSizeMax][yPix2/lcuSizeMax]) then
+					else if(not filtAcrTile[xIdx >> log2LcuSizeMax][yIdx >> log2LcuSizeMax] &&
+						numTile[xIdx >> log2LcuSizeMax][yPix1 >> log2LcuSizeMax] !=
+						numTile[xIdx >> log2LcuSizeMax][yPix2 >> log2LcuSizeMax]) then
 						pixIsInPict := false;
 					end end
 	
@@ -454,13 +454,13 @@ actor SaoFilter(bool DEBUG)
 				do
 					pixIdx[k][0] := xIdx + xOff[k];
 					pixIdx[k][1] := yIdx + yOff[k];
-					if(not filtAcrSlc[xIdx/lcuSizeMax][yIdx/lcuSizeMax] &&
-						numSlc[xIdx/lcuSizeMax][yIdx/lcuSizeMax] !=
-						numSlc[pixIdx[k][0]/lcuSizeMax][pixIdx[k][1]/lcuSizeMax]) then
+					if(not filtAcrSlc[xIdx >> log2LcuSizeMax][yIdx >> log2LcuSizeMax] &&
+						numSlc[xIdx >> log2LcuSizeMax][yIdx >> log2LcuSizeMax] !=
+						numSlc[pixIdx[k][0] >> log2LcuSizeMax][pixIdx[k][1] >> log2LcuSizeMax]) then
 						pixIsInPict := false;
-					else if(not filtAcrTile[xIdx/lcuSizeMax][yIdx/lcuSizeMax] &&
-						numTile[xIdx/lcuSizeMax][yIdx/lcuSizeMax] !=
-						numTile[pixIdx[k][0]/lcuSizeMax][pixIdx[k][1]/lcuSizeMax]) then
+					else if(not filtAcrTile[xIdx >> log2LcuSizeMax][yIdx >> log2LcuSizeMax] &&
+						numTile[xIdx >> log2LcuSizeMax][yIdx >> log2LcuSizeMax] !=
+						numTile[pixIdx[k][0] >> log2LcuSizeMax][pixIdx[k][1] >> log2LcuSizeMax]) then
 						pixIsInPict := false;
 					end end
 				end
@@ -597,13 +597,13 @@ actor SaoFilter(bool DEBUG)
 				do
 					pixIdx[k][0] := xIdx + xOff[k];
 					pixIdx[k][1] := yIdx + yOff[k];
-					if(not filtAcrSlc[xIdx / (lcuSizeMax >> 1)][yIdx / (lcuSizeMax >> 1)] &&
-						numSlc[xIdx / (lcuSizeMax >> 1)][yIdx / (lcuSizeMax >> 1)] !=
-						numSlc[pixIdx[k][0] / (lcuSizeMax >> 1)][pixIdx[k][1] / (lcuSizeMax >> 1)]) then
+					if(not filtAcrSlc[xIdx >> (log2LcuSizeMax - 1)][yIdx >> (log2LcuSizeMax - 1)] &&
+						numSlc[xIdx >> (log2LcuSizeMax - 1)][yIdx >> (log2LcuSizeMax - 1)] !=
+						numSlc[pixIdx[k][0] >> (log2LcuSizeMax - 1)][pixIdx[k][1] >> (log2LcuSizeMax - 1)]) then
 						pixIsInPict := false;
-					else if(not filtAcrTile[xIdx / (lcuSizeMax >> 1)][yIdx / (lcuSizeMax >> 1)] &&
-						numTile[xIdx / (lcuSizeMax >> 1)][yIdx / (lcuSizeMax >> 1)] !=
-						numTile[pixIdx[k][0] / (lcuSizeMax >> 1)][pixIdx[k][1] / (lcuSizeMax >> 1)]) then
+					else if(not filtAcrTile[xIdx >> (log2LcuSizeMax - 1)][yIdx >> (log2LcuSizeMax - 1)] &&
+						numTile[xIdx >> (log2LcuSizeMax - 1)][yIdx >> (log2LcuSizeMax - 1)] !=
+						numTile[pixIdx[k][0] >> (log2LcuSizeMax - 1)][pixIdx[k][1] >> (log2LcuSizeMax - 1)]) then
 						pixIsInPict := false;
 					end end
 				end
@@ -693,13 +693,13 @@ actor SaoFilter(bool DEBUG)
 					xPix2 := xIdx + 1;
 	
 					pixIsInPict := true;
-					if(not filtAcrSlc[xIdx / (lcuSizeMax >> 1)][yIdx / (lcuSizeMax >> 1)] &&
-						numSlc[xPix1 / (lcuSizeMax >> 1)][yIdx / (lcuSizeMax >> 1)] !=
-						numSlc[xPix2 / (lcuSizeMax >> 1)][yIdx / (lcuSizeMax >> 1)]) then
+					if(not filtAcrSlc[xIdx >> (log2LcuSizeMax - 1)][yIdx >> (log2LcuSizeMax - 1)] &&
+						numSlc[xPix1 >> (log2LcuSizeMax - 1)][yIdx >> (log2LcuSizeMax - 1)] !=
+						numSlc[xPix2 >> (log2LcuSizeMax - 1)][yIdx >> (log2LcuSizeMax - 1)]) then
 						pixIsInPict := false;
-					else if(not filtAcrTile[xIdx / (lcuSizeMax >> 1)][yIdx / (lcuSizeMax >> 1)] &&
-						numTile[xPix1 / (lcuSizeMax >> 1)][yIdx / (lcuSizeMax >> 1)] !=
-						numTile[xPix2 / (lcuSizeMax >> 1)][yIdx / (lcuSizeMax >> 1)]) then
+					else if(not filtAcrTile[xIdx >> (log2LcuSizeMax - 1)][yIdx >> (log2LcuSizeMax - 1)] &&
+						numTile[xPix1 >> (log2LcuSizeMax - 1)][yIdx >> (log2LcuSizeMax - 1)] !=
+						numTile[xPix2 >> (log2LcuSizeMax - 1)][yIdx >> (log2LcuSizeMax - 1)]) then
 						pixIsInPict := false;
 					end end
 
@@ -791,13 +791,13 @@ actor SaoFilter(bool DEBUG)
 					yPix2 := yIdx + 1;
 
 					pixIsInPict := true;
-					if(not filtAcrSlc[xIdx / (lcuSizeMax >> 1)][yIdx / (lcuSizeMax >> 1)] &&
-						numSlc[xIdx / (lcuSizeMax >> 1)][yPix1 / (lcuSizeMax >> 1)] !=
-						numSlc[xIdx / (lcuSizeMax >> 1)][yPix2 / (lcuSizeMax >> 1)]) then
+					if(not filtAcrSlc[xIdx >> (log2LcuSizeMax - 1)][yIdx >> (log2LcuSizeMax - 1)] &&
+						numSlc[xIdx >> (log2LcuSizeMax - 1)][yPix1 >> (log2LcuSizeMax - 1)] !=
+						numSlc[xIdx >> (log2LcuSizeMax - 1)][yPix2 >> (log2LcuSizeMax - 1)]) then
 						pixIsInPict := false;
-					else if(not filtAcrTile[xIdx / (lcuSizeMax >> 1)][yIdx / (lcuSizeMax >> 1)] &&
-						numTile[xIdx / (lcuSizeMax >> 1)][yPix1 / (lcuSizeMax >> 1)] !=
-						numTile[xIdx / (lcuSizeMax >> 1)][yPix2 / (lcuSizeMax >> 1)]) then
+					else if(not filtAcrTile[xIdx >> (log2LcuSizeMax - 1)][yIdx >> (log2LcuSizeMax - 1)] &&
+						numTile[xIdx >> (log2LcuSizeMax - 1)][yPix1 >> (log2LcuSizeMax - 1)] !=
+						numTile[xIdx >> (log2LcuSizeMax - 1)][yPix2 >> (log2LcuSizeMax - 1)]) then
 						pixIsInPict := false;
 					end end
 
@@ -940,7 +940,7 @@ actor SaoFilter(bool DEBUG)
 		lcuIsPictBorder := lcuFiltIsPictureBorder();
 		foreach uint cIdx in 0 .. 2
 		do
-			sendFilteredLcu(xCuFilt*lcuSizeMax, yCuFilt*lcuSizeMax, cIdx);
+			sendFilteredLcu(xCuFilt << log2LcuSizeMax, yCuFilt << log2LcuSizeMax, cIdx);
 			picSizeLoc := [picSize[cIdx][0], picSize[cIdx][1]];
 			if(saoTypeIdx[xCuFilt][yCuFilt][cIdx] = 1) then
 				foreach uint i in 0 .. 31
@@ -954,8 +954,8 @@ actor SaoFilter(bool DEBUG)
 			end
 			if(saoTypeIdx[xCuFilt][yCuFilt][cIdx]!=0) then
 				if(cIdx=0) then
-					codingTreeBlockModifLuma((xCuFilt*lcuSizeMax),
-						(yCuFilt*lcuSizeMax), picSizeLoc, lcuIsPictBorder);
+					codingTreeBlockModifLuma((xCuFilt << log2LcuSizeMax),
+						(yCuFilt << log2LcuSizeMax), picSizeLoc, lcuIsPictBorder);
 				else
 					codingTreeBlockModifChroma((xCuFilt * (lcuSizeMax >> 1)),
 						(yCuFilt * (lcuSizeMax >> 1)), cIdx, picSizeLoc, lcuIsPictBorder);
@@ -981,7 +981,7 @@ uint numPict;
 			else
 				4
 			end end;
-		picSizeInCu := [(picWidthInPix+(lcuSizeMax - 1))/lcuSizeMax, (picHeightInPix+(lcuSizeMax - 1))/lcuSizeMax];
+		picSizeInCu := [(picWidthInPix+(lcuSizeMax - 1)) >> log2LcuSizeMax, (picHeightInPix+(lcuSizeMax - 1)) >> log2LcuSizeMax];
 		picSizeInMb := [(picWidthInPix+15)/16, (picHeightInPix+15)/16];
 		picSize[0]  := [picWidthInPix   , picHeightInPix];
 		picSize[1]  := [picSize[0][0] >> 1, picSize[0][1] >> 1];
@@ -1051,8 +1051,8 @@ uint numPict;
 	guard
 		iLoop < numTiles
 	do
-		tilesBeg[iLoop] := [tilesCoord[0]/lcuSizeMax, tilesCoord[1]/lcuSizeMax];
-		tilesEnd[iLoop] := [(tilesCoord[2]+(lcuSizeMax - 1))/lcuSizeMax, (tilesCoord[3]+(lcuSizeMax - 1))/lcuSizeMax];
+		tilesBeg[iLoop] := [tilesCoord[0] >> log2LcuSizeMax, tilesCoord[1] >> log2LcuSizeMax];
+		tilesEnd[iLoop] := [(tilesCoord[2]+(lcuSizeMax - 1)) >> log2LcuSizeMax, (tilesCoord[3]+(lcuSizeMax - 1)) >> log2LcuSizeMax];
 		iLoop := iLoop + 1;
 	end
 
@@ -1110,7 +1110,7 @@ uint numPict;
 		uint(size=16) yPic
 	do
 		xPic := (xCu * (lcuSizeMax >> 1)) + (tokenGot & ((lcuSizeMax - 1) >> 1));
-		yPic := (yCu * (lcuSizeMax >> 1)) + tokenGot / (lcuSizeMax >> 1);
+		yPic := (yCu * (lcuSizeMax >> 1)) + (tokenGot >> (log2LcuSizeMax - 1));
 
 		foreach uint x in 0 .. 7
 		do
