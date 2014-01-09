@@ -957,8 +957,8 @@ actor SaoFilter(bool DEBUG)
 					codingTreeBlockModifLuma((xCuFilt << log2LcuSizeMax),
 						(yCuFilt << log2LcuSizeMax), picSizeLoc, lcuIsPictBorder);
 				else
-					codingTreeBlockModifChroma((xCuFilt * (lcuSizeMax >> 1)),
-						(yCuFilt * (lcuSizeMax >> 1)), cIdx, picSizeLoc, lcuIsPictBorder);
+					codingTreeBlockModifChroma((xCuFilt << (log2LcuSizeMax - 1)),
+						(yCuFilt << (log2LcuSizeMax - 1)), cIdx, picSizeLoc, lcuIsPictBorder);
 				end
 			end
 		end
@@ -1079,8 +1079,8 @@ uint numPict;
 		uint(size=16) xPic,
 		uint(size=16) yPic
 	do
-		xPic := (xCu * lcuSizeMax) + (tokenGot & (lcuSizeMax - 1));
-		yPic := (yCu * lcuSizeMax) + tokenGot / lcuSizeMax;
+		xPic := (xCu << log2LcuSizeMax) + (tokenGot & (lcuSizeMax - 1));
+		yPic := (yCu << log2LcuSizeMax) + (tokenGot >> log2LcuSizeMax);
 		foreach uint x in 0 .. 15
 		do
 			OrigPict[0][x+xPic][yPic] := samp[x]; 
@@ -1109,8 +1109,8 @@ uint numPict;
 		uint(size=16) xPic,
 		uint(size=16) yPic
 	do
-		xPic := (xCu * (lcuSizeMax >> 1)) + (tokenGot & ((lcuSizeMax - 1) >> 1));
-		yPic := (yCu * (lcuSizeMax >> 1)) + (tokenGot >> (log2LcuSizeMax - 1));
+		xPic := (xCu << (log2LcuSizeMax - 1)) + (tokenGot & ((lcuSizeMax - 1) >> 1));
+		yPic := (yCu << (log2LcuSizeMax - 1)) + (tokenGot >> (log2LcuSizeMax - 1));
 
 		foreach uint x in 0 .. 7
 		do
@@ -1175,15 +1175,15 @@ uint numPict;
 			if(saoTypeIdx[xCu][yCu][cIdx] = 0) then
 				addrBeg :=
 					if(cIdx=0) then
-						[xCu * lcuSizeMax, yCu * lcuSizeMax]
+						[xCu << log2LcuSizeMax, yCu << log2LcuSizeMax]
 					else
-						[xCu * (lcuSizeMax >> 1), yCu * (lcuSizeMax >> 1)]
+						[xCu << (log2LcuSizeMax - 1), yCu << (log2LcuSizeMax - 1)]
 					end;
 				addrEnd :=
 					if(cIdx=0) then
-						[(xCu * lcuSizeMax)+(lcuSizeMax - 1), (yCu * lcuSizeMax)+(lcuSizeMax - 1)]
+						[(xCu << log2LcuSizeMax)+(lcuSizeMax - 1), (yCu << log2LcuSizeMax)+(lcuSizeMax - 1)]
 					else
-						[(xCu * (lcuSizeMax >> 1))+ ((lcuSizeMax - 1) >> 1), (yCu * (lcuSizeMax >> 1))+ ((lcuSizeMax - 1) >> 1)]
+						[(xCu << (log2LcuSizeMax - 1))+ ((lcuSizeMax - 1) >> 1), (yCu << (log2LcuSizeMax - 1))+ ((lcuSizeMax - 1) >> 1)]
 					end;
 		
 				copyCu(addrBeg, addrEnd, cIdx);
@@ -1208,19 +1208,19 @@ uint numPict;
 		uint(size=16) addrEnd[2]
 	do
 		saoTypeIdx[xCu][yCu] := [0, 0, 0];
-		addrBeg := [xCu * lcuSizeMax, yCu * lcuSizeMax];
-		addrEnd := [(xCu * lcuSizeMax)+(lcuSizeMax - 1),
-			(yCu * lcuSizeMax)+(lcuSizeMax - 1)];
+		addrBeg := [xCu << log2LcuSizeMax, yCu << log2LcuSizeMax];
+		addrEnd := [(xCu << log2LcuSizeMax)+(lcuSizeMax - 1),
+			(yCu << log2LcuSizeMax)+(lcuSizeMax - 1)];
 		copyCu(addrBeg, addrEnd, 0);
 
-		addrBeg := [xCu * (lcuSizeMax >> 1), yCu * (lcuSizeMax >> 1)];
-		addrEnd := [(xCu * (lcuSizeMax >> 1))+ ((lcuSizeMax - 1) >> 1),
-		        (yCu * (lcuSizeMax >> 1))+ ((lcuSizeMax - 1) >> 1)];
+		addrBeg := [xCu << (log2LcuSizeMax - 1), yCu << (log2LcuSizeMax - 1)];
+		addrEnd := [(xCu << (log2LcuSizeMax - 1))+ ((lcuSizeMax - 1) >> 1),
+		        (yCu << (log2LcuSizeMax - 1))+ ((lcuSizeMax - 1) >> 1)];
 		copyCu(addrBeg, addrEnd, 1);
 
-		addrBeg := [xCu * (lcuSizeMax >> 1), yCu * (lcuSizeMax >> 1)];
-		addrEnd := [(xCu * (lcuSizeMax >> 1))+ ((lcuSizeMax - 1) >> 1),
-		        (yCu * (lcuSizeMax >> 1))+ ((lcuSizeMax - 1) >> 1)];
+		addrBeg := [xCu << (log2LcuSizeMax - 1), yCu << (log2LcuSizeMax - 1)];
+		addrEnd := [(xCu << (log2LcuSizeMax - 1))+ ((lcuSizeMax - 1) >> 1),
+		        (yCu << (log2LcuSizeMax - 1))+ ((lcuSizeMax - 1) >> 1)];
 		copyCu(addrBeg, addrEnd, 2);
 		filtPrevLcu();
 		nextLcuAddress();
@@ -1243,16 +1243,16 @@ uint numPict;
 
 		addrBeg :=
 			if(cIdx=0) then
-				[xCu * lcuSizeMax, yCu * lcuSizeMax]
+				[xCu << log2LcuSizeMax, yCu << log2LcuSizeMax]
 			else
-				[xCu * (lcuSizeMax >> 1), yCu * (lcuSizeMax >> 1)]
+				[xCu << (log2LcuSizeMax - 1), yCu << (log2LcuSizeMax - 1)]
 			end;
 		addrEnd :=
 			if(cIdx=0) then
-				[(xCu * lcuSizeMax)+(lcuSizeMax - 1), (yCu * lcuSizeMax)+(lcuSizeMax - 1)]
+				[(xCu << log2LcuSizeMax)+(lcuSizeMax - 1), (yCu << log2LcuSizeMax)+(lcuSizeMax - 1)]
 			else
-				[(xCu * (lcuSizeMax >> 1))+ ((lcuSizeMax - 1) >> 1),
-					(yCu * (lcuSizeMax >> 1))+ ((lcuSizeMax - 1) >> 1)]
+				[(xCu << (log2LcuSizeMax - 1))+ ((lcuSizeMax - 1) >> 1),
+					(yCu << (log2LcuSizeMax - 1))+ ((lcuSizeMax - 1) >> 1)]
 			end;
 
 		copyCu(addrBeg, addrEnd, cIdx);
@@ -1302,15 +1302,15 @@ uint numPict;
 	do
 		addrBeg :=
 			if(cIdx=0) then
-				[xCu * lcuSizeMax, yCu * lcuSizeMax]
+				[xCu << log2LcuSizeMax, yCu << log2LcuSizeMax]
 			else
-				[xCu * (lcuSizeMax >> 1), yCu * (lcuSizeMax >> 1)]
+				[xCu << (log2LcuSizeMax - 1), yCu << (log2LcuSizeMax - 1)]
 			end;
 		addrEnd :=
 			if(cIdx=0) then
-				[(xCu * lcuSizeMax)+(lcuSizeMax - 1), (yCu * lcuSizeMax)+(lcuSizeMax - 1)]
+				[(xCu << log2LcuSizeMax)+(lcuSizeMax - 1), (yCu << log2LcuSizeMax)+(lcuSizeMax - 1)]
 			else
-				[(xCu * (lcuSizeMax >> 1))+ ((lcuSizeMax - 1) >> 1), (yCu * (lcuSizeMax >> 1))+ ((lcuSizeMax - 1) >> 1)]
+				[(xCu << (log2LcuSizeMax - 1))+ ((lcuSizeMax - 1) >> 1), (yCu << (log2LcuSizeMax - 1))+ ((lcuSizeMax - 1) >> 1)]
 			end;
 
 		saoTypeIdx[xCu][yCu][cIdx] := 0;
