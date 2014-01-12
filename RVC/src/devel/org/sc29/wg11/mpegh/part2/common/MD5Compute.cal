@@ -61,6 +61,7 @@ Copyright (c) ISO/IEC 2008.
  *****************************************************************************/
 package devel.org.sc29.wg11.mpegh.part2.common;
 import  org.sc29.wg11.common.BitstreamReadUtils.*;
+import  std.stdio.Source.*;
 
 
 actor MD5Compute () uint IN, uint NEWLENGTH, uint(size= 8) SEI_MD5 ==> :
@@ -139,6 +140,7 @@ actor MD5Compute () uint IN, uint NEWLENGTH, uint(size= 8) SEI_MD5 ==> :
             hexPrint(genKey[1]);
             hexPrint(genKey[2]);
             hexPrint(genKey[3]); println("");
+			source_exit(0);
         end
     end
 	
