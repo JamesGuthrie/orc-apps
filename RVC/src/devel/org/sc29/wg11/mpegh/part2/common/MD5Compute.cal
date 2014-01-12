@@ -140,7 +140,7 @@ actor MD5Compute () uint IN, uint NEWLENGTH, uint(size= 8) SEI_MD5 ==> :
             hexPrint(genKey[1]);
             hexPrint(genKey[2]);
             hexPrint(genKey[3]); println("");
-			source_exit(0);
+			source_exit(-1);
         end
     end
 	
