@@ -233,13 +233,13 @@ actor GenerateBs()
 
 	procedure genBoundFilterStrength(uint(size=2) bS[1], uint(size=16) addr[2],
 		bool isVerticalEdge, uint(size=2) cIdx, bool isTUEdge, bool cbfQ0,
-		int(size=16) mvQ0 [2][2], int(size=16) refPocQ0[2])
+		int(size=32) mvQ0 [2][2], int(size=16) refPocQ0[2])
 	var
 		uint(size=16) q0[2] = [(addr[0]/4)&(PICT_WIDTH_POW_2/4-1), addr[1]/4],
 		uint(size=16) p0[2] := if(isVerticalEdge) then [q0[0]-1, q0[1]]
 			else [q0[0], q0[1]-1] end,
 		bool cbfP0 = if(isVerticalEdge) then cbfLeftNeighb[q0[1]] else cbfUpNeighb[q0[0]] end,
-		int(size=16) mvP0 [2][2] := if(isVerticalEdge) then
+		int(size=32) mvP0 [2][2] := if(isVerticalEdge) then
 			[[mvLeftNeighb[q0[1]][i][j]: for int j in 0 .. 1]: for int i in 0 .. 1]
 				else
 			[[mvUpNeighb[q0[0]][i][j]: for int j in 0 .. 1]: for int i in 0 .. 1] end,
@@ -516,8 +516,8 @@ actor GenerateBs()
 		uint(size=2) bS[1],
 		uint(size=16) addrBlk[2],
 		uint(size=16) rasterIdx,
-		int(size=16) mvQ0Pu1 [2][2] := [[mv[0][i][j]: for int j in 0 .. 1]: for int i in 0 .. 1],
-		int(size=16) mvQ0Pu2 [2][2] := [[mv[1][i][j]: for int j in 0 .. 1]: for int i in 0 .. 1],
+		int(size=32) mvQ0Pu1 [2][2] := [[mv[0][i][j]: for int j in 0 .. 1]: for int i in 0 .. 1],
+		int(size=32) mvQ0Pu2 [2][2] := [[mv[1][i][j]: for int j in 0 .. 1]: for int i in 0 .. 1],
 		int(size=16) refPocQ0Pu1[2] := [refPoc[0][i]: for int i in 0 .. 1],
 		int(size=16) refPocQ0Pu2[2] := [refPoc[1][i]: for int i in 0 .. 1]
 	do

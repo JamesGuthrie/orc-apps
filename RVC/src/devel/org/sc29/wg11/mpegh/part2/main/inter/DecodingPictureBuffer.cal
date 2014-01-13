@@ -85,7 +85,7 @@ actor DecodingPictureBuffer()
 	bool          isRef[DPB_SIZE];
 	bool          isStillRef[DPB_SIZE];
 
-	int (size=4)  currIdx := -1;
+	int (size=9)  currIdx := -1;
 	uint(size=6)  picSizeInCu[2];
 	uint(size=16) picSize[2];
 	uint(size=16) picSizeChr[2];
@@ -104,7 +104,7 @@ actor DecodingPictureBuffer()
 	uint(size=2)  compIdx;
 	uint(size=7)  puSize[2];
 	uint(size=7)  puSizeChr[2];
-	int (size=4)  refPicIdx;
+	int (size=9)  refPicIdx;
 	bool          isBiPred;
 	int (size=16) lastPocRef;
 	int (size=32) lastMvRef[2];
