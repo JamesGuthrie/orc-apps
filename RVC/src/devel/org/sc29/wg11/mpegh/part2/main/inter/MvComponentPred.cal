@@ -701,8 +701,8 @@ actor MvComponentPred(bool FIX_TMVP_REFIDX0)
 		uint l1CandIdx,
 		int  refIdxL0Cand,
 		int  refIdxL1Cand,
-		uint mvL0Cand[2],
-		uint mvL1Cand[2]
+		int(size=32) mvL0Cand[2],
+		int(size=32) mvL1Cand[2]
 	begin
 		while(combIdx != combIdxMax && numCandidate != maxNumCandidate)
 		do
