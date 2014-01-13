@@ -760,12 +760,6 @@
         src="U8ToU16_9" src-port="Out"/>
     <Connection dst="IntraPrediction" dst-port="CUInfo"
         src="MergeCUInfo" src-port="CUInfo"/>
-    <Connection dst="IntraPrediction" dst-port="Sample"
-        src="IntraInSample" src-port="O">
-        <Attribute kind="Value" name="bufferSize">
-            <Expr kind="Literal" literal-kind="Integer" value="8192"/>
-        </Attribute>
-    </Connection>
     <Connection dst="IntraPrediction" dst-port="SplitTransform"
         src="U8ToBool" src-port="Out"/>
     <Connection dst="IntraPrediction" dst-port="PictSize"
@@ -827,4 +821,7 @@
     <Connection dst="DeblockFilt" dst-port="SyntaxElem" src="U8Toi8_1" src-port="Out"/>
     <Connection dst="SaoFilter" dst-port="LcuSizeMax"
         src="lcuSizeMaxFile" src-port="O"/>
+    <Connection dst="IntraPrediction" dst-port="NeighbVal"
+        src="SelectCu" src-port="IntraNeighb"/>
+    <Connection dst="SelectCu" dst-port="SplitTransform" src="U8ToBool" src-port="Out"/>
 </XDF>
