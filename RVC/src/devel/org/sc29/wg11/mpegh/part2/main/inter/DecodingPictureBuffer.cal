@@ -312,9 +312,9 @@ actor DecodingPictureBuffer()
 	/* We get the whole Cu decoded (luma and chroma components) and we save
 	 * it in the Dpb (pictureBuffer).
 	 */
-	action Sample:[samp]  repeat 16*16 + 8*8*2 ==>
+	getPix: action Sample:[samp]  repeat 16*16 + 8*8*2 ==>
 	guard
-		currIdx != -1 && yIdx < picSizeInCu[1]
+		yIdx < picSizeInCu[1]
 	var
 		uint(size=16) xPixIdx,
 		uint(size=16) yPixIdx,
@@ -600,17 +600,29 @@ actor DecodingPictureBuffer()
 		CheckIsNewPict (checkIsNewPict.isTrue  )--> GetCuPix;
 		CheckIsNewPict (checkIsNewPict.isFalse )--> IsNewSlice;
 
+		GetCuPix (getPix        )--> GetCuPix;
 		GetCuPix (getReadAddr   )--> GetMvInfo;
 		GetCuPix (getCuPix.done )--> IsNewSlice;
 
+		GetMvInfo (getPix           )--> GetMvInfo;
 		GetMvInfo (getMvInfo.launch )--> SendCuLuma;
 		GetMvInfo (getMvInfo.skip   )--> GetCuPix;
 		GetMvInfo (getMvInfo.done   )--> GetCuPix;
-
+	
+		SendCuLuma (getPix               )--> SendCuLuma;
 		SendCuLuma (sendCu.luma.launch   )--> SendCuLuma;
 		SendCuLuma (sendCu.luma.done     )--> SendCuChroma;
 
+		SendCuChroma (getPix               )--> SendCuChroma;
 		SendCuChroma (sendCu.chroma.launch )--> SendCuChroma;
 		SendCuChroma (sendCu.chroma.done   )--> GetMvInfo;
+	end
+	priority
+		getPix > sendCu;
+		getPix > getMvInfo;
+		getPix > getCuPix;
+		getPix > getReadAddr;
+		sendCu.luma.launch > sendCu.luma.done;
+		sendCu.chroma.launch > sendCu.chroma.done;
 	end
 end
