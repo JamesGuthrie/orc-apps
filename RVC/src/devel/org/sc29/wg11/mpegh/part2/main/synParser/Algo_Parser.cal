@@ -223,6 +223,13 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
 		 nal_unit_type = NAL_TSA_N      or
 		 nal_unit_type = NAL_TSA_R      or
 		 nal_unit_type = NAL_TRAIL_N    or
+		 nal_unit_type = NAL_STSA_N		or
+		 nal_unit_type = NAL_STSA_R		or
+		 nal_unit_type = NAL_RADL_N		or
+		 nal_unit_type = NAL_RADL_R		or
+		 nal_unit_type = NAL_RASL_N		or
+		 nal_unit_type = NAL_RASL_R		or
+		 nal_unit_type = NAL_IDR_N_LP	or
 		 nal_unit_type = NAL_BLA_W_LP   or
          nal_unit_type = NAL_BLA_W_RADL or
          nal_unit_type = NAL_BLA_N_LP   or
@@ -845,8 +852,8 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
 	 *************************************************************************/
 	uint(size= 8) sps_log2_max_pic_order_cnt_lsb_minus4[NB_MAX_SPS];
 	uint(size=32) max_poc_lsb[NB_MAX_SPS];
-	int sps_bit_depth_luma_minus8;
-	int sps_bit_depth_chroma_minus8;
+	int sps_bit_depth_luma_minus8[NB_MAX_SPS];
+	int sps_bit_depth_chroma_minus8[NB_MAX_SPS];
 	
 	read_SPS_Header.se_idx_2 : action ==>
 	guard
@@ -864,9 +871,9 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
 			vld_ue_name(    fifo, res, "conf_win_bottom_offset                  "); 
 		end
 		vld_ue_name(    fifo, res, "sps_bit_depth_luma_minus8                   ");
-		sps_bit_depth_luma_minus8 := res[0];
+		sps_bit_depth_luma_minus8[sps_id] := res[0];
 		vld_ue_name(    fifo, res, "sps_bit_depth_chroma_minus8                 ");
-		sps_bit_depth_chroma_minus8 := res[0];
+		sps_bit_depth_chroma_minus8[sps_id] := res[0];
 		vld_ue_name(    fifo, res, "log2_max_pic_order_cnt_lsb_minus4       ");
 		sps_log2_max_pic_order_cnt_lsb_minus4[sps_id] := res[0];
 		max_poc_lsb[sps_id] := 1 << (sps_log2_max_pic_order_cnt_lsb_minus4[sps_id] + 4);
@@ -942,7 +949,7 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
 	 *************************************************************************/	 	
 	uint(size= 8) sps_max_transform_hierarchy_depth_inter[NB_MAX_SPS];
 	uint(size= 8) sps_max_transform_hierarchy_depth_intra[NB_MAX_SPS];
-	uint(size= 1) sps_scaling_list_enabled_flag;
+	uint(size= 1) sps_scaling_list_enabled_flag[NB_MAX_SPS];
 	
 	read_SPS_Header.se_idx_5 : action ==>
 	guard
@@ -955,8 +962,8 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
 		vld_ue_name(    fifo, res, "max_transform_hierarchy_depth_intra     ");
 		sps_max_transform_hierarchy_depth_intra[sps_id] := res[0];
 		vld_u_name(  1, fifo, res, "sps_scaling_list_enabled_flag           ");
-   		sps_scaling_list_enabled_flag := res[0];
-   		if sps_scaling_list_enabled_flag = 1 then
+   		sps_scaling_list_enabled_flag[sps_id] := res[0];
+   		if sps_scaling_list_enabled_flag[sps_id] = 1 then
 			se_idx := 60;
 		else
 			se_idx := 6;
@@ -969,8 +976,8 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
 	uint(size= 8) sps_num_short_term_ref_pic_sets[NB_MAX_SPS];
 	uint(size= 1) sps_pcm_enabled_flag[NB_MAX_SPS];
 	uint(size= 1) amp_enabled_flag;
-	uint(size= 8) sps_sl[4][6][64];
-    uint(size= 8) sps_sl_dc[2][6];
+	uint(size= 8) sps_sl[NB_MAX_SPS][4][6][64];
+    uint(size= 8) sps_sl_dc[NB_MAX_SPS][2][6];
     int sps_size_id := 0;
     int sps_size_id_matrixCase;
     int sps_matrix_id := 0;
@@ -989,26 +996,26 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
    		foreach int matrixId in 0 .. 5 do
         	// 4x4 default is 16
 	        foreach int i in 0 .. 15 do
-	        	sps_sl[0][matrixId][i] := 16;
+	        	sps_sl[sps_id][0][matrixId][i] := 16;
 	        end
-	        sps_sl_dc[0][matrixId] := 16; // default for 16x16
-	        sps_sl_dc[1][matrixId] := 16; // default for 32x32
+	        sps_sl_dc[sps_id][0][matrixId] := 16; // default for 16x16
+	        sps_sl_dc[sps_id][1][matrixId] := 16; // default for 32x32
    		end
    		foreach int i in 0 .. 63 do
-   			sps_sl[1][0][i] := default_scaling_list_intra[i];
-   			sps_sl[1][1][i] := default_scaling_list_intra[i];
-   			sps_sl[1][2][i] := default_scaling_list_intra[i];
-   			sps_sl[1][3][i] := default_scaling_list_inter[i];
-   			sps_sl[1][4][i] := default_scaling_list_inter[i];
-   			sps_sl[1][5][i] := default_scaling_list_inter[i];
-   			sps_sl[2][0][i] := default_scaling_list_intra[i];
-   			sps_sl[2][1][i] := default_scaling_list_intra[i];
-   			sps_sl[2][2][i] := default_scaling_list_intra[i];
-   			sps_sl[2][3][i] := default_scaling_list_inter[i];
-   			sps_sl[2][4][i] := default_scaling_list_inter[i];
-   			sps_sl[2][5][i] := default_scaling_list_inter[i];
-   			sps_sl[3][0][i] := default_scaling_list_intra[i];
-   			sps_sl[3][1][i] := default_scaling_list_inter[i];
+   			sps_sl[sps_id][1][0][i] := default_scaling_list_intra[i];
+   			sps_sl[sps_id][1][1][i] := default_scaling_list_intra[i];
+   			sps_sl[sps_id][1][2][i] := default_scaling_list_intra[i];
+   			sps_sl[sps_id][1][3][i] := default_scaling_list_inter[i];
+   			sps_sl[sps_id][1][4][i] := default_scaling_list_inter[i];
+   			sps_sl[sps_id][1][5][i] := default_scaling_list_inter[i];
+   			sps_sl[sps_id][2][0][i] := default_scaling_list_intra[i];
+   			sps_sl[sps_id][2][1][i] := default_scaling_list_intra[i];
+   			sps_sl[sps_id][2][2][i] := default_scaling_list_intra[i];
+   			sps_sl[sps_id][2][3][i] := default_scaling_list_inter[i];
+   			sps_sl[sps_id][2][4][i] := default_scaling_list_inter[i];
+   			sps_sl[sps_id][2][5][i] := default_scaling_list_inter[i];
+   			sps_sl[sps_id][3][0][i] := default_scaling_list_intra[i];
+   			sps_sl[sps_id][3][1][i] := default_scaling_list_inter[i];
    		end
 		vld_u_name(  1, fifo, res, "sps_scaling_list_data_present_flag      ");
 		sps_scaling_list_data_present_flag := res[0];
@@ -1037,27 +1044,23 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
 	    uint(size= 8) sps_scaling_list_pred_mode_flag[4][6],
     	uint(size= 32) sps_scaling_list_dc_coef[2][6]
    	do  
-//   		println("matrixloop ");
-//   		println("sps_matrix_id = " + sps_matrix_id);
-//   		println("sps_size_id = " + sps_size_id);
-   		
     	vld_u_name(  1, fifo, res, "scaling_list_pred_mode_flag             ");
         sps_scaling_list_pred_mode_flag[sps_size_id][sps_matrix_id] := res[0];
         if sps_scaling_list_pred_mode_flag[sps_size_id][sps_matrix_id] = 0 then
         	vld_ue_name(    fifo, res, "delta                                   ");
             delta := res[0];
             // Only need to handle non-zero delta. Zero means default, which should already be in the arrays.
-    		if delta = 1 then
+    		if delta != 0  then
         		// Copy from previous array.
                 if (sps_matrix_id - delta < 0) then
                     println("Invalid delta in scaling list data");				                        
                 end
 				if sps_size_id > 0 then size_id_memcpyCase := 64; else size_id_memcpyCase := 16; end
 				foreach int k in 0 .. size_id_memcpyCase - 1 do
-					sps_sl[sps_size_id][sps_matrix_id][k] := sps_sl[sps_size_id][sps_matrix_id][k];
+					sps_sl[sps_id][sps_size_id][sps_matrix_id][k] := sps_sl[sps_id][sps_size_id][sps_matrix_id - delta][k];
 				end
                 if (sps_size_id > 1) then
-                    sps_sl_dc[sps_size_id - 2][sps_matrix_id] := sps_sl_dc[sps_size_id - 2][sps_matrix_id - delta];
+                    sps_sl_dc[sps_id][sps_size_id - 2][sps_matrix_id] := sps_sl_dc[sps_id][sps_size_id - 2][sps_matrix_id - delta];
                 end
     		end
     		sps_matrix_id := sps_matrix_id + 1;
@@ -1068,7 +1071,7 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
             	vld_se_name(    fifo, res, "scaling_list_dc_coef                    ");
                 sps_scaling_list_dc_coef[sps_size_id - 2][sps_matrix_id] := res[0] + 8;
                 sps_next_coef := sps_scaling_list_dc_coef[sps_size_id - 2][sps_matrix_id];
-                sps_sl_dc[sps_size_id - 2][sps_matrix_id] := sps_next_coef;
+                sps_sl_dc[sps_id][sps_size_id - 2][sps_matrix_id] := sps_next_coef;
             end
         	se_idx := 63;
         	cnt_i := 0;
@@ -1089,7 +1092,7 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
         vld_se_name(    fifo, res, "scaling_list_delta_coef                 ");
         sps_scaling_list_delta_coef := res[0];
         sps_next_coef := (sps_next_coef + sps_scaling_list_delta_coef + 256) mod 256;
-        sps_sl[sps_size_id][sps_matrix_id][sps_pos] := sps_next_coef;
+        sps_sl[sps_id][sps_size_id][sps_matrix_id][sps_pos] := sps_next_coef;
         cnt_i := cnt_i +1;
     end
     
@@ -1372,7 +1375,7 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
 	 * read_PPS_Header.se_idx4
 	 *************************************************************************/	
 	uint(size=16) pps_row_height[NB_MAX_PPS][PICT_HEIGHT / MIN_CTB_SIZE_Y];
-	uint(size= 1) pps_scaling_list_data_present_flag;
+	uint(size= 1) pps_scaling_list_data_present_flag[NB_MAX_PPS];
 	
 	read_PPS_Header.se_idx_4.loop : action ==>
 	guard
@@ -1425,8 +1428,8 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
             end
 		end
 		vld_u_name(  1, fifo, res, "pps_scaling_list_data_present_flag      ");
-		pps_scaling_list_data_present_flag := res[0];
-		if pps_scaling_list_data_present_flag = 0 then
+		pps_scaling_list_data_present_flag[pps_id] := res[0];
+		if pps_scaling_list_data_present_flag[pps_id] = 0 then
 			se_idx := 52;
 		else
 			se_idx := 50;
@@ -1446,8 +1449,8 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
     uint(size= 1) pps_beta_offset[NB_MAX_PPS]; 
     uint(size= 1) pps_tc_offset[NB_MAX_PPS]; 
     uint(size= 8) pps_log2_parallel_merge_level[NB_MAX_PPS]; 
-    uint(size= 8) pps_sl[4][6][64];
-    uint(size= 8) pps_sl_dc[2][6];
+    uint(size= 8) pps_sl[NB_MAX_PPS][4][6][64];
+    uint(size= 8) pps_sl_dc[NB_MAX_PPS][2][6];
     int pps_matrix_id :=0;
     int pps_size_id := 0;
     int pps_next_coef;
@@ -1478,33 +1481,30 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
 	read_PPS_Header.se_idx_50 : action ==>
 	guard
 		se_idx = 50 and isFifoFull(fifo)
-	var
-		uint(size=32) res[1],
-		uint(size= 1) pps_scaling_list_data_present_flag
    	do 
    		foreach int matrixId in 0 .. 5 do
         	// 4x4 default is 16
 	        foreach int i in 0 .. 15 do
-	        	pps_sl[0][matrixId][i] := 16;
+	        	pps_sl[pps_id][0][matrixId][i] := 16;
 	        end
-	        pps_sl_dc[0][matrixId] := 16; // default for 16x16
-	        pps_sl_dc[1][matrixId] := 16; // default for 32x32
+	        pps_sl_dc[pps_id][0][matrixId] := 16; // default for 16x16
+	        pps_sl_dc[pps_id][1][matrixId] := 16; // default for 32x32
    		end
    		foreach int i in 0 .. 63 do
-   			pps_sl[1][0][i] := default_scaling_list_intra[i];
-   			pps_sl[1][1][i] := default_scaling_list_intra[i];
-   			pps_sl[1][2][i] := default_scaling_list_intra[i];
-   			pps_sl[1][3][i] := default_scaling_list_inter[i];
-   			pps_sl[1][4][i] := default_scaling_list_inter[i];
-   			pps_sl[1][5][i] := default_scaling_list_inter[i];
-   			pps_sl[2][0][i] := default_scaling_list_intra[i];
-   			pps_sl[2][1][i] := default_scaling_list_intra[i];
-   			pps_sl[2][2][i] := default_scaling_list_intra[i];
-   			pps_sl[2][3][i] := default_scaling_list_inter[i];
-   			pps_sl[2][4][i] := default_scaling_list_inter[i];
-   			pps_sl[2][5][i] := default_scaling_list_inter[i];
-   			pps_sl[3][0][i] := default_scaling_list_intra[i];
-   			pps_sl[3][1][i] := default_scaling_list_inter[i];
+   			pps_sl[pps_id][1][0][i] := default_scaling_list_intra[i];
+   			pps_sl[pps_id][1][1][i] := default_scaling_list_intra[i];
+   			pps_sl[pps_id][1][2][i] := default_scaling_list_intra[i];
+   			pps_sl[pps_id][1][3][i] := default_scaling_list_inter[i];
+   			pps_sl[pps_id][1][4][i] := default_scaling_list_inter[i];
+   			pps_sl[pps_id][1][5][i] := default_scaling_list_inter[i];
+   			pps_sl[pps_id][2][0][i] := default_scaling_list_intra[i];
+   			pps_sl[pps_id][2][1][i] := default_scaling_list_intra[i];
+   			pps_sl[pps_id][2][2][i] := default_scaling_list_intra[i];
+   			pps_sl[pps_id][2][3][i] := default_scaling_list_inter[i];
+   			pps_sl[pps_id][2][4][i] := default_scaling_list_inter[i];
+   			pps_sl[pps_id][2][5][i] := default_scaling_list_inter[i];
+   			pps_sl[pps_id][3][0][i] := default_scaling_list_intra[i];
+   			pps_sl[pps_id][3][1][i] := default_scaling_list_inter[i];
    		end
 		se_idx := 51;
 	end
@@ -1513,7 +1513,6 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
 	guard
 		se_idx = 51 and isFifoFull(fifo) , pps_size_id < 4
 	do
-		println("read_PPS_Header.se_idx_51_loopSize_id");
 		if pps_size_id = 3 then pps_size_id_matrixCase := 2; else pps_size_id_matrixCase := 6; end
 		se_idx := 53;
     end
@@ -1534,17 +1533,17 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
         	vld_ue_name(    fifo, res, "delta                                   ");
             delta := res[0];
             // Only need to handle non-zero delta. Zero means default, which should already be in the arrays.
-    		if delta = 1 then
+    		if delta != 0 then
         		// Copy from previous array.
                 if (pps_matrix_id - delta < 0) then
                     println("Invalid delta in scaling list data");				                        
                 end
 				if pps_size_id > 0 then size_id_memcpyCase := 64; else size_id_memcpyCase := 16; end
 				foreach int k in 0 .. size_id_memcpyCase do
-					pps_sl[pps_size_id][pps_matrix_id][k] := pps_sl[pps_size_id][pps_matrix_id][k];
+					pps_sl[pps_id][pps_size_id][pps_matrix_id][k] := pps_sl[pps_id][pps_size_id][pps_matrix_id - delta][k];
 				end
                 if (pps_size_id > 1) then
-                    pps_sl_dc[pps_size_id - 2][pps_matrix_id] := pps_sl_dc[pps_size_id - 2][pps_matrix_id - delta];
+                    pps_sl_dc[pps_id][pps_size_id - 2][pps_matrix_id] := pps_sl_dc[pps_id][pps_size_id - 2][pps_matrix_id - delta];
                 end
     		end
     		pps_matrix_id := pps_matrix_id + 1;
@@ -1555,7 +1554,7 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
             	vld_se_name(    fifo, res, "scaling_list_dc_coef                    ");
                 pps_scaling_list_dc_coef[pps_size_id - 2][pps_matrix_id] := res[0] + 8;
                 pps_next_coef := pps_scaling_list_dc_coef[pps_size_id - 2][pps_matrix_id];
-                pps_sl_dc[pps_size_id - 2][pps_matrix_id] := pps_next_coef;
+                pps_sl_dc[pps_id][pps_size_id - 2][pps_matrix_id] := pps_next_coef;
             end
             se_idx := 54;
         	cnt_i := 0;
@@ -1576,7 +1575,7 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
         vld_se_name(    fifo, res, "scaling_list_delta_coef                 ");
         pps_scaling_list_delta_coef := res[0];
         pps_next_coef := (pps_next_coef + pps_scaling_list_delta_coef + 256) & 255;
-        pps_sl[pps_size_id][pps_matrix_id][pps_pos] := pps_next_coef;
+        pps_sl[pps_id][pps_size_id][pps_matrix_id][pps_pos] := pps_next_coef;
         cnt_i := cnt_i + 1;
     end
     
@@ -1603,7 +1602,6 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
 	guard
 		se_idx = 51 and isFifoFull(fifo) , pps_size_id = 4
    	do 
-   		println("read_PPS_Header.se_idx_51_loopSize_id_End");
    		pps_size_id := 0;
    		se_idx := 52;
    	end  
@@ -1632,7 +1630,7 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
     uint(size=16) PicSizeInCtbsY;
     uint(size= 1) slice_temporal_mvp_enable_flag;
 
-	uint(size=32) poc;
+	int(size=32) poc;
 	uint(size= 3) slice_type;
 	uint(size=32) slice_segment_address;
 	uint(size= 1) slice_sample_adaptive_offset_flag[4];
@@ -1657,6 +1655,13 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
 				iPOCmsb := iPrevPOCmsb;
 			end
 		end
+		if (nal_unit_type = NAL_BLA_W_LP   or
+       		nal_unit_type = NAL_BLA_W_RADL or
+       		nal_unit_type = NAL_BLA_N_LP)
+        then
+        	iPOCmsb := 0;
+       	end
+        
 	    poc:= iPOCmsb+iPOClsb;
 	end
 	
@@ -1678,7 +1683,7 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
     uint prevColIndex := 0;
 	
 	read_SliceHeader.se_idx_1 : action ==> PictSize:[pictSize] repeat 2 , TileSize:[pictOrTileSize] repeat 2, PicSizeInMb:[(pictSize[0] + 15)/16, (pictSize[1] + 15)/16], 
-		DispCoord:[0, pictSize[0]-1, 0, pictSize[1]-1], SliceType:[slice_type], PartMode:[PART_MODE_PICT], SaoSe:[slice_sample_adaptive_offset_flag[0] + (slice_sample_adaptive_offset_flag[1]<<1)],
+		DispCoord:[0, pictSize[0]-1, 0, pictSize[1]-1], SliceType:[slice_type], PartMode:[part_mode], SaoSe:[slice_sample_adaptive_offset_flag[0] + (slice_sample_adaptive_offset_flag[1]<<1)],
 		IsPicSlcLcu:[1-first_slice_segment_in_pic_flag], LFAcrossSlcTile:[pps_loop_filter_across_slice_enabled_flag[pps_id] + (pps_loop_filter_across_slice_enabled_flag[pps_id]<<1)],
 		MvPredSyntaxElem:[pps_log2_parallel_merge_level[pps_id], slice_temporal_mvp_enable_flag], LcuSizeMax:[1 << Log2CtbSize]
 	guard
@@ -1692,7 +1697,8 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
 		uint(size=16) row_height[PICT_HEIGHT / MIN_CTB_SIZE_Y]	= [pps_row_height[pps_id][ i ] : for int i in 0 .. (PICT_HEIGHT / MIN_CTB_SIZE_Y)-1],
 		uint(size= 8) num_tile_columns_minus1		= pps_num_tile_columns_minus1[pps_id],
 		uint(size= 8) num_tile_rows_minus1			= pps_num_tile_rows_minus1[pps_id],
-		uint(size= 1) uniform_spacing_flag			= pps_uniform_spacing_flag[pps_id]
+		uint(size= 1) uniform_spacing_flag			= pps_uniform_spacing_flag[pps_id],
+		uint(size= 4) part_mode
    	do	
         Log2MinCbSize     := sps_log2_min_coding_block_size_minus3[sps_id] + 3;
         Log2CtbSize       := Log2MinCbSize + sps_log2_diff_max_min_coding_block_size[sps_id];
@@ -1704,7 +1710,7 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
    	
         vld_u_name(  1, fifo, res, "first_slice_segment_in_pic_flag         ");
 		first_slice_segment_in_pic_flag := res[0];
-		
+
 		if nal_unit_type >= 16 and nal_unit_type <= 23 then
 			vld_u_name(  1, fifo, res, "no_output_of_prior_pics_flag            ");
 		end
@@ -1726,6 +1732,13 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
 			slice_segment_address := res[0];
 		else
 			slice_segment_address := 0;
+		end
+		if first_slice_segment_in_pic_flag = 1 then
+			part_mode := PART_MODE_PICT;
+		elsif dependent_slice_segment_flag = 0 then
+			part_mode := PART_MODE_SLICE_INDEP;
+		else
+			part_mode := PART_MODE_SLICE_DEP;
 		end
 		if dependent_slice_segment_flag = 0 then
             foreach int i in 0 .. pps_num_extra_slice_header_bits[pps_id] - 1 do
@@ -2730,7 +2743,7 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
 	uint(size=16) colWidth[PICT_WIDTH / MIN_CTB_SIZE_Y];
 	uint(size=16) rowHeight[PICT_HEIGHT / MIN_CTB_SIZE_Y];
 
-	read_SliceData.init: action ==> SliceAddr:[0, 0]
+	read_SliceData.init: action ==>
 	guard
 		sliceData_idx = 1 and isFifoFull(fifo),
 		first_slice_segment_in_pic_flag = 1 or prev_pps_id != pps_id
@@ -2910,7 +2923,7 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
 		sliceData_idx := 2;
 	end
 		
-	read_SliceData.noInit: action ==> SliceAddr:[0, 0]
+	read_SliceData.noInit: action ==> 
 	guard
 		sliceData_idx = 1,
 		first_slice_segment_in_pic_flag = 0 and prev_pps_id = pps_id
@@ -2929,11 +2942,12 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
 	uint(size=32) CtbAddrTS;
 	uint(size=32) end_of_slice_flag;
 	 
-	read_SliceData.start : action ==>
+	read_SliceData.start : action ==> SliceAddr:[xCtb, yCtb]
 	guard
 		sliceData_idx = 2 and isFifoFull(fifo)
 	var
-		uint(size=32) res[1]
+		uint(size=32) res[1],
+		uint(size=32) CtbSize = 1 << Log2CtbSize
 	do
 		showBits(8, fifo, res);
 		//println("showbits8Start = " + res[0]);
@@ -2942,6 +2956,8 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
 		
 		CtbAddrRS     := slice_segment_address;
 		CtbAddrTS     := ctbAddrRStoTS[CtbAddrRS];
+		xCtb           := InverseRasterScan( CtbAddrRS, CtbSize, CtbSize, sps_pic_width_in_luma_samples[sps_id], 0 ) ;
+		yCtb           := InverseRasterScan( CtbAddrRS, CtbSize, CtbSize, sps_pic_width_in_luma_samples[sps_id], 1 ) ;
 		end_of_slice_flag  := 0;
 		sliceData_idx := 3;
 	end
@@ -3023,8 +3039,8 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
 					end
 				end
 		else
-//			println("endOfSlice ################################################### counter = " + counter);
-//			counter := counter + 1;
+			//println("endOfSlice ################################################### counter = " + counter);
+			//counter := counter + 1;
 			sliceData_idx := 5;
 			//curr_Tile := 0;
 			CtbAddrTS := 0;
@@ -3643,10 +3659,13 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
 	 	end
 		predMode := INTRA;
 		if pps_transquant_bypass_enable_flag[pps_id] != 0 then
-			// ##cu_transquant_bypass_flag := 0;
-			if cu_transquant_bypass_flag = 1then
+			get_CU_TRANSQUANT_BYPASS_FLAG(codIRange, codIOffset, ctxTable, fifo, res);
+			cu_transquant_bypass_flag := res[0];
+			if cu_transquant_bypass_flag = 1 then
 				//##set_deblocking_bypass();
 			end
+		else
+			cu_transquant_bypass_flag := 0;
 		end
 		if slice_type != I_SLICE then
 			get_SKIP_FLAG(codIRange, codIOffset, ctxTable, fifo, res, skip_flag_tab, x_cb, y_cb, leftFlag, upFlag);
@@ -3729,6 +3748,7 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
 			//println("codIRangeget_PART_SIZE := "+codIRange[0]+ " codIOffset := " +codIOffset[0]);
 			get_PART_SIZE(codIRange, codIOffset, ctxTable, fifo, res, predMode = INTRA, cu_log2CbSize, Log2MinCbSize, amp_enabled_flag);
 			partMode := res[0];
+			IntraSplitFlag := if ((partMode=PART_NxN) and (predMode=INTRA)) then 1 else 0 end;
 		end
 		cu_idx := 4;
 		if( predMode = INTRA ) then
@@ -4016,7 +4036,7 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
 								end;
 				cu_idx	:= 9;
 				//transform_tree( x0, y0, x0, y0, x0, y0, log2CbSize, log2CbSize, log2CbSize, 0, 0 )
-			elsif predMode != INTRA then
+			elsif predMode != INTRA then // ### not conform to openhevc !
 				cu_idx	:= 11;
 			end			
 		end
@@ -4638,6 +4658,13 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
 	 int(size= 8) rc_lastSubBlock;
 	 int(size= 8) rc_i;
 	 int(size= 16) tabTransCoeffLevel[32*32];
+	 int add;
+	 int scale;
+	 int scale_m;
+	 int dc_scale := 16; 
+	 uint(size=8) scale_matrix [64];
+	 uint(size= 8) shift;
+	 
 	read_ResidualCoding.start : action ==> TUSize:[sz, 0, isDST, transform_skip_flag,
 											slice_qp,
 											rc_cIdx,
@@ -4656,6 +4683,15 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
 		 int(size=16) yC := -1,
 		 int sz = 1 << rc_log2TrafoSize,
 		 uint(size=1) transform_skip_flag,
+		 int matrix_id,
+		 int qp_offset,
+		int(size=16) qp,
+		 int(size=16) qp_i,
+		 uint(size=16) qp_bd_offset_luma,
+		uint(size=16) qp_bd_offset_chroma,
+         int(size= 8) qp_y,
+        uint(size= 8) qp_c[15] = [ 29, 30, 31, 32, 33, 33, 34, 34, 35, 35, 36, 36, 37, 37],
+		uint(size= 8) levelScale[6] = [ 40, 45, 51, 57, 64, 72 ],
 		 uint(size=1) isDST = if (predMode = INTRA and rc_cIdx = TEXT_LUMA and sz = 4) then 1 else 0 end
 	do	
 		if DEBUG_CABAC and DEBUG_TRACE1 then
@@ -4663,6 +4699,61 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
 		elsif DEBUG_CABAC then
 			println("read_ResidualCoding.start "+if rc_cIdx = TEXT_LUMA then "cbY" elsif rc_cIdx = TEXT_CHROMA_U then "cbU" else "cbV" end);
 		end
+		
+		qp_bd_offset_luma           := 6 * sps_bit_depth_luma_minus8[sps_id];
+		qp_bd_offset_chroma         := 6 * sps_bit_depth_chroma_minus8[sps_id];
+		qp_y    := ((slice_qp + /*s->tu.cu_qp_delta +*/ 52 + 2 * qp_bd_offset_luma) mod (52 + qp_bd_offset_luma)) - qp_bd_offset_luma;
+		
+		shift := if rc_cIdx = 0 then sps_bit_depth_luma_minus8[sps_id] + 8 + rc_log2TrafoSize - 5 
+							  else sps_bit_depth_chroma_minus8[sps_id] + 8 + rc_log2TrafoSize - 5 end;
+		if rc_cIdx = 0 then
+            qp := qp_y + qp_bd_offset_luma;
+        else
+        	if rc_cIdx = 1 then
+        		qp_offset := pps_cb_qp_offset[pps_id] + slice_cb_qp_offset;
+        	else
+        		qp_offset := pps_cr_qp_offset[pps_id] + slice_cr_qp_offset;
+        	end
+            qp_i := clip_i32(qp_y + qp_offset, - qp_bd_offset_luma, 57);
+            if qp_i < 30 then
+                qp := qp_i;
+            elsif qp_i > 43 then
+                qp := qp_i - 6;
+            else
+                qp := qp_c[qp_i - 30];
+            end
+	
+	        qp := qp + qp_bd_offset_chroma;
+	    end
+		
+	    add := 1 << (shift - 1 );
+	    scale := levelScale[ rem6[qp] ] << (div6[qp]);
+	   	
+		scale_m := 16;
+		if sps_scaling_list_enabled_flag[sps_id] = 1 then
+            matrix_id := if predMode != INTRA then 1 else 0 end;
+
+            if rc_log2TrafoSize != 5 then
+                matrix_id := 3 * matrix_id + rc_cIdx;
+			end
+			if pps_scaling_list_data_present_flag[pps_id] = 1 then
+				foreach int i in 0 .. 63 do
+	            	scale_matrix[i] := pps_sl[pps_id][rc_log2TrafoSize - 2][matrix_id][i];
+	            end
+	            if rc_log2TrafoSize >= 4 then
+	                dc_scale := pps_sl_dc[pps_id][rc_log2TrafoSize - 4][matrix_id];
+	            end
+	        else
+	        	foreach int i in 0 .. 63 do
+	        		scale_matrix[i] := sps_sl[sps_id][rc_log2TrafoSize - 2][matrix_id][i];
+	        	end
+	            if rc_log2TrafoSize >= 4 then
+	                dc_scale := sps_sl_dc[sps_id][rc_log2TrafoSize - 4][matrix_id];
+	            end
+	        end
+        end
+		
+		
 		foreach int i in 0 .. sz * sz - 1 do
 			tabTransCoeffLevel[i] := 0;
 		end 
@@ -4897,76 +4988,9 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
 		 int          n       = significant_coeff_flag_idx[rc_m],
 	     int(size=16) transCoeffLevel := 0,
 	     int pos,
-		 int scale_m,
 		uint(size=16) xC,
-		uint(size=16) yC,
-		int dc_scale := 16, 
-		int matrix_id,
-		uint(size=8) scale_matrix [64],
-		int add,
-		int scale,
-		int qp_offset,
-		int(size=16) qp,
-		 int(size=16) qp_i,
-		 uint(size=16) qp_bd_offset_luma           = 6 * sps_bit_depth_luma_minus8,
-		uint(size=16) qp_bd_offset_chroma         = 6 * sps_bit_depth_chroma_minus8,
-         int(size= 8) qp_y     = ((slice_qp + /*s->tu.cu_qp_delta +*/ 52 + 2 * qp_bd_offset_luma) mod (52 + qp_bd_offset_luma)) - qp_bd_offset_luma,
-        uint(size= 8) qp_c[15] = [ 29, 30, 31, 32, 33, 33, 34, 34, 35, 35, 36, 36, 37, 37],
-		uint(size= 8) levelScale[6] = [ 40, 45, 51, 57, 64, 72 ],
-		uint(size= 8) shift = if rc_cIdx = 0 then sps_bit_depth_luma_minus8 + 8 + rc_log2TrafoSize - 5 
-							  else sps_bit_depth_chroma_minus8 + 8 + rc_log2TrafoSize - 5 end
-		
-		 
-	do
-		
-		if rc_cIdx = 0 then
-            qp := qp_y + qp_bd_offset_luma;
-        else
-        	if rc_cIdx = 1 then
-        		qp_offset := pps_cb_qp_offset[pps_id] + slice_cb_qp_offset;
-        	else
-        		qp_offset := pps_cr_qp_offset[pps_id] + slice_cr_qp_offset;
-        	end
-            qp_i := clip_i32(qp_y + qp_offset, - qp_bd_offset_luma, 57);
-            if qp_i < 30 then
-                qp := qp_i;
-            elsif qp_i > 43 then
-                qp := qp_i - 6;
-            else
-                qp := qp_c[qp_i - 30];
-            end
-	
-	        qp := qp + qp_bd_offset_chroma;
-	    end
-		
-	    add := 1 << (shift - 1 );
-	    scale := levelScale[ rem6[qp] ] << (div6[qp]);
-	   	
-		scale_m := 16;
-		if sps_scaling_list_enabled_flag = 1 then
-            matrix_id := if cur_intra_pred_mode != INTRA then 1 else 0 end;
-
-            if rc_log2TrafoSize != 5 then
-                matrix_id := 3 * matrix_id + rc_cIdx;
-			end
-			if pps_scaling_list_data_present_flag = 1 then
-				foreach int i in 0 .. 63 do
-	            	scale_matrix[i] := pps_sl[rc_log2TrafoSize - 2][matrix_id][i];
-	            end
-	            if rc_log2TrafoSize >= 4 then
-	                dc_scale := pps_sl_dc[rc_log2TrafoSize - 4][matrix_id];
-	            end
-	        else
-	        	foreach int i in 0 .. 63 do
-	        		scale_matrix[i] := sps_sl[rc_log2TrafoSize - 2][matrix_id][i];
-	        	end
-	            if rc_log2TrafoSize >= 4 then
-	                dc_scale := sps_sl_dc[rc_log2TrafoSize - 4][matrix_id];
-	            end
-	        end
-        end
-		
-					
+		uint(size=16) yC
+	do			
 		xC := ( rc_xS << 2 ) + ScanOrder[2][ rc_scanIdx ][ n ][ 0 ]; 
 		yC := ( rc_yS << 2 ) + ScanOrder[2][ rc_scanIdx ][ n ][ 1 ];			
 		transCoeffLevel := 1 + coeff_abs_level_greater1_flag[ n ] + if n = rc_firstGreater1ScanPos then coeff_abs_level_greater2_flag else 0 end;
@@ -4987,7 +5011,7 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
 		coeff_sign_flag := coeff_sign_flag << 1;
 		
 		if cu_transquant_bypass_flag = 0 then
-			if sps_scaling_list_enabled_flag = 1 then
+			if sps_scaling_list_enabled_flag[sps_id] = 1 then
 				if yC != 0 or xC != 0 or (rc_log2TrafoSize < 4) then
 					if rc_log2TrafoSize = 3 then
 						pos := (yC << 3) + xC;
@@ -5000,14 +5024,12 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
 					end
 					scale_m := scale_matrix[pos];
 				else
-					scale_m := dc_scale;					
+					scale_m := dc_scale;			
 				end
 			end 
 			transCoeffLevel := clip_i32(( ( transCoeffLevel * scale_m * scale + add )) >> shift, -32768, 32767 );
 		end
-		//println("transCoeffLevel= " +transCoeffLevel );
-		//println("xC= " +xC );
-		//println("yC= " +yC );
+
 		tabTransCoeffLevel[xC+(1<<rc_log2TrafoSize)*yC] := transCoeffLevel;
 		rc_numSigCoeff := rc_numSigCoeff + 1;
 		rc_m := rc_m + 1;		
