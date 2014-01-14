@@ -83,7 +83,7 @@ actor GenerateBs()
 	uint(size=16) tilesBeg[MAX_NUM_TILES][2];
 	uint(size=16) tilesEnd[MAX_NUM_TILES][2];
 
-	uint(size=5) predModeTab[PICT_WIDTH_POW_2/4][256/4];//
+	uint(size=5) predModeTab[PICT_WIDTH_POW_2/4][PICT_HEIGHT_POW_2/4];//
 	bool cbfUpNeighb[PICT_WIDTH_POW_2/4];//
 	bool cbfLeftNeighb[PICT_HEIGHT_POW_2/4];//
 	bool isBiPredTab[PICT_WIDTH_POW_2/4][PICT_HEIGHT_POW_2/4];//
@@ -131,7 +131,7 @@ actor GenerateBs()
 			y := yMin;
 			while(y!=yMax)
 			do
-				predModeTab[x][y&(255/4)] := cuMode;
+				predModeTab[x][y] := cuMode;
 				isBiPredTab[x][y] := isBiPred[tabIdx];
 				y := y+1;
 			end
@@ -256,7 +256,7 @@ actor GenerateBs()
 			bS[0] := 0;
 		else if(not isVerticalEdge && ((addr[1]>>2)&1)=1) then
 			bS[0] := 0;
-		else if(predModeTab[p0[0]][p0[1]&(255/4)] = INTRA || predModeTab[q0[0]][q0[1]&(255/4)] = INTRA) then
+		else if(predModeTab[p0[0]][p0[1]] = INTRA || predModeTab[q0[0]][q0[1]] = INTRA) then
 			bS[0] := 2;
 		else if(cIdx=0 && isTUEdge && (cbfP0 || cbfQ0)) then
 			bS[0] := 1;
