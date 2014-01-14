@@ -606,9 +606,8 @@ actor DecodingPictureBuffer()
 	end
 	priority
 		getPix > sendCu;
-		getPix > getMvInfo > getCuPix > isNewSlice;
-		getPix > getCuPix;
-		getPix > getReadAddr;
+		getPix > getMvInfo;
+		getPix > getReadAddr > getCuPix > isNewSlice;
 		sendCu.luma.launch > sendCu.luma.done;
 		sendCu.chroma.launch > sendCu.chroma.done;
 	end
