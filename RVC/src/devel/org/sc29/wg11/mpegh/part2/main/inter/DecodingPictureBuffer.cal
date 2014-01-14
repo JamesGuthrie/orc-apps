@@ -528,16 +528,6 @@ actor DecodingPictureBuffer()
 		numPocRef = 0
 	end
 
-	checkIsNewPict.isTrue: action ==>
-	guard
-		isNewPicture
-	end
-
-	checkIsNewPict.isFalse: action ==>
-	guard
-		not isNewPicture
-	end
-
 	/** We send the reference samples according to the size of the predCu. **/
 	sendCu.luma.launch: action ==> RefSample:[sample]
 	guard
@@ -589,19 +579,16 @@ actor DecodingPictureBuffer()
 
 	schedule fsm IsNewSlice:
 		IsNewSlice (isNewPict   )--> GetRps;
-		IsNewSlice (isNewSlice  )--> GetRps;
 
 		GetRps (getRps.launch )--> GetRpsPoc;
-		GetRps (getRps.done   )--> CheckIsNewPict;
+		GetRps (getRps.done   )--> GetCuPix;
 
 		GetRpsPoc (getRpsPoc.launch )--> GetRpsPoc;
 		GetRpsPoc (getRpsPoc.done   )--> GetRps;
 
-		CheckIsNewPict (checkIsNewPict.isTrue  )--> GetCuPix;
-		CheckIsNewPict (checkIsNewPict.isFalse )--> IsNewSlice;
-
 		GetCuPix (getPix        )--> GetCuPix;
 		GetCuPix (getReadAddr   )--> GetMvInfo;
+		GetCuPix (isNewSlice    )--> GetRps;
 		GetCuPix (getCuPix.done )--> IsNewSlice;
 
 		GetMvInfo (getPix           )--> GetMvInfo;
@@ -619,7 +606,7 @@ actor DecodingPictureBuffer()
 	end
 	priority
 		getPix > sendCu;
-		getPix > getMvInfo;
+		getPix > getMvInfo > getCuPix > isNewSlice;
 		getPix > getCuPix;
 		getPix > getReadAddr;
 		sendCu.luma.launch > sendCu.luma.done;
