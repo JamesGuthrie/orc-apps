@@ -578,9 +578,7 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 	end
 	/* Computing the weighted prediction of the current pixel */
 	/* CLEAN ME */
-	procedure weightedPred(uint(size=2) cIdx, uint(size=7) puIdxMax[2], uint(size=2)  numList,
-		uint(size=2) isBiPredOrLx, uint(size=2)  wpIdc, int weightCu[3][2], int offsetCu[3][2],
-		int logWD[3])
+	procedure weightedPred(uint(size=2) cIdx, uint(size=7) puIdxMax[2])
 	var
 		uint(size=1) rdList = if(isBiPredOrLx = PRED_L1) then 1 else 0 end,
 		int wX,
@@ -1451,8 +1449,7 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 				if(component=1) then
 					puIdxMax := [puIdxMax[i]>>1 : for int i in 0 .. 1];
 				end
-				weightedPred(component, puIdxMax, numList, isBiPredOrLx,
-					wpIdc, weightCu,offsetCu, logWD);
+				weightedPred(component, puIdxMax);
 			end
 		end
 		iLoop := 0;
