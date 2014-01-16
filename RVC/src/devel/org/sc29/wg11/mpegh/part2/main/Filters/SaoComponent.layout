@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<layout>
+	<vertices>
+		<vertex id="IsPicSlcLcu" x="61" y="134"/>
+		<vertex id="LcuSizeMax" x="57" y="167"/>
+		<vertex id="LFAcrossSlcTile" x="51" y="209"/>
+		<vertex id="PicSize" x="79" y="243"/>
+		<vertex id="SampleIn" x="74" y="277"/>
+		<vertex id="SaoSe" x="89" y="309"/>
+		<vertex id="TilesCoord" x="72" y="345"/>
+		<vertex id="FiltSample" x="810" y="216"/>
+		<vertex id="SAO_Luma" x="378" y="51"/>
+		<vertex id="MergeLumaChroma" x="617" y="194"/>
+		<vertex id="SAO_Chroma" x="381" y="292"/>
+	</vertices>
+</layout>

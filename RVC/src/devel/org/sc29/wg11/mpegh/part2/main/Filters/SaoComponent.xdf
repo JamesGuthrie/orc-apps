@@ -77,21 +77,6 @@
             <Expr kind="Literal" literal-kind="Boolean" value="false"/>
         </Parameter>
     </Instance>
-    <Instance id="SAO">
-        <Class name="devel.org.sc29.wg11.mpegh.part2.main.Filters.SaoFilter"/>
-        <Parameter name="DECODE_COMP">
-            <Expr kind="Literal" literal-kind="Integer" value="3"/>
-        </Parameter>
-        <Parameter name="DEBUG">
-            <Expr kind="Literal" literal-kind="Boolean" value="false"/>
-        </Parameter>
-    </Instance>
-    <Instance id="Check">
-        <Class name="testBench.common.CheckU8"/>
-        <Parameter name="portName">
-            <Expr kind="Literal" literal-kind="String" value="Sao_FiltSample"/>
-        </Parameter>
-    </Instance>
     <Connection dst="SAO_Luma" dst-port="IsPicSlcLcu" src="" src-port="IsPicSlcLcu"/>
     <Connection dst="SAO_Luma" dst-port="LcuSizeMax" src="" src-port="LcuSizeMax"/>
     <Connection dst="SAO_Luma" dst-port="LFAcrossSlcTile" src="" src-port="LFAcrossSlcTile"/>
@@ -111,14 +96,4 @@
     <Connection dst="MergeLumaChroma" dst-port="ChromaSample"
         src="SAO_Chroma" src-port="FiltSample"/>
     <Connection dst="" dst-port="FiltSample" src="MergeLumaChroma" src-port="Sample"/>
-    <Connection dst="SAO" dst-port="TilesCoord" src="" src-port="TilesCoord"/>
-    <Connection dst="SAO" dst-port="SaoSe" src="" src-port="SaoSe"/>
-    <Connection dst="SAO" dst-port="SampleIn" src="" src-port="SampleIn"/>
-    <Connection dst="SAO" dst-port="PicSize" src="" src-port="PicSize"/>
-    <Connection dst="SAO" dst-port="LFAcrossSlcTile" src="" src-port="LFAcrossSlcTile"/>
-    <Connection dst="SAO" dst-port="LcuSizeMax" src="" src-port="LcuSizeMax"/>
-    <Connection dst="SAO" dst-port="IsPicSlcLcu" src="" src-port="IsPicSlcLcu"/>
-    <Connection dst="Check" dst-port="ValueGenerated"
-        src="MergeLumaChroma" src-port="Sample"/>
-    <Connection dst="Check" dst-port="RealValue" src="SAO" src-port="FiltSample"/>
 </XDF>
