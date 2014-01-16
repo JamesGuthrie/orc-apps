@@ -1061,6 +1061,16 @@ uint numPict;
 		iLoop = numTiles
 	end
 
+	checkSliceEn.isFalse: action ==>
+	guard
+		not slcSaoCompEn[0] && not slcSaoCompEn[1]
+	end
+
+	checkSliceEn.isTrue: action ==>
+	guard
+		slcSaoCompEn[0] || slcSaoCompEn[1]
+	end
+
 	getCuPix.launch.init: action IsPicSlcLcu:[isNewLcu] ==>
 	guard
 		lcuTileIdx < numTiles
@@ -1145,7 +1155,7 @@ uint numPict;
 
 	getSaoMerge.noMerge: action SaoSe:[mergeInfo] ==>
 	guard
-		(slcSaoCompEn[0] || slcSaoCompEn[1]) and mergeInfo = SAO_NO_MERGE
+		mergeInfo = SAO_NO_MERGE
 	do
 		if (DEBUG_Trace) then
 			println("=== getSaoMerge.noMerge ===");
@@ -1155,7 +1165,7 @@ uint numPict;
 
 	getSaoMerge.merge: action SaoSe:[mergeInfo] ==>
 	guard
-		(slcSaoCompEn[0] || slcSaoCompEn[1]) and mergeInfo != SAO_NO_MERGE
+		mergeInfo != SAO_NO_MERGE
 	var
 		uint(size=16) addrBeg[2],
 		uint(size=16) addrEnd[2],
@@ -1201,8 +1211,6 @@ uint numPict;
 	end
 
 	getSaoMerge.skip: action ==>
-	guard
-		not slcSaoCompEn[0] && not slcSaoCompEn[1]
 	var
 		uint(size=16) addrBeg[2],
 		uint(size=16) addrEnd[2]
@@ -1222,7 +1230,6 @@ uint numPict;
 		addrEnd := [(xCu << (log2LcuSizeMax - 1))+ ((lcuSizeMax - 1) >> 1),
 		        (yCu << (log2LcuSizeMax - 1))+ ((lcuSizeMax - 1) >> 1)];
 		copyCu(addrBeg, addrEnd, 2);
-		filtPrevLcu();
 		nextLcuAddress();
 	end
 
@@ -1419,33 +1426,60 @@ uint numPict;
 	end
 
 	schedule fsm IsNewPict:
-		IsNewPict (isNewPict )--> GetNumTiles;
+		IsNewPict (isNewPict     )--> CheckSliceEn;
 
-		GetCuPix (isNewSlice           )--> GetNumTiles;
-		GetCuPix (getCuPix.launch.init )--> GetCuPixLuma;
-		GetCuPix (getCuPix.done        )--> SendLastSamples;
 
-		GetCuPixLuma (getCuPix.launch.luma     )--> GetCuPixLuma;
-		GetCuPixLuma (getCuPix.launch.lumaDone )--> GetCuPixChr;
+		CheckSliceEn (checkSliceEn.isTrue )-->GetNumTilesFilt;
+		CheckSliceEn (checkSliceEn.isFalse )-->GetNumTilesSkipFilt;
 
-		GetCuPixChr (getCuPix.launch.chroma     )--> GetCuPixChr;
-		GetCuPixChr (getCuPix.launch.chromaDone )--> GetSaoMerge;
+		/* Using SAO */
+		GetCuPixFilt (isNewSlice           )--> GetNumTilesFilt;
+		GetCuPixFilt (getCuPix.launch.init )--> GetCuPixLumaFilt;
+		GetCuPixFilt (getCuPix.done        )--> SendLastSamplesFilt;
 
-		GetNumTiles   (getNumTiles          )--> GetTilesCoord;
-		GetTilesCoord (getTilesCoord.launch )--> GetTilesCoord;
-		GetTilesCoord (getTilesCoord.done   )--> SendSamples;
+		GetCuPixLumaFilt (getCuPix.launch.luma     )--> GetCuPixLumaFilt;
+		GetCuPixLumaFilt (getCuPix.launch.lumaDone )--> GetCuPixChrFilt;
 
-		GetSaoMerge (getSaoMerge.skip    )--> SendSamples;
-		GetSaoMerge (getSaoMerge.merge   )--> SendSamples;
-		GetSaoMerge (getSaoMerge.noMerge )--> GetSaoTypeIdx;
+		GetCuPixChrFilt (getCuPix.launch.chroma     )--> GetCuPixChrFilt;
+		GetCuPixChrFilt (getCuPix.launch.chromaDone )--> GetSaoMergeFilt;
 
-		GetSaoTypeIdx(getSaoTypeIdx     )--> GetSaoTypeIdx;
-		GetSaoTypeIdx(getSaoTypeIdxDone )--> SendSamples;
+		GetNumTilesFilt   (getNumTiles          )--> GetTilesCoordFilt;
+		GetTilesCoordFilt (getTilesCoord.launch )--> GetTilesCoordFilt;
+		GetTilesCoordFilt (getTilesCoord.done   )--> SendSamplesFilt;
 
-		SendSamples (sendSamples.launch )--> SendSamples;
-		SendSamples (sendSamples.done   )--> GetCuPix;
+		GetSaoMergeFilt (getSaoMerge.merge   )--> SendSamplesFilt;
+		GetSaoMergeFilt (getSaoMerge.noMerge )--> GetSaoTypeIdxFilt;
 
-		SendLastSamples (sendSamples.launch )--> SendLastSamples;
-		SendLastSamples (sendSamples.done   )--> IsNewPict;
+		GetSaoTypeIdxFilt (getSaoTypeIdx     )--> GetSaoTypeIdxFilt;
+		GetSaoTypeIdxFilt (getSaoTypeIdxDone )--> SendSamplesFilt;
+
+		SendSamplesFilt (sendSamples.launch )--> SendSamplesFilt;
+		SendSamplesFilt (sendSamples.done   )--> GetCuPixFilt;
+
+		SendLastSamplesFilt (sendSamples.launch )--> SendLastSamplesFilt;
+		SendLastSamplesFilt (sendSamples.done   )--> IsNewPict;
+
+		/* Not using SAO. */
+		GetCuPixSkipFilt (isNewSlice           )--> GetNumTilesSkipFilt;
+		GetCuPixSkipFilt (getCuPix.launch.init )--> GetCuPixLumaSkipFilt;
+		GetCuPixSkipFilt (getCuPix.done        )--> SendLastSamplesSkipFilt;
+
+		GetCuPixLumaSkipFilt (getCuPix.launch.luma     )--> GetCuPixLumaSkipFilt;
+		GetCuPixLumaSkipFilt (getCuPix.launch.lumaDone )--> GetCuPixChrSkipFilt;
+
+		GetCuPixChrSkipFilt (getCuPix.launch.chroma     )--> GetCuPixChrSkipFilt;
+		GetCuPixChrSkipFilt (getCuPix.launch.chromaDone )--> GetSaoMergeSkipFilt;
+
+		GetNumTilesSkipFilt   (getNumTiles          )--> GetTilesCoordSkipFilt;
+		GetTilesCoordSkipFilt (getTilesCoord.launch )--> GetTilesCoordSkipFilt;
+		GetTilesCoordSkipFilt (getTilesCoord.done   )--> SendSamplesSkipFilt;
+
+		GetSaoMergeSkipFilt (getSaoMerge.skip    )--> SendSamplesSkipFilt;
+
+		SendSamplesSkipFilt (sendSamples.launch )--> SendSamplesSkipFilt;
+		SendSamplesSkipFilt (sendSamples.done   )--> GetCuPixSkipFilt;
+
+		SendLastSamplesSkipFilt (sendSamples.launch )--> SendLastSamplesSkipFilt;
+		SendLastSamplesSkipFilt (sendSamples.done   )--> IsNewPict;
 	end
 end

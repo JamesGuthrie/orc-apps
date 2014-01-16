@@ -207,8 +207,6 @@ actor SelectCu()
 	getCuSample.isIntra: action IntraSample:[intraSample] repeat SCU_SIZE,
 		ResidualSample:[resSample] repeat SCU_SIZE
 		==> Sample:[sample] repeat SCU_SIZE
-	guard
-		idxBlk < nbBlk
 	var
 		uint(size=16) blkAddr[2],
 		bool bottomBlk,
@@ -263,8 +261,6 @@ actor SelectCu()
 
 	/* Getting prediction samples from interPrediction */
 	getCuSample.isInter: action InterSample:[interSample] repeat SCU_SIZE ==>
-	guard
-		idxBlk < nbBlk
 	var
 		uint(size=16) blkAddr[2],
 		/* Offset is not null when numPart = 2 and partIdx = 1. */
@@ -298,8 +294,6 @@ actor SelectCu()
 	 */
 	getCuSample.isInterRes: action ResidualSample:[resSample] repeat SCU_SIZE
 		==> Sample:[sample] repeat SCU_SIZE
-	guard
-		idxBlk < nbBlk
 	var
 		uint(size=16) blkAddr[2],
 		bool bottomBlk,
@@ -366,8 +360,6 @@ actor SelectCu()
 
 	/* Check if the intra prediction CU has to be split in 4 "subCU" */
 	getSplitTrafo.isTrue: action SplitTransform:[splitTrafo] ==>
-	guard
-		splitTrafo && trafoTreeDepth>-1
 	do
 		trafoTreeDepth := trafoTreeDepth + 1;
 		trafoTreeIdx[trafoTreeDepth] := 0;
@@ -378,7 +370,7 @@ actor SelectCu()
 	 */
 	getSplitTrafo.isFalse: action SplitTransform:[splitTrafo] ==>
 	guard
-		not splitTrafo && trafoTreeDepth>-1
+		not splitTrafo
 	var
 		uint(size=7)  treeNS
 	do
@@ -441,8 +433,6 @@ actor SelectCu()
 	end
 
 	sendIntraNeighb.launch: action ==> IntraNeighb:[neighbSamp[idxComp][idxSamp]]
-	guard
-		cIdx < 3
 	var
 		uint(size=8) idxSamp = idxPixNeighb,
 		uint(size=2) idxComp = cIdx
@@ -496,5 +486,11 @@ actor SelectCu()
 
 		SendInterNeighb (sendIntraNeighb.launch )--> SendInterNeighb;
 		SendInterNeighb (sendIntraNeighb.done   )--> GetCuInfo;
+	end
+	priority
+		sendIntraNeighb.done > sendIntraNeighb.launch;
+		getCuSample.done > getCuSample.isIntra > getCuSample.isInter;
+		getCuSample.done > getCuSample.isInterRes;
+		getSplitTrafo.done > getSplitTrafo.isFalse > getSplitTrafo.isTrue;
 	end
 end
