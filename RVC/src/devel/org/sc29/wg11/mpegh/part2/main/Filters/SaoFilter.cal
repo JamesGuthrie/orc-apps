@@ -156,14 +156,25 @@ actor SaoFilter(bool DEBUG, uint(size=2) DECODE_COMP = 3)
 	begin
 		if(cIdx = 0) then
 			sendFilteredLcu(xCu << log2LcuSizeMax, yCu << log2LcuSizeMax, 0);
+			if((DECODE_COMP & LUMA_COMP) != 0) then
+				foreach uint x in addrBeg[0] .. addrEnd[0]
+				do
+					foreach uint y in addrBeg[1] .. addrEnd[1]
+					do
+						FiltPict[cIdx][x][y] := OrigPict[cIdx][x][y];
+					end
+				end
+			end
 		else
 			sendFilteredLcu(xCu << log2LcuSizeMax, yCu << log2LcuSizeMax, cIdx);
-		end
-		foreach uint x in addrBeg[0] .. addrEnd[0]
-		do
-			foreach uint y in addrBeg[1] .. addrEnd[1]
-			do
-				FiltPict[cIdx][x][y] := OrigPict[cIdx][x][y];
+			if((DECODE_COMP & CHROMA_COMP) != 0) then
+				foreach uint x in addrBeg[0] .. addrEnd[0]
+				do
+					foreach uint y in addrBeg[1] .. addrEnd[1]
+					do
+						FiltPict[cIdx][x][y] := OrigPict[cIdx][x][y];
+					end
+				end
 			end
 		end
 	end
@@ -935,12 +946,17 @@ actor SaoFilter(bool DEBUG, uint(size=2) DECODE_COMP = 3)
 	procedure sampAdapOffFilt()
 	var
 		uint(size=16) picSizeLoc[2],
-		bool lcuIsPictBorder
+		bool lcuIsPictBorder,
+		uint(size=2) COMP_MIN = if((DECODE_COMP & LUMA_COMP) = 0) then 1 else 0 end,
+		uint(size=2) COMP_MAX = if((DECODE_COMP & CHROMA_COMP) != 0) then 2 else 0 end
 	begin
 		lcuIsPictBorder := lcuFiltIsPictureBorder();
 		foreach uint cIdx in 0 .. 2
 		do
 			sendFilteredLcu(xCuFilt << log2LcuSizeMax, yCuFilt << log2LcuSizeMax, cIdx);
+		end
+		foreach uint cIdx in COMP_MIN .. COMP_MAX
+		do
 			picSizeLoc := [picSize[cIdx][0], picSize[cIdx][1]];
 			if(saoTypeIdx[xCuFilt][yCuFilt][cIdx] = 1) then
 				foreach uint i in 0 .. 31

@@ -9,10 +9,10 @@
 		<vertex id="SaoSe" x="57" y="555"/>
 		<vertex id="TilesCoord" x="57" y="652"/>
 		<vertex id="FiltSample" x="909" y="607"/>
-		<vertex id="SAO" x="316" y="292"/>
 		<vertex id="SAO_Luma" x="322" y="552"/>
-		<vertex id="Check" x="907" y="490"/>
 		<vertex id="MergeLumaChroma" x="587" y="605"/>
 		<vertex id="SAO_Chroma" x="323" y="742"/>
+		<vertex id="SAO" x="316" y="292"/>
+		<vertex id="Check" x="907" y="490"/>
 	</vertices>
 </layout>
