@@ -1335,8 +1335,9 @@ uint numPict;
 	end
 	
 
-	sendSamples.launch: action ==> FiltSample:[filtSamp] repeat 16*16 + 2 * 8*8 
+	sendSamples.launch.allComp: action ==> FiltSample:[filtSamp] repeat 16*16 + 2 * 8*8 
 	guard
+		DECODE_COMP = ALL_COMP,
 		mbFiltered[0][xMbSent][yMbSent] &&
 		mbFiltered[1][xMbSent][yMbSent] &&
 		mbFiltered[2][xMbSent][yMbSent] &&
@@ -1378,6 +1379,108 @@ uint numPict;
 		blkAddrX := blkAddrX>>1;
 		blkAddrY := blkAddrY>>1;
 		tokenOffset:= 16*16;
+		xMax := min(7, picSize[0][0]/2 - blkAddrX - 1);
+		yMax := min(7, picSize[0][1]/2 - blkAddrY - 1);
+		foreach uint comp in 1 .. 2
+		do
+			foreach uint y in 0 .. yMax
+			do
+				foreach uint x in 0 .. xMax
+				do
+					filtSamp[x+y*8 + tokenOffset] := FiltPict[comp][blkAddrX+x][blkAddrY+y];
+				end
+			end
+			tokenOffset:= tokenOffset + 8*8;
+		end
+
+		if(DEBUG) then
+			tokenOffset:= 16*16;
+			foreach uint comp in 1 .. 2
+			do
+				foreach uint y in yMax + 1 .. 7
+				do
+					foreach uint x in 0 .. 7
+					do
+						filtSamp[x+y*8 + tokenOffset] := 0;
+					end
+				end
+				foreach uint x in xMax + 1 .. 7
+				do
+					foreach uint y in 0 .. 7
+					do
+						filtSamp[x+y*8 + tokenOffset] := 0;
+					end
+				end
+				tokenOffset:= tokenOffset + 8*8;
+			end
+		end
+
+		nextMbAddr();
+	end
+
+	sendSamples.launch.lumaComp: action ==> FiltSample:[filtSamp] repeat 16*16
+	guard
+		DECODE_COMP = LUMA_COMP,
+		mbFiltered[0][xMbSent][yMbSent] &&
+		mbFiltered[1][xMbSent][yMbSent] &&
+		mbFiltered[2][xMbSent][yMbSent] &&
+		yMbSent != picSizeInMb[1]
+	var
+		uint(size=8) filtSamp[16*16+2*8*8],
+		uint(size=16) blkAddrX, uint(size=16) blkAddrY,
+		uint(size=16) xMax, uint(size=16) yMax
+	do
+		blkAddrX := xMbSent*16;
+		blkAddrY := yMbSent*16;
+		xMax := min(15, picSize[0][0] - blkAddrX - 1);
+		yMax := min(15, picSize[0][1] - blkAddrY - 1);
+		foreach uint y in 0 .. yMax
+		do
+			foreach uint x in 0 .. xMax
+			do
+				filtSamp[x+y*16] := FiltPict[0][blkAddrX+x][blkAddrY+y];
+			end
+		end
+		if(DEBUG) then
+			foreach uint y in 0 .. 15
+			do
+				foreach uint x in xMax + 1 .. 15
+				do
+					filtSamp[x+y*16] := 0;
+				end
+			end
+			foreach uint x in 0 .. 15
+			do
+				foreach uint y in yMax + 1 .. 15
+				do
+					filtSamp[x+y*16] := 0;
+				end
+			end
+		end
+
+		nextMbAddr();
+	end
+
+	sendSamples.launch.chromaComp: action ==> FiltSample:[filtSamp] repeat 2 * 8*8 
+	guard
+		DECODE_COMP = CHROMA_COMP,
+		mbFiltered[0][xMbSent][yMbSent] &&
+		mbFiltered[1][xMbSent][yMbSent] &&
+		mbFiltered[2][xMbSent][yMbSent] &&
+		yMbSent != picSizeInMb[1]
+	var
+		uint tokenOffset := 0,
+		uint(size=8) filtSamp[16*16+2*8*8],
+		uint(size=16) blkAddrX, uint(size=16) blkAddrY,
+		uint(size=16) xMax, uint(size=16) yMax
+	do
+		blkAddrX := xMbSent*16;
+		blkAddrY := yMbSent*16;
+		xMax := min(15, picSize[0][0] - blkAddrX - 1);
+		yMax := min(15, picSize[0][1] - blkAddrY - 1);
+
+		blkAddrX := blkAddrX>>1;
+		blkAddrY := blkAddrY>>1;
 		xMax := min(7, picSize[0][0]/2 - blkAddrX - 1);
 		yMax := min(7, picSize[0][1]/2 - blkAddrY - 1);
 		foreach uint comp in 1 .. 2
