@@ -93,11 +93,6 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 	uint(size=4) bitDepth = 8;
 	uint(size=10) maxPixVal = (1<<bitDepth)-1;
 
-	uint(size=2) LUMA_COMP   = 1;
-	uint(size=2) CHROMA_COMP = 2;
-	uint(size=2) ALL_COMP    = 3;
-
-
 	int(size=16)  currPoc;
 	uint(size=2)  listIdx;
 

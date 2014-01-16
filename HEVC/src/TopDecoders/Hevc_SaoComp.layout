@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<layout>
+	<vertices>
+		<vertex id="BYTE" x="57" y="1233"/>
+		<vertex id="SIZE" x="401" y="87"/>
+		<vertex id="DispCoord" x="401" y="184"/>
+		<vertex id="PictSize" x="401" y="281"/>
+		<vertex id="SEI_MD5" x="401" y="378"/>
+		<vertex id="VID" x="1177" y="1261"/>
+		<vertex id="Algo_Parser" x="171" y="936"/>
+		<vertex id="xIT" x="401" y="601"/>
+		<vertex id="IntraPrediction" x="1752" y="432"/>
+		<vertex id="SelectCU" x="1505" y="1702"/>
+		<vertex id="DecodingPictureBuffer" x="1059" y="871"/>
+		<vertex id="InterPrediction" x="1292" y="1018"/>
+		<vertex id="SAO" x="861" y="1250"/>
+		<vertex id="QpGen" x="401" y="1376"/>
+		<vertex id="DBFilter" x="677" y="1376"/>
+		<vertex id="generateInfo" x="401" y="742"/>
+	</vertices>
+</layout>

@@ -71,7 +71,7 @@ actor InterPredPipeline2(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 	uint(size=2)  IsBiPredOrLx,
 	int (size=32) Mv,
 	uint(size=4)  PartMode,
-	uint(size=16) Poc,
+	int (size=16) Poc,
 	uint(size=3)  RefIdx,
 	int (size=16) RefList,
 	int (size=16) Sample,
@@ -92,11 +92,6 @@ actor InterPredPipeline2(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 	/* Fix me !! */
 	uint(size=4) bitDepth = 8;
 	uint(size=10) maxPixVal = (1<<bitDepth)-1;
-
-	uint(size=2) LUMA_COMP   = 1;
-	uint(size=2) CHROMA_COMP = 2;
-	uint(size=2) ALL_COMP    = 3;
-
 
 	int(size=16)  currPoc;
 	uint(size=2)  listIdx;
@@ -134,6 +129,7 @@ actor InterPredPipeline2(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 	uint(size=2)  isBiPredOrLx;
 	int (size=4)  refIdxLx[2];
 	int (size=32) mvLx[2][2];
+	bool          noQPel_noEPel_noWP[3];
 	uint(size=2)  numList;
 	int           logWDTab[SZ_REF_LIST+1][SZ_REF_LIST+1][3];
 	int           weightCuTab[SZ_REF_LIST+1][SZ_REF_LIST+1][3][2];
@@ -578,9 +574,7 @@ actor InterPredPipeline2(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 	end
 	/* Computing the weighted prediction of the current pixel */
 	/* CLEAN ME */
-	procedure weightedPred(uint(size=2) cIdx, uint(size=7) puIdxMax[2], uint(size=2)  numList,
-		uint(size=2) isBiPredOrLx, uint(size=2)  wpIdc, int weightCu[3][2], int offsetCu[3][2],
-		int logWD[3])
+	procedure weightedPred(uint(size=2) cIdx, uint(size=7) puIdxMax[2])
 	var
 		uint(size=1) rdList = if(isBiPredOrLx = PRED_L1) then 1 else 0 end,
 		int wX,
@@ -827,11 +821,9 @@ actor InterPredPipeline2(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 	/* We have a new slice, we will update differents value then get the new
 	 * refList and weights
 	 */
+//		partMode = PART_MODE_SLICE_INDEP || partMode = PART_MODE_PICT
 	isNewSlice.notDep: action PartMode:[partMode], Poc:[poc], SliceType:[sliceType],
 		WeightedPredSe:[weightPredIdc] ==>
-	guard
-		partMode = PART_MODE_SLICE_INDEP ||
-		partMode = PART_MODE_PICT
 	do
 		isBSlice := sliceType = B_SLICE;
 		currPoc  := poc;
@@ -1059,8 +1051,6 @@ actor InterPredPipeline2(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 	end
 
 	getCuMode.isInter: action IsBiPredOrLx:[isBiPredOrPredLX] ==>
-	guard
-		cuMode = INTER || cuMode = SKIP
 	var
 		uint(size=7) intermSize[2][2] = [[puSize[0], fullPuSize[1]],
 			[puSizeChr[0], fullPuSizeChr[1]]],
@@ -1148,6 +1138,9 @@ actor InterPredPipeline2(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 		end
 		idxL0 := refIdxLx[0]+1;
 		idxL1 := refIdxLx[1]+1;
+		noQPel_noEPel_noWP[0] := wpIdc = 0 && (mvLx[listIdx][0] & 3) = 0 && (mvLx[listIdx][1] & 3) = 0;
+		noQPel_noEPel_noWP[1] := wpIdc = 0 && (mvLx[listIdx][0] & 7) = 0 && (mvLx[listIdx][1] & 7) = 0;
+		noQPel_noEPel_noWP[2] := noQPel_noEPel_noWP[1];
 		foreach int component in COMP_MIN .. COMP_MAX
 		do
 			logWD[component] := logWDTab[idxL0][idxL1][component];
@@ -1184,6 +1177,11 @@ actor InterPredPipeline2(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 				offsetCu[component][list] := offsetCuTab[idxL0][idxL1][component][list];
 			end
 		end
+		noQPel_noEPel_noWP[0] := wpIdc = 0 && (mvLx[0][0] & 3) = 0 && (mvLx[0][1] & 3) = 0 &&
+			(mvLx[1][0] & 3) = 0 && (mvLx[1][1] & 3) = 0;
+		noQPel_noEPel_noWP[1] := wpIdc = 0 && (mvLx[0][0] & 7) = 0 && (mvLx[0][1] & 7) = 0 &&
+			(mvLx[1][0] & 7) = 0 && (mvLx[1][1] & 7) = 0;
+		noQPel_noEPel_noWP[2] := noQPel_noEPel_noWP[1];
 		listIdx := 0;
 		iLoop   := 0;
 		jLoop   := 0;
@@ -1385,31 +1383,88 @@ actor InterPredPipeline2(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 			mvQuartPix := [mvLx[listIdx][i] & maskMv[component]:
 				for int i in 0 .. 1];
 
-
 			if(((PROCESS_MODE_HALF_PIX & HALF_PIX_1ST_PART) != 0) &&
 				mvQuartPix[0] = 0 && mvQuartPix[1] = 0) then
 				if(component = 0) then
-					foreach int x in 0 .. puIdxMax[0]-1
-					do
-						foreach int y in 0 .. puIdxMax[1]-1
+					if(noQPel_noEPel_noWP[0]) then
+						if(listIdx = 0) then
+							foreach int x in 0 .. puIdxMax[0]-1
+							do
+								foreach int y in 0 .. puIdxMax[1]-1
+								do
+									/* When we mvQuartPix is equal to [0,0], we multiply by 1^shift1,
+									 * because after this procedure we will have the weighted prediction.
+									 */
+									predSampLuma[0][x][y] := predSampLuma[listIdx][x+3]
+										[y+3];
+								end
+							end
+						else
+							foreach int x in 0 .. puIdxMax[0]-1
+							do
+								foreach int y in 0 .. puIdxMax[1]-1
+								do
+									/* When we mvQuartPix is equal to [0,0], we multiply by 1^shift1,
+									 * because after this procedure we will have the weighted prediction.
+									 */
+									predSampLuma[0][x][y] := (predSampLuma[listIdx][x+3]
+										[y+3] + predSampLuma[0][x][y] + 1) >> 1;
+									predSampLuma[0][x][y] := clip_i32(predSampLuma[0][x][y], 0, 255);
+								end
+							end
+						end
+					else
+						foreach int x in 0 .. puIdxMax[0]-1
 						do
-							/* When we mvQuartPix is equal to [0,0], we multiply by 1^shift1,
-							 * because after this procedure we will have the weighted prediction.
-							 */
-							predSampLuma[listIdx][x][y] := predSampLuma[listIdx][x+3]
-								[y+3]<<shift1;
+							foreach int y in 0 .. puIdxMax[1]-1
+							do
+								/* When we mvQuartPix is equal to [0,0], we multiply by 1^shift1,
+								 * because after this procedure we will have the weighted prediction.
+								 */
+								predSampLuma[listIdx][x][y] := predSampLuma[listIdx][x+3]
+									[y+3]<<shift1;
+							end
 						end
 					end
 				else
-					foreach int x in 0 .. puIdxMax[0]-1
-					do
-						foreach int y in 0 .. puIdxMax[1]-1
+					if(noQPel_noEPel_noWP[1]) then
+						if(listIdx = 0) then
+							foreach int x in 0 .. puIdxMax[0]-1
+							do
+								foreach int y in 0 .. puIdxMax[1]-1
+								do
+									/* When we mvQuartPix is equal to [0,0], we multiply by 1^shift1,
+									 * because after this procedure we will have the weighted prediction.
+									 */
+									predSampChr[0][component-1][x][y] := predSampChr[listIdx][component-1][x+1]
+										[y+1];
+								end
+							end
+						else
+							foreach int x in 0 .. puIdxMax[0]-1
+							do
+								foreach int y in 0 .. puIdxMax[1]-1
+								do
+									/* When we mvQuartPix is equal to [0,0], we multiply by 1^shift1,
+									 * because after this procedure we will have the weighted prediction.
+									 */
+									predSampChr[0][component-1][x][y] := (predSampChr[listIdx][component-1][x+1]
+										[y+1] + predSampChr[0][component-1][x][y] + 1) >> 1;
+									predSampChr[0][component-1][x][y] := clip_i32(predSampChr[0][component-1][x][y], 0, 255);
+								end
+							end
+						end
+					else
+						foreach int x in 0 .. puIdxMax[0]-1
 						do
-							/* When we mvQuartPix is equal to [0,0], we multiply by 1^shift1,
-							 * because after this procedure we will have the weighted prediction.
-							 */
-							predSampChr[listIdx][component-1][x][y] := predSampChr[listIdx][component-1][x+1]
-								[y+1]<<shift1;
+							foreach int y in 0 .. puIdxMax[1]-1
+							do
+								/* When we mvQuartPix is equal to [0,0], we multiply by 1^shift1,
+								 * because after this procedure we will have the weighted prediction.
+								 */
+								predSampChr[listIdx][component-1][x][y] := predSampChr[listIdx][component-1][x+1]
+									[y+1]<<shift1;
+							end
 						end
 					end
 				end
@@ -1451,8 +1506,9 @@ actor InterPredPipeline2(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 				if(component=1) then
 					puIdxMax := [puIdxMax[i]>>1 : for int i in 0 .. 1];
 				end
-				weightedPred(component, puIdxMax, numList, isBiPredOrLx,
-					wpIdc, weightCu,offsetCu, logWD);
+				if(not noQPel_noEPel_noWP[component]) then
+					weightedPred(component, puIdxMax);
+				end
 			end
 		end
 		iLoop := 0;
@@ -1728,8 +1784,10 @@ actor InterPredPipeline2(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 		SendIntermPuChr (sendIntermPu.done              )--> GetSamples;
 	end
 	priority
+		getPartMode > isNewSlice.dep > isNewSlice.notDep;
 		getWeightLX.launch > getWeightLX.skip >getWeightLX.done;
 		sendPu.skip > sendPu.launch > sendPu.done;
 		getSamples.done > getSamples.luma;
+		getCuMode.isNotInter > getCuMode.isInter;
 	end
 end

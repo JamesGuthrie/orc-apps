@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<XDF name="HEVCDecoderInter_no_md5">
+<XDF name="Hevc_SaoComp">
     <Port kind="Input" name="BYTE">
         <Type name="int">
             <Entry kind="Expr" name="size">
@@ -18,6 +18,20 @@
         <Type name="int">
             <Entry kind="Expr" name="size">
                 <Expr kind="Literal" literal-kind="Integer" value="32"/>
+            </Entry>
+        </Type>
+    </Port>
+    <Port kind="Output" name="PictSize">
+        <Type name="uint">
+            <Entry kind="Expr" name="size">
+                <Expr kind="Literal" literal-kind="Integer" value="16"/>
+            </Entry>
+        </Type>
+    </Port>
+    <Port kind="Output" name="SEI_MD5">
+        <Type name="uint">
+            <Entry kind="Expr" name="size">
+                <Expr kind="Literal" literal-kind="Integer" value="8"/>
             </Entry>
         </Type>
     </Port>
@@ -115,6 +129,8 @@
     <Connection dst="" dst-port="VID" src="SAO" src-port="FiltSample"/>
     <Connection dst="DecodingPictureBuffer" dst-port="Sample" src="SAO" src-port="FiltSample"/>
     <Connection dst="QpGen" dst-port="TuSize" src="Algo_Parser" src-port="TUSize"/>
+    <Connection dst="" dst-port="PictSize" src="Algo_Parser" src-port="PictSize"/>
+    <Connection dst="" dst-port="SEI_MD5" src="Algo_Parser" src-port="SEI_MD5"/>
     <Connection dst="SAO" dst-port="SampleIn" src="DBFilter" src-port="FiltSample"/>
     <Connection dst="generateInfo" dst-port="PartMode" src="Algo_Parser" src-port="PartMode"/>
     <Connection dst="generateInfo" dst-port="PictSize" src="Algo_Parser" src-port="PictSize"/>

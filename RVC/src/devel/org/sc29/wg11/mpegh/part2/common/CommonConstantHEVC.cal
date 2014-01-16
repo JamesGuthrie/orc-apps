@@ -26,6 +26,10 @@ unit CommonConstantHEVC :
  	uint(size= 8) BLW_WIDTH_MAX					= 64;
 	uint(size= 8) BLW_HEIGHT_MAX				= 64;
 	uint(size= 4) MAX_NUM_REF					=  4;
+
+	uint(size=2) LUMA_COMP   = 1;
+	uint(size=2) CHROMA_COMP = 2;
+	uint(size=2) ALL_COMP    = 3;
 	/**************************************************************************
 	 * SliceType
  	 *************************************************************************/
