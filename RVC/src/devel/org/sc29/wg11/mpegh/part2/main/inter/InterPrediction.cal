@@ -134,6 +134,7 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 	uint(size=2)  isBiPredOrLx;
 	int (size=4)  refIdxLx[2];
 	int (size=32) mvLx[2][2];
+	bool          noQPel_noEPel[3];
 	uint(size=2)  numList;
 	int           logWDTab[SZ_REF_LIST+1][SZ_REF_LIST+1][3];
 	int           weightCuTab[SZ_REF_LIST+1][SZ_REF_LIST+1][3][2];
@@ -825,11 +826,9 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 	/* We have a new slice, we will update differents value then get the new
 	 * refList and weights
 	 */
+//		partMode = PART_MODE_SLICE_INDEP || partMode = PART_MODE_PICT
 	isNewSlice.notDep: action PartMode:[partMode], Poc:[poc], SliceType:[sliceType],
 		WeightedPredSe:[weightPredIdc] ==>
-	guard
-		partMode = PART_MODE_SLICE_INDEP ||
-		partMode = PART_MODE_PICT
 	do
 		isBSlice := sliceType = B_SLICE;
 		currPoc  := poc;
@@ -1057,8 +1056,6 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 	end
 
 	getCuMode.isInter: action IsBiPredOrLx:[isBiPredOrPredLX] ==>
-	guard
-		cuMode = INTER || cuMode = SKIP
 	var
 		uint(size=7) intermSize[2][2] = [[puSize[0], fullPuSize[1]],
 			[puSizeChr[0], fullPuSizeChr[1]]],
@@ -1383,31 +1380,60 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 			mvQuartPix := [mvLx[listIdx][i] & maskMv[component]:
 				for int i in 0 .. 1];
 
+			noQPel_noEPel[component] := mvQuartPix[0] = 0 && mvQuartPix[1] = 0;
 
 			if(((PROCESS_MODE_HALF_PIX & HALF_PIX_1ST_PART) != 0) &&
 				mvQuartPix[0] = 0 && mvQuartPix[1] = 0) then
 				if(component = 0) then
-					foreach int x in 0 .. puIdxMax[0]-1
-					do
-						foreach int y in 0 .. puIdxMax[1]-1
+					if(wpIdc = 0 && numList = 1) then
+						foreach int x in 0 .. puIdxMax[0]-1
 						do
-							/* When we mvQuartPix is equal to [0,0], we multiply by 1^shift1,
-							 * because after this procedure we will have the weighted prediction.
-							 */
-							predSampLuma[listIdx][x][y] := predSampLuma[listIdx][x+3]
-								[y+3]<<shift1;
+							foreach int y in 0 .. puIdxMax[1]-1
+							do
+								/* When we mvQuartPix is equal to [0,0], we multiply by 1^shift1,
+								 * because after this procedure we will have the weighted prediction.
+								 */
+								predSampLuma[0][x][y] := predSampLuma[listIdx][x+3]
+									[y+3];
+							end
+						end
+					else
+						foreach int x in 0 .. puIdxMax[0]-1
+						do
+							foreach int y in 0 .. puIdxMax[1]-1
+							do
+								/* When we mvQuartPix is equal to [0,0], we multiply by 1^shift1,
+								 * because after this procedure we will have the weighted prediction.
+								 */
+								predSampLuma[listIdx][x][y] := predSampLuma[listIdx][x+3]
+									[y+3]<<shift1;
+							end
 						end
 					end
 				else
-					foreach int x in 0 .. puIdxMax[0]-1
-					do
-						foreach int y in 0 .. puIdxMax[1]-1
+					if(wpIdc = 0 && numList = 1) then
+						foreach int x in 0 .. puIdxMax[0]-1
 						do
-							/* When we mvQuartPix is equal to [0,0], we multiply by 1^shift1,
-							 * because after this procedure we will have the weighted prediction.
-							 */
-							predSampChr[listIdx][component-1][x][y] := predSampChr[listIdx][component-1][x+1]
-								[y+1]<<shift1;
+							foreach int y in 0 .. puIdxMax[1]-1
+							do
+								/* When we mvQuartPix is equal to [0,0], we multiply by 1^shift1,
+								 * because after this procedure we will have the weighted prediction.
+								 */
+								predSampChr[0][component-1][x][y] := predSampChr[listIdx][component-1][x+1]
+									[y+1];
+							end
+						end
+					else
+						foreach int x in 0 .. puIdxMax[0]-1
+						do
+							foreach int y in 0 .. puIdxMax[1]-1
+							do
+								/* When we mvQuartPix is equal to [0,0], we multiply by 1^shift1,
+								 * because after this procedure we will have the weighted prediction.
+								 */
+								predSampChr[listIdx][component-1][x][y] := predSampChr[listIdx][component-1][x+1]
+									[y+1]<<shift1;
+							end
 						end
 					end
 				end
@@ -1449,7 +1475,9 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 				if(component=1) then
 					puIdxMax := [puIdxMax[i]>>1 : for int i in 0 .. 1];
 				end
-				weightedPred(component, puIdxMax);
+				if(wpIdc != 0 || numList != 1 || not noQPel_noEPel[component]) then
+					weightedPred(component, puIdxMax);
+				end
 			end
 		end
 		iLoop := 0;
@@ -1725,8 +1753,10 @@ actor InterPrediction(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HALF_P
 		SendIntermPuChr (sendIntermPu.done              )--> GetSamples;
 	end
 	priority
+		getPartMode > isNewSlice.dep > isNewSlice.notDep;
 		getWeightLX.launch > getWeightLX.skip >getWeightLX.done;
 		sendPu.skip > sendPu.launch > sendPu.done;
 		getSamples.done > getSamples.luma;
+		getCuMode.isNotInter > getCuMode.isInter;
 	end
 end
