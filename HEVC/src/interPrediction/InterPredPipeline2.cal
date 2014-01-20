@@ -1485,7 +1485,7 @@ actor InterPredPipeline2(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 		jLoop := 0;
 	end
 
-	getSamples.done: action ==>
+	applyWeights: action ==>
 	// This guard should be simplified.
 	guard
 		listIdx = numList && isBiPredOrLx = BI_PRED || listIdx = 2 || listIdx = 1 && isBiPredOrLx = PRED_L0
@@ -1758,7 +1758,7 @@ actor InterPredPipeline2(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 		GetRefIdx (getRefIdx )--> GetSamples;
 
 		GetSamples (getSamples.luma )--> GetLumaSamples;
-		GetSamples (getSamples.done )--> SendPu;
+		GetSamples (applyWeights    )--> SendPu;
 
 		GetLumaSamples (getSamples.luma.launch )--> GetLumaSamples;
 		GetLumaSamples (getSamples.luma.skip   )--> GetLumaSamples;
@@ -1787,7 +1787,7 @@ actor InterPredPipeline2(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 		getPartMode > isNewSlice.dep > isNewSlice.notDep;
 		getWeightLX.launch > getWeightLX.skip >getWeightLX.done;
 		sendPu.skip > sendPu.launch > sendPu.done;
-		getSamples.done > getSamples.luma;
+		applyWeights > getSamples.luma;
 		getCuMode.isNotInter > getCuMode.isInter;
 	end
 end
