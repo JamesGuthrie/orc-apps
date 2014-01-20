@@ -758,7 +758,7 @@ actor DeblockingFilter(bool FILT_VERT_EDGES, bool FILT_HOR_EDGES, bool DEBUG)
 //		FILT_HOR_EDGES || xIdx != lastXIdx || yIdx != lastYIdx
 	end
 
-	sendSamplesBis.launch.luma: action ==> FiltSample:[filtSamp] repeat 16
+	sendSamples.launch.luma: action ==> FiltSample:[filtSamp] repeat 16
 	guard
 		 tokenSent < numTokenPerLcu[0]//,
 //		FILT_HOR_EDGES || xIdx != lastXIdx || yIdx != lastYIdx
@@ -783,7 +783,7 @@ actor DeblockingFilter(bool FILT_VERT_EDGES, bool FILT_HOR_EDGES, bool DEBUG)
 		yOff := tokenSent / lcuSizeMax;
 	end
 
-	sendSamplesBis.launch.lumaDone: action ==>
+	sendSamples.launch.lumaDone: action ==>
 	guard
 		tokenSent = numTokenPerLcu[0]
 	do
@@ -793,7 +793,7 @@ actor DeblockingFilter(bool FILT_VERT_EDGES, bool FILT_HOR_EDGES, bool DEBUG)
 		compIdx := 1;
 	end
 
-	sendSamplesBis.launch.chroma: action ==> FiltSample:[filtSamp] repeat 8
+	sendSamples.launch.chroma: action ==> FiltSample:[filtSamp] repeat 8
 	guard
 		compIdx < 3
 	var
@@ -822,7 +822,7 @@ actor DeblockingFilter(bool FILT_VERT_EDGES, bool FILT_HOR_EDGES, bool DEBUG)
 		end
 	end
 
-	sendSamplesBis.launch.chromaDone: action ==>
+	sendSamples.launch.chromaDone: action ==>
 	guard
 		compIdx = 3
 	do
@@ -830,7 +830,7 @@ actor DeblockingFilter(bool FILT_VERT_EDGES, bool FILT_HOR_EDGES, bool DEBUG)
 		computeNextLcuAddrBis();
 	end
 
-	sendSamplesBis.done: action ==>
+	sendSamples.done: action ==>
 	guard
 		not mbFiltered[xIdxBis >> log2LcuSizeMax][yIdxBis >> log2LcuSizeMax]  || tileIdxBis = numTiles
 	end
@@ -870,23 +870,23 @@ actor DeblockingFilter(bool FILT_VERT_EDGES, bool FILT_HOR_EDGES, bool DEBUG)
 		CheckSendSamples2 (sendSamples.ready    )--> SendSamplesLuma;
 		CheckSendSamples2 (sendSamples.notReady )--> GetCuPix;
 
-		SendSamplesLuma (sendSamplesBis.launch.luma     )--> SendSamplesLuma;
-		SendSamplesLuma (sendSamplesBis.launch.lumaDone )--> SendSamplesChr;
+		SendSamplesLuma (sendSamples.launch.luma     )--> SendSamplesLuma;
+		SendSamplesLuma (sendSamples.launch.lumaDone )--> SendSamplesChr;
 
-		SendSamplesChr (sendSamplesBis.launch.chroma     )--> SendSamplesChr;
-		SendSamplesChr (sendSamplesBis.launch.chromaDone )--> GetCuPix;
+		SendSamplesChr (sendSamples.launch.chroma     )--> SendSamplesChr;
+		SendSamplesChr (sendSamples.launch.chromaDone )--> GetCuPix;
 
 
 		CheckSendSamples (sendSamples.ready    )--> SendSamplesBis;
 		CheckSendSamples (sendSamples.notReady )--> IsNewPict;
 
-		SendSamplesBis (sendSamplesBis.launch.luma )--> SendSamplesLumaBis;
-		SendSamplesBis (sendSamplesBis.done        )--> IsNewPict;
+		SendSamplesBis (sendSamples.launch.luma )--> SendSamplesLumaBis;
+		SendSamplesBis (sendSamples.done        )--> IsNewPict;
 
-		SendSamplesLumaBis (sendSamplesBis.launch.luma     )--> SendSamplesLumaBis;
-		SendSamplesLumaBis (sendSamplesBis.launch.lumaDone )--> SendSamplesChrBis;
+		SendSamplesLumaBis (sendSamples.launch.luma     )--> SendSamplesLumaBis;
+		SendSamplesLumaBis (sendSamples.launch.lumaDone )--> SendSamplesChrBis;
 
-		SendSamplesChrBis (sendSamplesBis.launch.chroma     )--> SendSamplesChrBis;
-		SendSamplesChrBis (sendSamplesBis.launch.chromaDone )--> CheckSendSamples;
+		SendSamplesChrBis (sendSamples.launch.chroma     )--> SendSamplesChrBis;
+		SendSamplesChrBis (sendSamples.launch.chromaDone )--> CheckSendSamples;
 	end
 end
