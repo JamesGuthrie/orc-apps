@@ -77,19 +77,19 @@
             </Entry>
         </Type>
     </Port>
-    <Instance id="InterPredictionLuma">
+    <Instance id="InterpLuma">
         <Class name="devel.org.sc29.wg11.mpegh.part2.main.inter.InterPrediction"/>
         <Parameter name="DECODE_COMP">
             <Expr kind="Literal" literal-kind="Integer" value="1"/>
+        </Parameter>
+        <Parameter name="PROCESS_MODE_HALF_PIX">
+            <Expr kind="Literal" literal-kind="Integer" value="3"/>
         </Parameter>
         <Parameter name="IDX_SUB_BLOCK">
             <Expr kind="List">
                 <Expr kind="Literal" literal-kind="Integer" value="0"/>
                 <Expr kind="Literal" literal-kind="Integer" value="0"/>
             </Expr>
-        </Parameter>
-        <Parameter name="PROCESS_MODE_HALF_PIX">
-            <Expr kind="Literal" literal-kind="Integer" value="3"/>
         </Parameter>
         <Parameter name="LOG2_NUM_SUB_BLK">
             <Expr kind="List">
@@ -98,19 +98,19 @@
             </Expr>
         </Parameter>
     </Instance>
-    <Instance id="InterPredictionChroma">
+    <Instance id="InterpChroma">
         <Class name="devel.org.sc29.wg11.mpegh.part2.main.inter.InterPrediction"/>
         <Parameter name="DECODE_COMP">
             <Expr kind="Literal" literal-kind="Integer" value="2"/>
+        </Parameter>
+        <Parameter name="PROCESS_MODE_HALF_PIX">
+            <Expr kind="Literal" literal-kind="Integer" value="3"/>
         </Parameter>
         <Parameter name="IDX_SUB_BLOCK">
             <Expr kind="List">
                 <Expr kind="Literal" literal-kind="Integer" value="0"/>
                 <Expr kind="Literal" literal-kind="Integer" value="0"/>
             </Expr>
-        </Parameter>
-        <Parameter name="PROCESS_MODE_HALF_PIX">
-            <Expr kind="Literal" literal-kind="Integer" value="3"/>
         </Parameter>
         <Parameter name="LOG2_NUM_SUB_BLK">
             <Expr kind="List">
@@ -122,32 +122,29 @@
     <Instance id="MergeLumaChroma">
         <Class name="devel.org.sc29.wg11.mpegh.part2.inter.MergeLumaChroma"/>
     </Instance>
-    <Connection dst="InterPredictionLuma" dst-port="CUInfo" src="" src-port="CUInfo"/>
-    <Connection dst="InterPredictionLuma" dst-port="Mv" src="" src-port="Mv"/>
-    <Connection dst="InterPredictionLuma" dst-port="PartMode" src="" src-port="PartMode"/>
-    <Connection dst="InterPredictionLuma" dst-port="Poc" src="" src-port="Poc"/>
-    <Connection dst="InterPredictionLuma" dst-port="RefIdx" src="" src-port="RefIdx"/>
-    <Connection dst="InterPredictionLuma" dst-port="RefList" src="" src-port="RefList"/>
-    <Connection dst="InterPredictionLuma" dst-port="Sample" src="" src-port="Sample"/>
-    <Connection dst="InterPredictionLuma" dst-port="SliceType" src="" src-port="SliceType"/>
-    <Connection dst="InterPredictionLuma" dst-port="WeightedPredSe"
-        src="" src-port="WeightedPredSe"/>
-    <Connection dst="InterPredictionLuma" dst-port="IsBiPredOrLx" src="" src-port="IsBiPredOrLx"/>
-    <Connection dst="InterPredictionChroma" dst-port="CUInfo" src="" src-port="CUInfo"/>
-    <Connection dst="InterPredictionChroma" dst-port="Mv" src="" src-port="Mv"/>
-    <Connection dst="InterPredictionChroma" dst-port="PartMode" src="" src-port="PartMode"/>
-    <Connection dst="InterPredictionChroma" dst-port="Poc" src="" src-port="Poc"/>
-    <Connection dst="InterPredictionChroma" dst-port="RefIdx" src="" src-port="RefIdx"/>
-    <Connection dst="InterPredictionChroma" dst-port="RefList" src="" src-port="RefList"/>
-    <Connection dst="InterPredictionChroma" dst-port="Sample" src="" src-port="Sample"/>
-    <Connection dst="InterPredictionChroma" dst-port="SliceType" src="" src-port="SliceType"/>
-    <Connection dst="InterPredictionChroma" dst-port="WeightedPredSe"
-        src="" src-port="WeightedPredSe"/>
-    <Connection dst="InterPredictionChroma" dst-port="IsBiPredOrLx"
-        src="" src-port="IsBiPredOrLx"/>
+    <Connection dst="InterpLuma" dst-port="CUInfo" src="" src-port="CUInfo"/>
+    <Connection dst="InterpLuma" dst-port="Mv" src="" src-port="Mv"/>
+    <Connection dst="InterpLuma" dst-port="PartMode" src="" src-port="PartMode"/>
+    <Connection dst="InterpLuma" dst-port="Poc" src="" src-port="Poc"/>
+    <Connection dst="InterpLuma" dst-port="RefIdx" src="" src-port="RefIdx"/>
+    <Connection dst="InterpLuma" dst-port="RefList" src="" src-port="RefList"/>
+    <Connection dst="InterpLuma" dst-port="Sample" src="" src-port="Sample"/>
+    <Connection dst="InterpLuma" dst-port="SliceType" src="" src-port="SliceType"/>
+    <Connection dst="InterpLuma" dst-port="WeightedPredSe" src="" src-port="WeightedPredSe"/>
+    <Connection dst="InterpLuma" dst-port="IsBiPredOrLx" src="" src-port="IsBiPredOrLx"/>
+    <Connection dst="InterpChroma" dst-port="CUInfo" src="" src-port="CUInfo"/>
+    <Connection dst="InterpChroma" dst-port="Mv" src="" src-port="Mv"/>
+    <Connection dst="InterpChroma" dst-port="PartMode" src="" src-port="PartMode"/>
+    <Connection dst="InterpChroma" dst-port="Poc" src="" src-port="Poc"/>
+    <Connection dst="InterpChroma" dst-port="RefIdx" src="" src-port="RefIdx"/>
+    <Connection dst="InterpChroma" dst-port="RefList" src="" src-port="RefList"/>
+    <Connection dst="InterpChroma" dst-port="Sample" src="" src-port="Sample"/>
+    <Connection dst="InterpChroma" dst-port="SliceType" src="" src-port="SliceType"/>
+    <Connection dst="InterpChroma" dst-port="WeightedPredSe" src="" src-port="WeightedPredSe"/>
+    <Connection dst="InterpChroma" dst-port="IsBiPredOrLx" src="" src-port="IsBiPredOrLx"/>
     <Connection dst="MergeLumaChroma" dst-port="LumaSample"
-        src="InterPredictionLuma" src-port="PredSample"/>
+        src="InterpLuma" src-port="PredSample"/>
     <Connection dst="MergeLumaChroma" dst-port="ChromaSample"
-        src="InterPredictionChroma" src-port="PredSample"/>
+        src="InterpChroma" src-port="PredSample"/>
     <Connection dst="" dst-port="PredSample" src="MergeLumaChroma" src-port="Sample"/>
 </XDF>

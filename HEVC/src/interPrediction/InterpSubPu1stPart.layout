@@ -14,10 +14,10 @@
 		<vertex id="SliceType" x="57" y="1077"/>
 		<vertex id="WeightedPredSe" x="57" y="1174"/>
 		<vertex id="PredSample" x="1292" y="576"/>
-		<vertex id="Interp2ndPart" x="875" y="551"/>
+		<vertex id="Interp_2_0_0" x="875" y="551"/>
 		<vertex id="SubMuxPrecomp" x="576" y="341"/>
-		<vertex id="InterpPreComput" x="324" y="435"/>
-		<vertex id="InterpPreComput2" x="338" y="809"/>
+		<vertex id="Interp_1_0_0" x="324" y="435"/>
+		<vertex id="Interp_1_1_0" x="338" y="809"/>
 		<vertex id="SubPreMuxPrecomp" x="95" y="665"/>
 	</vertices>
 </layout>

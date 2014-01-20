@@ -1,20 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <layout>
 	<vertices>
-		<vertex id="CUInfo" x="57" y="167"/>
 		<vertex id="Mv" x="57" y="70"/>
-		<vertex id="PartMode" x="57" y="749"/>
-		<vertex id="Poc" x="57" y="361"/>
-		<vertex id="RefIdx" x="57" y="846"/>
-		<vertex id="RefList" x="57" y="652"/>
+		<vertex id="CUInfo" x="57" y="167"/>
 		<vertex id="Sample" x="57" y="264"/>
-		<vertex id="SliceType" x="57" y="555"/>
-		<vertex id="WeightedPredSe" x="57" y="943"/>
+		<vertex id="Poc" x="57" y="361"/>
 		<vertex id="IsBiPredOrLx" x="57" y="458"/>
+		<vertex id="SliceType" x="57" y="555"/>
+		<vertex id="RefList" x="57" y="652"/>
+		<vertex id="PartMode" x="57" y="749"/>
+		<vertex id="RefIdx" x="57" y="846"/>
+		<vertex id="WeightedPredSe" x="57" y="943"/>
 		<vertex id="PredSample" x="1063" y="486"/>
-		<vertex id="InterPredictionLumaPart1" x="250" y="554"/>
-		<vertex id="InterPredictionChroma" x="250" y="237"/>
+		<vertex id="InterpLuma_1_0_0" x="250" y="554"/>
+		<vertex id="InterpChroma" x="250" y="237"/>
 		<vertex id="MergeLumaChroma" x="789" y="471"/>
-		<vertex id="InterPredictionLumaPart2" x="588" y="614"/>
+		<vertex id="InterpLuma_2_0_0" x="588" y="614"/>
 	</vertices>
 </layout>

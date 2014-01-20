@@ -15,12 +15,12 @@
 		<vertex id="PredCuSize" x="-295" y="1296"/>
 		<vertex id="PredSample" x="1492" y="293"/>
 		<vertex id="SubPuMux" x="1294" y="272"/>
-		<vertex id="Interp_0_0" x="978" y="-89"/>
-		<vertex id="Interp_1_0" x="976" y="163"/>
-		<vertex id="Interp_0_1" x="974" y="413"/>
-		<vertex id="Interp_1_1" x="970" y="665"/>
-		<vertex id="InterpPreComput2" x="157" y="1103"/>
-		<vertex id="InterpPreComput1" x="152" y="747"/>
+		<vertex id="Interp_2_0_0" x="978" y="-89"/>
+		<vertex id="Interp_2_1_0" x="976" y="163"/>
+		<vertex id="Interp_2_0_1" x="974" y="413"/>
+		<vertex id="Interp_2_1_1" x="970" y="665"/>
+		<vertex id="Interp_1_1_0" x="157" y="1103"/>
+		<vertex id="Interp_1_0_0" x="152" y="747"/>
 		<vertex id="SubMuxPrecomp" x="518" y="822"/>
 		<vertex id="SubDeMuxPrecomp" x="-151" y="1042"/>
 	</vertices>

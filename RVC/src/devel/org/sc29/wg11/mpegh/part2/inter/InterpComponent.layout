@@ -12,8 +12,8 @@
 		<vertex id="WeightedPredSe" x="15" y="535"/>
 		<vertex id="IsBiPredOrLx" x="21" y="587"/>
 		<vertex id="PredSample" x="806" y="387"/>
-		<vertex id="InterPredictionLuma" x="314" y="175"/>
-		<vertex id="InterPredictionChroma" x="308" y="433"/>
+		<vertex id="InterpLuma" x="314" y="175"/>
+		<vertex id="InterpChroma" x="308" y="433"/>
 		<vertex id="MergeLumaChroma" x="610" y="370"/>
 	</vertices>
 </layout>
