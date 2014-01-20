@@ -1387,7 +1387,7 @@ actor InterPredPipeline1(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 				mvQuartPix[0] = 0 && mvQuartPix[1] = 0) then
 				if(component = 0) then
 					if(noQPel_noEPel_noWP[0]) then
-						if(listIdx = 0) then
+						if(numList = 1 || listIdx = 0) then
 							foreach int x in 0 .. puIdxMax[0]-1
 							do
 								foreach int y in 0 .. puIdxMax[1]-1
@@ -1428,7 +1428,7 @@ actor InterPredPipeline1(uint(size=2) DECODE_COMP, uint(size=2) PROCESS_MODE_HAL
 					end
 				else
 					if(noQPel_noEPel_noWP[1]) then
-						if(listIdx = 0) then
+						if(numList = 1 || listIdx = 0) then
 							foreach int x in 0 .. puIdxMax[0]-1
 							do
 								foreach int y in 0 .. puIdxMax[1]-1
