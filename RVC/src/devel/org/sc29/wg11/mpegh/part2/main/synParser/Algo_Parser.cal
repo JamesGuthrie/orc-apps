@@ -1764,7 +1764,6 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
 	    uint prevColIndex := 0;
 	    uint slice_addr := 0;
 	    int slice_idx :=0;
-	    int pocTid0 := 0;
 	    int idx := 0;
 	    
 	    read_SliceHeader.se_idx_1 : action ==> PictSize:[pictSize] repeat 2 , TileSize:[pictOrTileSize] repeat 2, PicSizeInMb:[(pictSize[0] + 15)/16, (pictSize[1] + 15)/16],
@@ -1938,7 +1937,6 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
 	            nal_unit_type != NAL_RASL_N  and
 	            nal_unit_type != NAL_RASL_R) then
 	            
-	            pocTid0 := poc;
 		    end
 	        
 	        if( sps_sample_adaptive_offset_enabled_flag[sps_id] = 1) then
@@ -1952,16 +1950,6 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
 	    		slice_sample_adaptive_offset_flag[1] := 0;
 	    		slice_sample_adaptive_offset_flag[2] := 0;
 	        end
-	    
-	        
-	
-	//	            if (first_slice_segment_in_pic_flag = 1) then
-	//	                    sao := slice_sample_adaptive_offset_flag[0] + (slice_sample_adaptive_offset_flag[1]<<1);
-	//	                    isPicSlcLcu := 0;
-	//	            else
-	//	                    sao := slice_sample_adaptive_offset_flag[0] + slice_sample_adaptive_offset_flag[1];
-	//	                    isPicSlcLcu := 2 ;
-	//	            end
 	
 	        //////////////////////////////////////////////////////////////////////////// copied from line 2412
 	        if num_tile_columns_minus1 >= (PICT_WIDTH / MIN_CTB_SIZE_Y) then
@@ -4188,7 +4176,7 @@ read_CodingQuadTree.start : action ==>
         do
                 cu_idx := 10;
                 if pcm_flag = 0 then
-                        if( predMode != INTRA and not(partMode = PART_2Nx2N and merge_flag = 1) ) then
+                        if( predMode != INTRA and not(partMode = PART_2Nx2N and merge_flag != 0) ) then
                                 get_NO_RESIDUAL_SYNTAX_FLAG(codIRange, codIOffset, ctxTable, fifo, res);
                                 //no_residual_data_flag
                         end
@@ -4242,14 +4230,68 @@ read_CodingQuadTree.start : action ==>
                  cu_idx = 10
         var
                 uint(size= 8) length = (1 << cu_log2CbSize) >> Log2MinCbSize,
+                int qPy_local := 0,
                 uint(size=16) x_cb = cu_x0 >> Log2MinCbSize,
-        uint(size=16) y_cb = cu_y0 >> Log2MinCbSize
+        		uint(size=16) y_cb = cu_y0 >> Log2MinCbSize,
+        		int qp_block_mask = (1<<(Log2CtbSize - pps_diff_cu_qp_delta_depth[pps_id])) - 1,
+        		int MinCuQpDeltaSizeMask := (1 << (Log2CtbSize -
+			                                      pps_diff_cu_qp_delta_depth[pps_id])) - 1,
+			    int ctb_size_mask        = (1 <<Log2CtbSize) - 1,
+			    int xQgBase              := cu_x0 - (cu_x0 & MinCuQpDeltaSizeMask),
+			    int yQgBase              := cu_y0 - (cu_y0 & MinCuQpDeltaSizeMask),
+			    bool availableA           := ((cu_x0 & ctb_size_mask) != 0) and ((xQgBase & ctb_size_mask) != 0) ,
+			    bool availableB           := ((cu_y0 & ctb_size_mask) != 0) and ((yQgBase & ctb_size_mask) != 0) ,
+                int qPy_a := 0,
+    			int qPy_b := 0,
+    			int x_cb_qp                 := xQgBase >> sps_log2_min_coding_block_size[sps_id],
+			    int y_cb_qp                 := yQgBase >> sps_log2_min_coding_block_size[sps_id]
         do
+        		if (pps_cu_qp_delta_enabled_flag[pps_id] != 0 and IsCuQpDeltaCoded = 0) then
+        			if (first_qp_group != 0) or (xQgBase = 0 and yQgBase = 0) then
+        					first_qp_group := if IsCuQpDeltaCoded != 0 then 0 else 1 end;
+        					qPy_pred := slice_qp;
+        				else
+        					qPy_pred := qp_y;
+        				end	
+        				
+        				if (availableA = false) then
+				        	qPy_a := qPy_pred;
+					    else
+					        qPy_a := qp_y_tab[(x_cb_qp - 1) + y_cb_qp * min_cb_width];
+						end
+					    if (availableB = false) then
+					        qPy_b := qPy_pred;
+					    else
+					        qPy_b := qp_y_tab[x_cb_qp + (y_cb_qp - 1) * min_cb_width];
+					    end
+					    qPy_local :=  (qPy_a + qPy_b + 1) >> 1;
+					    
+                		if CuQpDelta != 0 then
+                			qp_y    := ((qPy_local + CuQpDelta + 52 + 2 * qp_bd_offset_luma) mod (52 + qp_bd_offset_luma)) - qp_bd_offset_luma;
+                		else
+				        	qp_y := qPy_local;
+                		end
+        		end
+
+   		 		//x := y_cb * min_cb_width + x_cb;
+			    foreach  int y in 0 .. length - 1 do
+			    	foreach int x in 0 .. length - 1 do
+			        	qp_y_tab[x +  y * min_cb_width] :=  qp_y;
+			        end
+			       //x := x + min_cb_width;
+			    end
+			
+			    if(((cu_x0 + (1<<cu_log2CbSize)) & qp_block_mask) = 0 and
+			       ((cu_y0 + (1<<cu_log2CbSize)) & qp_block_mask) = 0) then
+			        qPy_pred := qp_y;
+			    end
 //              println("read_CodingUnit_end ");
-        foreach uint i  in 0 .. length-1 do
-                cu_top_ctDepth[x_cb + i]  := cu_ctDepth;
-                cu_left_ctDepth[y_cb + i] := cu_ctDepth;
+        		foreach uint i  in 0 .. length-1 do
+	                cu_top_ctDepth[x_cb + i]  := cu_ctDepth;
+	                cu_left_ctDepth[y_cb + i] := cu_ctDepth;
                 end
+                
+                
         end
 
         /**************************************************************************
@@ -4503,8 +4545,11 @@ read_CodingQuadTree.start : action ==>
         uint(size= 1) cbf_luma;
         uint(size= 8) cur_intra_pred_mode;
         uint(size= 1) split_transform_flag;
+         
+        uint(size=16) xBase;
+        uint(size=16) yBase;  
         uint(size=16) cbf_xBase;
-        uint(size=16) cbf_yBase;                
+        uint(size=16) cbf_yBase;             
 
         /**************************************************************************
          * read_TransformTree.start
@@ -4516,8 +4561,7 @@ read_CodingQuadTree.start : action ==>
         var
                 uint(size=16) x0                                = ttStack[ttStack_idx][TT_x0],
                 uint(size=16) y0                                = ttStack[ttStack_idx][TT_y0],
-                uint(size=16) xBase                             = ttStack[ttStack_idx][TT_xBase],
-                uint(size=16) yBase                             = ttStack[ttStack_idx][TT_yBase],
+               
                 uint(size= 8) log2TrafoSize         = ttStack[ttStack_idx][TT_log2TrafoSize],
                 uint(size= 8) trafoDepth                = ttStack[ttStack_idx][TT_trafoDepth],
                 uint(size=16) cbf_x0                    = x0 & ((1<<log2TrafoSize)-1),
@@ -4526,6 +4570,8 @@ read_CodingQuadTree.start : action ==>
                 uint(size= 1) IntraSplitFlag   = if predMode = INTRA and partMode = PART_NxN then 1 else 0 end,
                 uint(size= 1) InterSplitFlag   = if sps_max_transform_hierarchy_depth_inter[sps_id] = 0 and predMode = INTER and partMode != PART_2Nx2N and trafoDepth = 0 then 1 else 0 end
         do
+        	xBase                       := ttStack[ttStack_idx][TT_xBase];
+            yBase                       := ttStack[ttStack_idx][TT_yBase];
     		cbf_xBase := xBase & ((1 << log2TrafoSize) - 1);
     		cbf_yBase := yBase & ((1 << log2TrafoSize) - 1);
     		if DEBUG_CABAC and DEBUG_TRACE1 then
@@ -4687,6 +4733,7 @@ read_CodingQuadTree.start : action ==>
         uint(size= 8) tu_blkIdx;
         uint(size= 8) tu_log2TrafoSize;
         int qp_y_tab [4096]; // to be checked
+        int qPy_pred:=0;
 
         /**************************************************************************
          * read_TransformUnit.start
@@ -4702,43 +4749,15 @@ read_CodingQuadTree.start : action ==>
                 uint(size=16) cbf_y0                    = tu_y0 & ((1<<tu_log2TrafoSize)-1),
 			    int MinCuQpDeltaSizeMask := (1 << (Log2CtbSize -
 			                                      pps_diff_cu_qp_delta_depth[pps_id])) - 1,
-			    int xQgBase              := cbf_xBase - (cbf_xBase & MinCuQpDeltaSizeMask),
-			    int yQgBase              := cbf_xBase - (cbf_xBase & MinCuQpDeltaSizeMask),
-			    //int min_cb_width         := min_cb_width,
-			    //int min_cb_height        := min_cb_height,
+			    int ctb_size_mask        = (1 <<Log2CtbSize) - 1,
+			    int xQgBase              := xBase - (xBase & MinCuQpDeltaSizeMask),
+			    int yQgBase              := yBase - (yBase & MinCuQpDeltaSizeMask),
 			    int x_cb                 := xQgBase >> sps_log2_min_coding_block_size[sps_id],
 			    int y_cb                 := yQgBase >> sps_log2_min_coding_block_size[sps_id],
-			    int availableA           := 0,//if ((cbf_xBase   & ctb_size_mask) != 0 and (xQgBase & ctb_size_mask) != 0) then 1 else 0 end,
-			    int availableB           := 0,//if (cbf_xBase   & ctb_size_mask) != 0 and (yQgBase & ctb_size_mask) != 0 then 1 else 0 end,
-    			int qPy_pred:=0,
-                
+			    int availableA           := 0,//if ((xBase   & ctb_size_mask) != 0 and (xQgBase & ctb_size_mask) != 0) then 1 else 0 end,
+			    int availableB           := 0,//if (yBase   & ctb_size_mask) != 0 and (yQgBase & ctb_size_mask) != 0 then 1 else 0 end,
                 int qPy_a := 0,
     			int qPy_b := 0
-//    			int xC0b := (cbf_x0 - (cbf_x0 & ctb_size_mask)) >> sps_log2_min_coding_block_size[NB_MAX_SPS],
-//            	int yC0b := (cbf_y0 - (cbf_y0 & ctb_size_mask)) >> sps_log2_min_coding_block_size[NB_MAX_SPS],
-//	            int idxX := (xQgBase  & ctb_size_mask)  >> sps_log2_min_coding_block_size[NB_MAX_SPS],
-//	            int idxY := (yQgBase  & ctb_size_mask)  >> sps_log2_min_coding_block_size[NB_MAX_SPS],
-//	            int idx_mask := ctb_size_mask >> sps_log2_min_transform_block_size[NB_MAX_SPS],
-//	            int offsetX[8][8] = [
-//                [ -1, 1, 3, 1, 7, 1, 3, 1 ],
-//                [  0, 0, 0, 0, 0, 0, 0, 0 ],
-//                [  1, 3, 1, 3, 1, 3, 1, 3 ],
-//                [  2, 2, 2, 2, 2, 2, 2, 2 ],
-//                [  3, 5, 7, 5, 3, 5, 7, 5 ],
-//                [  4, 4, 4, 4, 4, 4, 4, 4 ],
-//                [  5, 7, 5, 7, 5, 7, 5, 7 ],
-//                [  6, 6, 6, 6, 6, 6, 6, 6 ]
-//            ],
-//            int offsetY[8][8] = [
-//                [ 7, 0, 1, 2, 3, 4, 5, 6 ],
-//                [ 0, 1, 2, 3, 4, 5, 6, 7 ],
-//                [ 1, 0, 3, 2, 5, 4, 7, 6 ],
-//                [ 0, 1, 2, 3, 4, 5, 6, 7 ],
-//                [ 3, 0, 1, 2, 7, 4, 5, 6 ],
-//                [ 0, 1, 2, 3, 4, 5, 6, 7 ],
-//                [ 1, 0, 3, 2, 5, 4, 7, 6 ],
-//                [ 0, 1, 2, 3, 4, 5, 6, 7 ]
-//            ]
         do
                 if DEBUG_CABAC and DEBUG_TRACE1 then
                         println("read_TransformUnit.start("+tu_x0+", "+tu_y0+", "+tu_xBase+", "+tu_yBase+", "+
@@ -4762,24 +4781,18 @@ read_CodingQuadTree.start : action ==>
                 		end
                 		IsCuQpDeltaCoded := 1;
                 		
-                		if first_qp_group != 0 then
+                		if (first_qp_group != 0) or (xQgBase = 0 and yQgBase = 0) then
         					first_qp_group := if IsCuQpDeltaCoded != 0 then 0 else 1 end;
         					qPy_pred := slice_qp;
         				else
         					qPy_pred := qp_y;
-        					
-        					if (ct_log2CbSize < Log2CtbSize -pps_diff_cu_qp_delta_depth[pps_id]) then
-					            
-					            //qPy_pred := qp_y_tab[y * min_cb_width + x];
-        					end
-        				end
-        				
+        				end	
         				
         				if (availableA = 0) then
 				        	qPy_a := qPy_pred;
 					    else
 					        qPy_a := qp_y_tab[(x_cb - 1) + y_cb * min_cb_width];
-						  end
+						end
 					    if (availableB = 0) then
 					        qPy_b := qPy_pred;
 					    else
