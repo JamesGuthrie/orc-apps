@@ -988,7 +988,8 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
 	    uint(size= 8) sps_max_transform_hierarchy_depth_inter[NB_MAX_SPS];
 	    uint(size= 8) sps_max_transform_hierarchy_depth_intra[NB_MAX_SPS];
 	    uint(size= 1) sps_scaling_list_enabled_flag[NB_MAX_SPS];
-	    int(size=32) ctb_width;
+	    uint(size=16) sps_ctb_width[NB_MAX_SPS];
+	    uint(size=16) sps_log2_ctb_size[NB_MAX_SPS];
 	    int(size=32) min_cb_width;
 	    
 	
@@ -1007,9 +1008,9 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
 	        "sps_scaling_list_enabled_flag           ");
 	        sps_scaling_list_enabled_flag[sps_id] := res[0];
 	        
-	        min_cb_width := sps_pic_width_in_luma_samples[sps_id] >>
-	        sps_log2_min_coding_block_size[sps_id];
-	        
+	        min_cb_width := sps_pic_width_in_luma_samples[sps_id] >> sps_log2_min_coding_block_size[sps_id];
+	        sps_log2_ctb_size[sps_id] := sps_log2_min_coding_block_size[sps_id] + sps_log2_diff_max_min_coding_block_size[sps_id];
+	        sps_ctb_width[sps_id] := (sps_pic_width_in_luma_samples[sps_id]  + (1 << sps_log2_ctb_size[sps_id]) - 1) >> sps_log2_ctb_size[sps_id];
 	        
 	        if sps_scaling_list_enabled_flag[sps_id] = 1 then
 	        	se_idx := 60;
@@ -1766,10 +1767,7 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
 	    int slice_idx :=0;
 	    int idx := 0;
 	    
-	    read_SliceHeader.se_idx_1 : action ==> PictSize:[pictSize] repeat 2 , TileSize:[pictOrTileSize] repeat 2, PicSizeInMb:[(pictSize[0] + 15)/16, (pictSize[1] + 15)/16],
-								                DispCoord:[0, pictSize[0]-1, 0, pictSize[1]-1],  PartMode:[part_mode],
-								                LFAcrossSlcTile:[pps_loop_filter_across_slice_enabled_flag[pps_id] + (pps_loop_filter_across_slice_enabled_flag[pps_id]<<1)]
-	           
+	    read_SliceHeader.se_idx_1 : action ==> PartMode:[part_mode]       
 	    guard
 	        se_idx = 1 and idx = 0 and isFifoFull(fifo)
 	    var
@@ -1936,7 +1934,6 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
 	            nal_unit_type != NAL_RADL_R  and
 	            nal_unit_type != NAL_RASL_N  and
 	            nal_unit_type != NAL_RASL_R) then
-	            
 		    end
 	        
 	        if( sps_sample_adaptive_offset_enabled_flag[sps_id] = 1) then
@@ -2033,70 +2030,72 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
                 uint(size=32) res[1],
                 int NumPocTotalCurr := 0
         do
-                num_ref_idx_l0_active    := 0;
-                num_ref_idx_l1_active    := 0;
-                mvd_l1_zero_flag         := 0;
-                if slice_type = P_SLICE or slice_type = B_SLICE then
-                        num_ref_idx_l0_active := pps_num_ref_idx_l0_default_active_minus1[pps_id] + 1;
-                        if slice_type = B_SLICE then
-                                num_ref_idx_l1_active := pps_num_ref_idx_l1_default_active_minus1[pps_id] + 1;
-                        end
-                        vld_u_name(  1, fifo, res, "num_ref_idx_active_override_flag        ");
-                        if res[0] = 1 then
-                                vld_ue_name(    fifo, res, "num_ref_idx_l0_active_minus1            ");
-                                num_ref_idx_l0_active := res[0] + 1;
-                                if slice_type = B_SLICE then
-                                        vld_ue_name(    fifo, res, "num_ref_idx_l1_active_minus1            ");
-                                        num_ref_idx_l1_active := res[0] + 1;
-                                end
-                        end
+            num_ref_idx_l0_active    := 0;
+            num_ref_idx_l1_active    := 0;
+            mvd_l1_zero_flag         := 0;
+            if slice_type = P_SLICE or slice_type = B_SLICE then
+                num_ref_idx_l0_active := pps_num_ref_idx_l0_default_active_minus1[pps_id] + 1;
+                if slice_type = B_SLICE then
+                        num_ref_idx_l1_active := pps_num_ref_idx_l1_default_active_minus1[pps_id] + 1;
+                end
+                vld_u_name(  1, fifo, res, "num_ref_idx_active_override_flag        ");
+                if res[0] = 1 then
+                    vld_ue_name(    fifo, res, "num_ref_idx_l0_active_minus1            ");
+                    num_ref_idx_l0_active := res[0] + 1;
+                    if slice_type = B_SLICE then
+                        vld_ue_name(    fifo, res, "num_ref_idx_l1_active_minus1            ");
+                        num_ref_idx_l1_active := res[0] + 1;
+                    end
+                end
 
-                        ref_pic_list_modification_flag_lx[0] := 0;
-                        ref_pic_list_modification_flag_lx[1] := 0;
+                ref_pic_list_modification_flag_lx[0] := 0;
+                ref_pic_list_modification_flag_lx[1] := 0;
 
-                        foreach int i in 0 .. pcRPS[sps_id][sps_num_short_term_ref_pic_sets[sps_id]][NUM_NEGATIVE_PICS]-1 do
-                                if (pcRPS[sps_id][sps_num_short_term_ref_pic_sets[sps_id]][USED+i] = 1) then
-                                        NumPocTotalCurr := NumPocTotalCurr + 1;
-                                end
-                        end
+                foreach int i in 0 ..
+                pcRPS[sps_id][sps_num_short_term_ref_pic_sets[sps_id]][NUM_NEGATIVE_PICS]- 1 do
+                	if
+                	(pcRPS[sps_id][sps_num_short_term_ref_pic_sets[sps_id]][USED + i] = 1) then
+                		NumPocTotalCurr := NumPocTotalCurr + 1;
+                	end
+                end
 
-                        foreach int i in pcRPS[sps_id][sps_num_short_term_ref_pic_sets[sps_id]][NUM_NEGATIVE_PICS] .. pcRPS[sps_id][sps_num_short_term_ref_pic_sets[sps_id]][NUM_PICS]-1 do
-                                if (pcRPS[sps_id][sps_num_short_term_ref_pic_sets[sps_id]][USED+i] = 1) then
-                                        NumPocTotalCurr := NumPocTotalCurr + 1;
-                                end
-                        end
+                foreach int i in pcRPS[sps_id][sps_num_short_term_ref_pic_sets[sps_id]][NUM_NEGATIVE_PICS] .. pcRPS[sps_id][sps_num_short_term_ref_pic_sets[sps_id]][NUM_PICS]-1 do
+                    if (pcRPS[sps_id][sps_num_short_term_ref_pic_sets[sps_id]][USED+i] = 1) then
+                        NumPocTotalCurr := NumPocTotalCurr + 1;
+                    end
+                end
 
-                        foreach int i in 0 .. num_long_term_sps + num_long_term_pics - 1 do
-                                if ( UsedByCurrPicLt[i] = 1) then
-                                        NumPocTotalCurr := NumPocTotalCurr + 1;
-                                end
-                        end
+                foreach int i in 0 .. num_long_term_sps + num_long_term_pics - 1 do
+                    if ( UsedByCurrPicLt[i] = 1) then
+                        NumPocTotalCurr := NumPocTotalCurr + 1;
+                    end
+                end
 
-                    if pps_lists_modification_present_flag[pps_id] = 1 and NumPocTotalCurr > 1 then
-                        vld_u_name(  1, fifo, res, "ref_pic_list_modification_flag_l0       ");
-                        ref_pic_list_modification_flag_lx[0] := res[0];
-                        if ref_pic_list_modification_flag_lx[0] = 1 then
-                                foreach int i in 0 .. num_ref_idx_l0_active - 1 do
-                                        vld_u_name(log2((NumPocTotalCurr-1)<<1) , fifo, res, "list_entry_lx                           ");
-                                        list_entry_lx[0][i] := res[0];
-                                end
-                        end
-
-                        if slice_type = B_SLICE then
-                                vld_u_name(  1, fifo, res, "ref_pic_list_modification_flag_l1       ");
-                                ref_pic_list_modification_flag_lx[1] := res[0];
-                                if ref_pic_list_modification_flag_lx[1] = 1 then
-                                        foreach int i in 0 .. num_ref_idx_l1_active - 1 do
-                                                vld_u_name(log2((NumPocTotalCurr-1)<<1) , fifo, res, "list_entry_lx                           ");
-                                                list_entry_lx[1][i] := res[0];
-                                        end
-                                end
+                if pps_lists_modification_present_flag[pps_id] = 1 and NumPocTotalCurr > 1 then
+                    vld_u_name(  1, fifo, res, "ref_pic_list_modification_flag_l0       ");
+                    ref_pic_list_modification_flag_lx[0] := res[0];
+                    if ref_pic_list_modification_flag_lx[0] = 1 then
+                        foreach int i in 0 .. num_ref_idx_l0_active - 1 do
+                            vld_u_name(log2((NumPocTotalCurr-1)<<1) , fifo, res, "list_entry_lx                           ");
+                            list_entry_lx[0][i] := res[0];
                         end
                     end
+
                     if slice_type = B_SLICE then
-                                vld_u_name(  1, fifo, res, "mvd_l1_zero_flag                        ");
-                                mvd_l1_zero_flag := res[0];
+                        vld_u_name(  1, fifo, res, "ref_pic_list_modification_flag_l1       ");
+                        ref_pic_list_modification_flag_lx[1] := res[0];
+                        if ref_pic_list_modification_flag_lx[1] = 1 then
+                            foreach int i in 0 .. num_ref_idx_l1_active - 1 do
+                                vld_u_name(log2((NumPocTotalCurr-1)<<1) , fifo, res, "list_entry_lx                           ");
+                                list_entry_lx[1][i] := res[0];
+                            end
                         end
+                    end
+                end
+                if slice_type = B_SLICE then
+                    vld_u_name(  1, fifo, res, "mvd_l1_zero_flag                        ");
+                    mvd_l1_zero_flag := res[0];
+               	end
             end
                 se_idx := 10;
         end
@@ -2116,14 +2115,14 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
         begin
                 foreach int i in 0 .. pc_rps[sps_id][idx][NUM_NEGATIVE_PICS] - 1
                 do
-                	if (pc_rps[sps_id][idx][USED + i] = 1) then
-                		pocTables[ST_CURR_BEF][j] := poc +
-                		pc_rps[sps_id][idx][DELTAPOC + i];
-                		j := j + 1;
-                	else
-                		pocTables[ST_FOLL][k] := poc + pc_rps[sps_id][idx][DELTAPOC + i];
-                		k := k + 1;
-                	end
+	            	if (pc_rps[sps_id][idx][USED + i] = 1) then
+	            		pocTables[ST_CURR_BEF][j] := poc +
+	            		pc_rps[sps_id][idx][DELTAPOC + i];
+	            		j := j + 1;
+	            	else
+	            		pocTables[ST_FOLL][k] := poc + pc_rps[sps_id][idx][DELTAPOC + i];
+	            		k := k + 1;
+	            	end
                 end
                 numPic[ST_CURR_BEF] := j;
                 j := 0;
@@ -2719,33 +2718,34 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
         uint(size= 8) slice_segment_header_extension_length;
         uint num_entry_offsets := 0;
 
-        read_SliceHeader.se_idx_6 : action ==> TilesCoord:[num_entry_offsets], RealTilesCoord:[num_entry_offsets]
+        read_SliceHeader.se_idx_6 : action ==> 
         guard
                 se_idx = 6 and isFifoFull(fifo)
         var
                 uint(size=32) res[1]
         do
-                se_idx := 8;
-                if pps_tiles_enabled_flag[pps_id] = 1 or
-                pps_entropy_coding_sync_enabled_flag[pps_id] = 1 then
-                	vld_ue_name(fifo, res,"num_entry_point_offsets                 ");
-                	num_entry_point_offsets := res[0]; 
-                	if num_entry_point_offsets > NUM_ENTRY_MAX then
-                		println("ERROR: fix NUM_ENTRY_MAX");
-                	end
-                	if num_entry_point_offsets > 0 then
-                		vld_ue_name(fifo, res,"offset_len_minus1                       ");
-                		offset_len := res[0] + 1;
-                		se_idx := 7;
-                	end
-        end
+            se_idx := 8;
+            if pps_tiles_enabled_flag[pps_id] = 1 or pps_entropy_coding_sync_enabled_flag[pps_id] = 1 then
+            	vld_ue_name(fifo, res, "num_entry_point_offsets                 ");
+            	num_entry_point_offsets := res[0];
+            	if num_entry_point_offsets > NUM_ENTRY_MAX then
+            		println("ERROR: fix NUM_ENTRY_MAX");
+            	end
+            	if num_entry_point_offsets > 0 then
+            		vld_ue_name(fifo, res,
+            		"offset_len_minus1                       ");
+            		offset_len := res[0] + 1;
+            		se_idx := 7;
+            	end
+        	end
 
-        if TILE_SPLIT_ENABLE != 0 then
-                        num_entry_offsets := 1;
-                else
-                        num_entry_offsets := (pps_num_tile_columns_minus1[pps_id] + 1) * (pps_num_tile_rows_minus1[pps_id] + 1);
-                end
-    	end
+	        if TILE_SPLIT_ENABLE != 0 then
+	        	num_entry_offsets := 1;
+	        else
+	        	num_entry_offsets := (pps_num_tile_columns_minus1[pps_id] + 1) *
+	        	(pps_num_tile_rows_minus1[pps_id] + 1);
+	        end
+	    end
 
 	    read_SliceHeader.se_idx_7_loop : action ==>
 	    guard
@@ -2856,7 +2856,10 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
         uint(size=16) rowHeight[PICT_HEIGHT / MIN_CTB_SIZE_Y];
 
         read_SliceData.init: action ==> IsPicSlcLcu:[0], MvPredSyntaxElem:[pps_log2_parallel_merge_level[pps_id], slice_temporal_mvp_enable_flag ,collocated_from_lX , collocated_ref_idx],
-        								SaoSe:[slice_sample_adaptive_offset_flag[0] + (slice_sample_adaptive_offset_flag[1]<<1)]
+        								SaoSe:[slice_sample_adaptive_offset_flag[0] + (slice_sample_adaptive_offset_flag[1]<<1)], TilesCoord:[num_entry_offsets], RealTilesCoord:[num_entry_offsets]
+        								, PicSizeInMb:[(pictSize[0] + 15)/16, (pictSize[1] + 15)/16], DispCoord:[0, pictSize[0]-1, 0, pictSize[1]-1]
+        								,LFAcrossSlcTile:[pps_loop_filter_across_slice_enabled_flag[pps_id] + (pps_loop_filter_across_slice_enabled_flag[pps_id]<<1)],
+        								 PictSize:[pictSize] repeat 2, TileSize:[pictOrTileSize] repeat 2
         guard
                 sliceData_idx = 1 and isFifoFull(fifo),
                 first_slice_segment_in_pic_flag = 1 or prev_pps_id != pps_id
@@ -2873,13 +2876,14 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
                 uint(size=16) tIdx,
                 uint count :=0
         do
-        	
                 //isNotFirstSlice   := true;
                 prev_pps_id := pps_id;
                 skip_flag_tab := [ [ 0 : for int j in 0 .. 1 ] : for int i in
                 0 .. PICT_WIDTH - 1 ];
+                qp_y_tab := [ 0 : for int i in  0 .. (4096 * 2048) - 1 ];
                 intraPredMode := [ [ INTRA_DC : for int j in 0 .. 1 ] : for
                 int i in 0 .. PICT_WIDTH - 1 ];
+                first_qp_group := 1;
                 Log2MinTrafoSize := sps_log2_min_transform_block_size[sps_id];
                 Log2MaxTrafoSize := Log2MinTrafoSize +
                 sps_log2_diff_max_min_transform_block_size[sps_id];
@@ -2951,7 +2955,7 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
                         end
                 end
                 InitScanningArray(ScanOrder);
-                if num_entry_point_offsets > 0 then
+                if num_entry_offsets > 0 then
                         sliceData_idx := 20;
                 else
                         sliceData_idx := 21;
@@ -3044,24 +3048,18 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
                 sliceData_idx = 1,
                 first_slice_segment_in_pic_flag = 0 and dependent_slice_segment_flag = 1 and prev_pps_id = pps_id
         do
-        		
-                if num_entry_offsets > 0 then
-                        sliceData_idx := 20;
-                else
-                        sliceData_idx := 21;
-                end
+                sliceData_idx := 2;
         end
         
         read_SliceData.noInit_isSlc: action ==> MvPredSyntaxElem:[pps_log2_parallel_merge_level[pps_id],slice_temporal_mvp_enable_flag, collocated_from_lX , collocated_ref_idx],
-        										IsPicSlcLcu:[1]
-        										//SaoSe:[ slice_sample_adaptive_offset_flag[0] + (slice_sample_adaptive_offset_flag[1]<<1)],
-        										//LFAcrossSlcTile:[pps_loop_filter_across_slice_enabled_flag[pps_id] + (pps_loop_filter_across_slice_enabled_flag[pps_id]<<1)]
+        										IsPicSlcLcu:[1], TilesCoord:[num_entry_offsets], RealTilesCoord:[num_entry_offsets],
+        										LFAcrossSlcTile:[pps_loop_filter_across_slice_enabled_flag[pps_id] + (pps_loop_filter_across_slice_enabled_flag[pps_id]<<1)],
+        										PictSize:[pictSize] repeat 2, TileSize:[pictOrTileSize] repeat 2
         guard
                 sliceData_idx = 1,
                 first_slice_segment_in_pic_flag = 0 and dependent_slice_segment_flag = 0 and prev_pps_id = pps_id
         do
-        		
-                if num_entry_point_offsets > 0 then
+                if num_entry_offsets > 0 then
                         sliceData_idx := 20;
                 else
                         sliceData_idx := 21;
@@ -3167,7 +3165,7 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
                                         end
                                 end
                 else
-                        //println("endOfSlice ################################################### counter = " + counter);
+                        println("endOfSlice ################################################### counter = " + counter);
                         counter := counter + 1;
                         sliceData_idx := 5;
                         //curr_Tile := 0;
@@ -3183,6 +3181,8 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
         read_SliceData_end: action ==>
         guard
                 sliceData_idx = 5
+        do
+        	first_qp_group := 1;
         end
 
         /**************************************************************************
@@ -3192,7 +3192,6 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
          *************************************************************************/
         uint(size=16) xCtb;
         uint(size=16) yCtb;
-        uint(size=32) CtbAddrInSlice;
         uint(size= 8) codingTree_idx;
         uint(size= 8) ctStack_idx;
         uint(size=16) ctStack[5][CT_STRUCT_SIZE];
@@ -3200,6 +3199,12 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
 	    bool ctb_left_flag;
 	    bool ctb_up_flag;
 	    int ctb_addr_in_slice ;
+//	    int tab_slice_address[4096] := [-1 : for int i in 0 .. 4095]; // size to be checked (TODO)
+//	    uint(size=8) slice_or_tiles_left_boundary;
+//	    uint(size=8) slice_or_tiles_up_boundary;
+//	    bool ctb_up_right_flag;
+//	    bool ctb_up_left_flag;
+	    
         /**************************************************************************
          * read_CodingTree.start
          *************************************************************************/
@@ -3212,6 +3217,8 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
                 uint CtbAddrRS := ctbAddrTStoRS[CtbAddrTS],
                 int tile_left_boundary,
                 int tile_up_boundary,
+//                int slice_left_boundary,
+//                int slice_up_boundary,
                 uint indexTS := 0,
                 uint indexRS_0 := 0,
                 uint indexRS_1 := 0
@@ -3223,48 +3230,57 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
             if CtbAddrRS != 0 then
             	indexRS_0 := CtbAddrRS - 1;
             end
-            if CtbAddrTS >= ctb_width then
-            	indexRS_1 := CtbAddrTS - ctb_width;
+            if CtbAddrRS >= sps_ctb_width[sps_id] then
+            	indexRS_1 := CtbAddrRS - sps_ctb_width[sps_id];
             end
-           
-            xCtb := InverseRasterScan(CtbAddrRS, CtbSize, CtbSize,
-            sps_pic_width_in_luma_samples[sps_id], 0);
-            yCtb := InverseRasterScan(CtbAddrRS, CtbSize, CtbSize,
-            sps_pic_width_in_luma_samples[sps_id], 1);
-            if pps_entropy_coding_sync_enabled_flag[pps_id] = 1 then
+//			tab_slice_address[CtbAddrRS] := slice_addr;
+            xCtb := InverseRasterScan(CtbAddrRS, CtbSize, CtbSize, sps_pic_width_in_luma_samples[sps_id], 0);
+            yCtb := InverseRasterScan(CtbAddrRS, CtbSize, CtbSize, sps_pic_width_in_luma_samples[sps_id], 1);
+            if pps_entropy_coding_sync_enabled_flag[pps_id] != 0 then
             	if (xCtb = 0 and (yCtb & (CtbSize - 1)) = 0) then
             		first_qp_group := 1;
             	end
-            	elsif pps_tiles_enabled_flag[pps_id] = 1 then if (CtbAddrTS
-            	!= 0 and TileId[CtbAddrTS] != TileId[indexTS]) then
-            		first_qp_group := 1;
-            	end
+            else if pps_tiles_enabled_flag[pps_id] = 1 then 
+            		if (CtbAddrTS != 0 and TileId[CtbAddrTS] != TileId[indexTS]) then
+            			first_qp_group := 1;
+            	 	end
+            	 end
             end
             if (pps_tiles_enabled_flag[pps_id] = 1) then
-            	tile_left_boundary := if (xCtb > 0 && TileId[CtbAddrTS] !=
-            	TileId[ctbAddrRStoTS[indexRS_0]]) then
+            	tile_left_boundary := if (xCtb > 0 && TileId[CtbAddrTS] != TileId[ctbAddrRStoTS[indexRS_0]]) then
             		1
             	else
             		0
             	end;
             	
-            	tile_up_boundary := if (yCtb > 0 && TileId[CtbAddrTS] !=
-            	TileId[ctbAddrRStoTS[indexRS_1]]) then
+            	tile_up_boundary := if (yCtb > 0 && TileId[CtbAddrTS] != TileId[ctbAddrRStoTS[indexRS_1]]) then
             		1
             	else
             		0
-            	end;	
+            	end;
+//            	slice_left_boundary := if (xCtb > 0 && tab_slice_address[CtbAddrRS] != tab_slice_address[indexRS_0]) then
+//            		1 
+//            	else 
+//            		0 
+//            	end;
+//        		slice_up_boundary   := if (yCtb > 0 && tab_slice_address[CtbAddrRS] != tab_slice_address[indexRS_1])then
+//        			1
+//        		else
+//        			0
+//        		end;
             else
             	tile_left_boundary := 0;
-            	tile_up_boundary := 0;           	
+            	tile_up_boundary := 0;
+//            	slice_left_boundary := if (ctb_addr_in_slice <= 0) then 1 else 0 end;
+//        		slice_up_boundary   := if (ctb_addr_in_slice < sps_ctb_width[sps_id]) then 1 else 0 end;
             end
+            //slice_or_tiles_left_boundary := slice_left_boundary + (tile_left_boundary << 1);
+    		//slice_or_tiles_up_boundary   := slice_up_boundary   + (tile_up_boundary   << 1);
+            ctb_left_flag := (xCtb > 0) and (ctb_addr_in_slice > 0) and (tile_left_boundary = 0);
+            ctb_up_flag := (yCtb > 0) && (ctb_addr_in_slice >= sps_ctb_width[sps_id]) && tile_up_boundary = 0;
+//           ctb_up_right_flag := ((yCtb > 0)                && (ctb_addr_in_slice+1 >= sps_ctb_width[sps_id]) && (TileId[CtbAddrTS] = TileId[ctbAddrRStoTS[CtbAddrRS+1 - sps_ctb_width[sps_id]]]));
+//    		ctb_up_left_flag  := ((xCtb > 0) && (yCtb > 0)  && (ctb_addr_in_slice-1 >= sps_ctb_width[sps_id]) && (TileId[CtbAddrTS] = TileId[ctbAddrRStoTS[CtbAddrRS-1 - sps_ctb_width[sps_id]]]));
             
-            ctb_left_flag := (xCtb > 0) and (ctb_addr_in_slice > 0) and
-            (tile_left_boundary = 0);
-            ctb_up_flag := (yCtb > 0) && (ctb_addr_in_slice >= ctb_width)
-            && tile_up_boundary = 0;
-            
-            CtbAddrInSlice := CtbAddrRS - slice_segment_address;
             codingTree_idx := 2;
             if CtbAddrTS = ctbAddrRStoTS[slice_segment_address] then //                      println("codIRangeINITCABACbegin := "+codIRange[0]+ " codIOffset := " +codIOffset[0]);
             	decodeStart(codIRange, codIOffset, fifo); //                      println("codIRangeINITCABAC1 := "+codIRange[0]+ " codIOffset := " +codIOffset[0]);
@@ -3374,44 +3390,32 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
                  int(size=32) res[1],
                 uint(size= 1) sao_merge_left_flag       := 0,
                 uint(size= 1) sao_merge_up_flag         := 0,
-                 int(size= 9) sao_merge             := SAO_NO_MERGE,
-       			uint indexLeft := 0,
-                uint indexUp := 0
+                 int(size= 9) sao_merge             := SAO_NO_MERGE
         do
-        	if(pps_tiles_enabled_flag[pps_id] = 1) then
-                if CtbAddrRS != 0 then
-            		indexLeft := CtbAddrRS - 1;
-        		end
-		        if CtbAddrRS >= PicWidthInCtbsY then
-		            indexUp := CtbAddrRS - PicWidthInCtbsY;
-		        end
-                ctb_left_flag := CtbAddrInSlice > 0 and (TileId[ CtbAddrTS ] = TileId[ ctbAddrRStoTS[ indexLeft ] ]);
-                ctb_up_flag := CtbAddrInSlice >= PicWidthInCtbsY and (TileId[ CtbAddrTS ] = TileId[ ctbAddrRStoTS[ indexUp] ]);
-			end
-                if sao_rx > 0 then
-                        if ctb_left_flag then
-                                get_SAO_MERGE_FLAG(codIRange, codIOffset, ctxTable, fifo, res);
-                                sao_merge_left_flag := res[0];
-                                if sao_merge_left_flag = 1 then
-                                    sao_merge       := SAO_MERGE_LEFT;
-                                end
-                        end
-                end
-                if sao_ry > 0 and sao_merge_left_flag = 0 then
-                        if ctb_up_flag then
-                                get_SAO_MERGE_FLAG(codIRange, codIOffset, ctxTable, fifo, res);
-                                sao_merge_up_flag := res[0];
-				                if sao_merge_up_flag = 1 then
-				                	sao_merge       := SAO_MERGE_UP;
-				                end
-				        end
-        		end
-                sao_idx  := 2;
-                if sao_merge_left_flag = 0 and sao_merge_up_flag = 0 then
-                        sao_cIdx := 0;
-                else
-                        sao_cIdx := 3;
-                end
+            if sao_rx > 0 then
+            	if ctb_left_flag then
+            		get_SAO_MERGE_FLAG(codIRange, codIOffset, ctxTable, fifo, res);
+            		sao_merge_left_flag := res[0];
+            		if sao_merge_left_flag = 1 then
+            			sao_merge := SAO_MERGE_LEFT;
+            		end
+            	end
+            end
+            if sao_ry > 0 and sao_merge_left_flag = 0 then
+            	if ctb_up_flag then
+            		get_SAO_MERGE_FLAG(codIRange, codIOffset, ctxTable, fifo, res);
+            		sao_merge_up_flag := res[0];
+            		if sao_merge_up_flag = 1 then
+            			sao_merge := SAO_MERGE_UP;
+            		end
+            	end
+            end
+            sao_idx := 2;
+            if sao_merge_left_flag = 0 and sao_merge_up_flag = 0 then
+            	sao_cIdx := 0;
+            else
+            	sao_cIdx := 3;
+            end
         end
         /**************************************************************************
          * read_SaoParam.loop
@@ -3448,30 +3452,30 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
         do
 
 	        foreach int i in 0 .. 3 do
-	            get_SAO_OFFSET_ABS(offsetTh, codIRange, codIOffset, fifo, res);
-	            offset[i] := res[0];
+	        	get_SAO_OFFSET_ABS(offsetTh, codIRange, codIOffset, fifo, res);
+	        	offset[i] := res[0];
 	        end
 	        if sao_typeIdx = SAO_BAND then
-	                        foreach int i in 0 .. 3 do
-	                                if offset[i] != 0 then
-	                                        get_SAO_OFFSET_SIGN(codIRange, codIOffset, fifo, res);
-	                                        if res[0] != 0 then
-	                                                offset[i] := -offset[i];
-	                                        end
-	                                end
-	                        end
-	                        get_SAO_BAND_POSITION(codIRange, codIOffset, fifo, res);
-	                        sao_eo := res[0];
-	                else
-	                    offset[2] := -offset[2];
-	                    offset[3] := -offset[3];
-	                        if sao_cIdx != 2 then
-	                                get_SAO_EO(codIRange, codIOffset, fifo, res);
-	                                sao_eo := res[0];
-	                        end
-	                end
-	                sao_cIdx := sao_cIdx + 1;
-	        sao_idx  := 2;
+	        	foreach int i in 0 .. 3 do
+	        		if offset[i] != 0 then
+	        			get_SAO_OFFSET_SIGN(codIRange, codIOffset, fifo, res);
+	        			if res[0] != 0 then
+	        				offset[i] := -offset[i];
+	        			end
+	        		end
+	        	end
+	        	get_SAO_BAND_POSITION(codIRange, codIOffset, fifo, res);
+	        	sao_eo := res[0];
+	        else
+	        	offset[2] := -offset[2];
+	        	offset[3] := -offset[3];
+	        	if sao_cIdx != 2 then
+	        		get_SAO_EO(codIRange, codIOffset, fifo, res);
+	        		sao_eo := res[0];
+	        	end
+	        end
+	        sao_cIdx := sao_cIdx + 1;
+	        sao_idx := 2;
         end
         read_SaoParam.nextLoop : action ==>
         guard
@@ -3496,7 +3500,7 @@ actor Algo_Parser (uint TILE_INDEX, uint TILE_SPLIT_ENABLE)
         /**************************************************************************
          * read_CodingQuadTree.start
          *************************************************************************/
-read_CodingQuadTree.start : action ==>
+		read_CodingQuadTree.start : action ==>
         guard
                 ctStack[ctStack_idx][CT_idx] = 1 and isFifoFull(fifo)
         var
@@ -3514,27 +3518,12 @@ read_CodingQuadTree.start : action ==>
             uint(size=16) MinCbAddrZS,
             uint(size=16) m,
             uint(size=16) x0b = ct_x0 & ((1 << Log2CtbSize) - 1),
-        	uint(size=16) y0b = ct_y0 & ((1 << Log2CtbSize) - 1),
-
-	      	uint indexLeft := 0,
-	      	uint indexUp   :=0
+        	uint(size=16) y0b = ct_y0 & ((1 << Log2CtbSize) - 1)
         do
     	    ct_log2CbSize := ctStack[ctStack_idx][CT_log2CbSize];
     	    CtbAddrRS := PicWidthInCtbsY * tbY + tbX;
-    	    MinCbAddrZS := ctbAddrRStoTS[CtbAddrRS] << ((Log2CtbSize -
-    	    Log2MinCbSize) * 2);
-    	    if pps_tiles_enabled_flag[pps_id] = 1 or dependent_slice_segment_flag = 0 then
-    	    	if CtbAddrRS != 0 then
-    	    		indexLeft := CtbAddrRS - 1;
-    	    	end
-    	    	if CtbAddrRS >= PicWidthInCtbsY then
-    	    		indexUp := CtbAddrRS - PicWidthInCtbsY;
-    	    	end
-    	    	ctb_left_flag := (ct_x0 > 0) and CtbAddrInSlice > 0 and
-    	    	(TileId[CtbAddrTS] = TileId[ctbAddrRStoTS[indexLeft]]);
-    	    	ctb_up_flag := (ct_y0 > 0) and CtbAddrInSlice >= PicWidthInCtbsY and
-    	    	(TileId[CtbAddrTS] = TileId[ctbAddrRStoTS[indexUp]]);
-    	   	end
+    	    MinCbAddrZS := ctbAddrRStoTS[CtbAddrRS] << ((Log2CtbSize - Log2MinCbSize) * 2);
+
     	    if DEBUG_CABAC and DEBUG_TRACE1 then
     	    	println("read_CodingTree.start (" + ct_x0 + ", " + ct_y0 + ", " + (1
     	    	<< ct_log2CbSize) + ", " + ctStack[ctStack_idx][CT_ctDepth] + ")");
@@ -3742,6 +3731,8 @@ read_CodingQuadTree.start : action ==>
         guard
                 ctStack[ctStack_idx][CT_idx] = 7,
                 ctStack_idx = 0
+//        do
+//        	tab_slice_address[CtbAddrRS] := -1;
         end
 
         /**************************************************************************
@@ -3771,7 +3762,7 @@ read_CodingQuadTree.start : action ==>
                  [ 1,  1,  1, 34,  1],
                  [0, 26, 10, 1, 0]];
 
-
+		int qp_block_mask := 0;
                 /**************************************************************************
          * read_CodingUnit.start
          *************************************************************************/
@@ -3791,22 +3782,21 @@ read_CodingQuadTree.start : action ==>
 		        int(size=32) x0b = ct_x0 & ((1 << Log2CtbSize) - 1),
 		        int(size=32) y0b = ct_y0 & ((1 << Log2CtbSize) - 1),
 		        bool leftFlag,
-		        bool upFlag,
-              	uint indexLeft := 0,
-              	uint indexUp   :=0
+		        bool upFlag
         do
-        	if (pps_tiles_enabled_flag[pps_id] = 1) then
-        		if CtbAddrRS != 0 then
-        			indexLeft := CtbAddrRS - 1;
-        		end
-        		if CtbAddrRS >= PicWidthInCtbsY then
-        			indexUp := CtbAddrRS - PicWidthInCtbsY;
-        		end
-        		ctb_left_flag := ct_x0 > 0 and CtbAddrInSlice > 0 and
-        		(TileId[CtbAddrTS] = TileId[ctbAddrRStoTS[indexLeft]]);
-        		ctb_up_flag := ct_y0 > 0 and CtbAddrInSlice >= PicWidthInCtbsY and
-        		(TileId[CtbAddrTS] = TileId[ctbAddrRStoTS[indexUp]]);
-        	end
+        	qp_block_mask    := (1<<(sps_log2_ctb_size[sps_id] - pps_diff_cu_qp_delta_depth[pps_id])) - 1;
+//        	if (pps_tiles_enabled_flag[pps_id] = 1) then
+//        		if CtbAddrRS != 0 then
+//        			indexLeft := CtbAddrRS - 1;
+//        		end
+//        		if CtbAddrRS >= PicWidthInCtbsY then
+//        			indexUp := CtbAddrRS - PicWidthInCtbsY;
+//        		end
+//        		ctb_left_flag := ct_x0 > 0 and CtbAddrInSlice > 0 and
+//        		(TileId[CtbAddrTS] = TileId[ctbAddrRStoTS[indexLeft]]);
+//        		ctb_up_flag := ct_y0 > 0 and CtbAddrInSlice >= PicWidthInCtbsY and
+//        		(TileId[CtbAddrTS] = TileId[ctbAddrRStoTS[indexUp]]);
+//        	end
         	leftFlag := ctb_left_flag or (x0b > 0);
         	upFlag := ctb_up_flag or (y0b > 0);
         	skip_flag := 0;
@@ -3888,23 +3878,19 @@ read_CodingQuadTree.start : action ==>
             uint(size=32) res[1],
             uint(size= 8) Log2MinIPCMCUSize = Log2MinCbSize,
             uint(size= 8) pbOffset,
-            uint(size= 8) pbEnd,
-            uint(size=16) ct_x0                     = ctStack[ctStack_idx][CT_x0],
-            uint(size=16) ct_y0                     = ctStack[ctStack_idx][CT_y0],
-         	uint indexLeft := 0,
-          	uint indexUp   :=0
+            uint(size= 8) pbEnd
         do
-        	if (pps_tiles_enabled_flag[pps_id] = 1) then
-	            if CtbAddrRS != 0 then
-	            	indexLeft := CtbAddrRS - 1;
-	        	end
-		        if CtbAddrRS >= PicWidthInCtbsY then
-		            indexUp   := CtbAddrRS - PicWidthInCtbsY;
-		        end
-		        ctb_left_flag := ct_x0 > 0 and CtbAddrInSlice > 0 and (TileId[ CtbAddrTS ] = TileId[ ctbAddrRStoTS[ indexLeft ] ]);
-	            ctb_up_flag   := ct_y0 > 0 and CtbAddrInSlice  >= PicWidthInCtbsY and (TileId[ CtbAddrTS ] = TileId[ ctbAddrRStoTS[ indexUp ] ]);
-		        
-		    end
+//        	if (pps_tiles_enabled_flag[pps_id] = 1) then
+//	            if CtbAddrRS != 0 then
+//	            	indexLeft := CtbAddrRS - 1;
+//	        	end
+//		        if CtbAddrRS >= PicWidthInCtbsY then
+//		            indexUp   := CtbAddrRS - PicWidthInCtbsY;
+//		        end
+//		        ctb_left_flag := ct_x0 > 0 and CtbAddrInSlice > 0 and (TileId[ CtbAddrTS ] = TileId[ ctbAddrRStoTS[ indexLeft ] ]);
+//	            ctb_up_flag   := ct_y0 > 0 and CtbAddrInSlice  >= PicWidthInCtbsY and (TileId[ CtbAddrTS ] = TileId[ ctbAddrRStoTS[ indexUp ] ]);
+//		        
+//		    end
                 IntraSplitFlag  := 0;
                 if slice_type != I_SLICE then
                         //println("codIRangeget_PRED_MODE_FLAG := "+codIRange[0]+ " codIOffset := " +codIOffset[0]);
@@ -4176,22 +4162,24 @@ read_CodingQuadTree.start : action ==>
         do
                 cu_idx := 10;
                 if pcm_flag = 0 then
-                        if( predMode != INTRA and not(partMode = PART_2Nx2N and merge_flag != 0) ) then
-                                get_NO_RESIDUAL_SYNTAX_FLAG(codIRange, codIOffset, ctxTable, fifo, res);
-                                //no_residual_data_flag
-                        end
-                        if res[0] != 0 then
-                                MaxTrafoDepth := if predMode = INTRA then
-                                                                        sps_max_transform_hierarchy_depth_intra[sps_id] + IntraSplitFlag
-                                                                else
-                                                                        sps_max_transform_hierarchy_depth_inter[sps_id]
-                                                                end;
-                                cu_idx  := 9;
-                                //transform_tree( x0, y0, x0, y0, x0, y0, log2CbSize, log2CbSize, log2CbSize, 0, 0 )
-                        elsif predMode != INTRA then // ### not conform to openhevc !
-                                cu_idx  := 11;
-                        end
+                	if (predMode != INTRA and not(partMode = PART_2Nx2N and
+                	merge_flag = 1)) then
+                		get_NO_RESIDUAL_SYNTAX_FLAG(codIRange, codIOffset, ctxTable,
+                		fifo, res); //no_residual_data_flag
+                	end
+                	if res[0] != 0 then
+                		MaxTrafoDepth := if predMode = INTRA then
+                			sps_max_transform_hierarchy_depth_intra[sps_id] +
+                			IntraSplitFlag
+                		else
+                			sps_max_transform_hierarchy_depth_inter[sps_id]
+                		end;
+                		cu_idx := 9; //transform_tree( x0, y0, x0, y0, x0, y0, log2CbSize, log2CbSize, log2CbSize, 0, 0 )
+                		elsif predMode != INTRA then // ### not conform to openhevc !
+                		cu_idx := 11;
+                	end
                 end
+                
         end
 
         read_CodingUnit.endFunctionSend : action ==> SplitTransform:[false], TUSize:[1<<cu_log2CbSize, 1, 0, 0, slice_qp, TEXT_LUMA, 0, //luma
@@ -4199,9 +4187,9 @@ read_CodingQuadTree.start : action ==>
                                                                                                                                 1<<(cu_log2CbSize-1), 1, 0, 0, 0, TEXT_CHROMA_V, 0], //cr
                                                                                                                                 Cbf:[false], Qp:[qp_y, qp_y, qp_y]
         guard
-                cu_idx = 11
+            cu_idx = 11
         do
-                cu_idx  := 10;
+        	cu_idx  := 10;
         end
 
         /**************************************************************************
@@ -4211,87 +4199,93 @@ read_CodingQuadTree.start : action ==>
         guard
                 cu_idx = 9
         do
-                cu_idx                                                  := 10;
-                ttStack_idx                                             :=  0;
-                ttStack[0][TT_idx]                              :=  1;
-                ttStack[0][TT_x0]                               :=  cu_x0;
-                ttStack[0][TT_y0]                               :=  cu_y0;
+                cu_idx                                  := 10;
+                ttStack_idx                            	:=  0;
+                ttStack[0][TT_idx]                    	:=  1;
+                ttStack[0][TT_x0]                      	:=  cu_x0;
+                ttStack[0][TT_y0]                    	:=  cu_y0;
                 ttStack[0][TT_xBase]                    :=  cu_x0;
                 ttStack[0][TT_yBase]                    :=  cu_y0;
-                ttStack[0][TT_log2TrafoSize]    :=  cu_log2CbSize;
+                ttStack[0][TT_log2TrafoSize]   			:=  cu_log2CbSize;
                 ttStack[0][TT_trafoDepth]               :=  0;
                 ttStack[0][TT_blkIdx]                   :=  0;
         end
         /**************************************************************************
          * read_CodingUnit_end
          *************************************************************************/
+        int qPy_pred			 := 0;
         read_CodingUnit_end : action ==>
         guard
                  cu_idx = 10
         var
-                uint(size= 8) length = (1 << cu_log2CbSize) >> Log2MinCbSize,
-                int qPy_local := 0,
-                uint(size=16) x_cb = cu_x0 >> Log2MinCbSize,
-        		uint(size=16) y_cb = cu_y0 >> Log2MinCbSize,
-        		int qp_block_mask = (1<<(Log2CtbSize - pps_diff_cu_qp_delta_depth[pps_id])) - 1,
-        		int MinCuQpDeltaSizeMask := (1 << (Log2CtbSize -
-			                                      pps_diff_cu_qp_delta_depth[pps_id])) - 1,
-			    int ctb_size_mask        = (1 <<Log2CtbSize) - 1,
-			    int xQgBase              := cu_x0 - (cu_x0 & MinCuQpDeltaSizeMask),
-			    int yQgBase              := cu_y0 - (cu_y0 & MinCuQpDeltaSizeMask),
-			    bool availableA           := ((cu_x0 & ctb_size_mask) != 0) and ((xQgBase & ctb_size_mask) != 0) ,
-			    bool availableB           := ((cu_y0 & ctb_size_mask) != 0) and ((yQgBase & ctb_size_mask) != 0) ,
-                int qPy_a := 0,
-    			int qPy_b := 0,
-    			int x_cb_qp                 := xQgBase >> sps_log2_min_coding_block_size[sps_id],
-			    int y_cb_qp                 := yQgBase >> sps_log2_min_coding_block_size[sps_id]
-        do
-        		if (pps_cu_qp_delta_enabled_flag[pps_id] != 0 and IsCuQpDeltaCoded = 0) then
-        			if (first_qp_group != 0) or (xQgBase = 0 and yQgBase = 0) then
-        					first_qp_group := if IsCuQpDeltaCoded != 0 then 0 else 1 end;
-        					qPy_pred := slice_qp;
-        				else
-        					qPy_pred := qp_y;
-        				end	
-        				
-        				if (availableA = false) then
-				        	qPy_a := qPy_pred;
-					    else
-					        qPy_a := qp_y_tab[(x_cb_qp - 1) + y_cb_qp * min_cb_width];
-						end
-					    if (availableB = false) then
-					        qPy_b := qPy_pred;
-					    else
-					        qPy_b := qp_y_tab[x_cb_qp + (y_cb_qp - 1) * min_cb_width];
-					    end
-					    qPy_local :=  (qPy_a + qPy_b + 1) >> 1;
-					    
-                		if CuQpDelta != 0 then
-                			qp_y    := ((qPy_local + CuQpDelta + 52 + 2 * qp_bd_offset_luma) mod (52 + qp_bd_offset_luma)) - qp_bd_offset_luma;
-                		else
-				        	qp_y := qPy_local;
-                		end
+            uint(size= 8) length = (1 << cu_log2CbSize) >> Log2MinCbSize,
+            uint(size=16) ct_x_cb = cu_x0 >> Log2MinCbSize,
+        	uint(size=16) ct_y_cb = cu_y0 >> Log2MinCbSize,
+        	int ctb_size_mask        := (1 << Log2CtbSize) - 1,
+		    int MinCuQpDeltaSizeMask := (1 << (Log2CtbSize - pps_diff_cu_qp_delta_depth[pps_id])) - 1,
+		    int xQgBase              := cu_x0 - (cu_x0 & MinCuQpDeltaSizeMask),
+		    int yQgBase              := cu_y0 - (cu_y0 & MinCuQpDeltaSizeMask),
+		    int x_cb                 := xQgBase >> Log2MinCbSize,
+		    int y_cb                 := yQgBase >> Log2MinCbSize,
+		    int availableA           := if ((cu_x0   & ctb_size_mask) != 0 and (xQgBase & ctb_size_mask) != 0) then 1 else 0 end,
+		    int availableB           := if (cu_y0   & ctb_size_mask) != 0 and (yQgBase & ctb_size_mask) != 0 then 1 else 0 end,
+            int qPy_local 			 := 0,
+            int qPy_a 				 := 0,
+			int qPy_b 				 := 0,
+			int local_qPy_pred		 :=0,
+			int x := 0
+		do
+	        if (pps_cu_qp_delta_enabled_flag[pps_id] != 0 and IsCuQpDeltaCoded = 0)then
+	        	println("end");
+	        	if first_qp_group != 0 or (xQgBase = 0 and yQgBase = 0) then
+	        		first_qp_group := if IsCuQpDeltaCoded != 0 then
+	        			0
+	        		else
+	        			1
+	        		end;
+	        		local_qPy_pred := slice_qp;
+	        	else
+	        		local_qPy_pred := qPy_pred;
+	        	end
+	        	if (availableA = 0) then
+	        		qPy_a := local_qPy_pred;
+	        	else
+	        		qPy_a := qp_y_tab[(x_cb - 1) + y_cb * min_cb_width];
+	        		
+	        	end
+	        	println("qPy_a = " + qPy_a);
+	        	if (availableB = 0) then
+	        		qPy_b := local_qPy_pred;
+	        	else
+	        		qPy_b := qp_y_tab[x_cb + (y_cb - 1) * min_cb_width];
+	        	end
+	        	println("qPy_b = " + qPy_b);
+	        	qPy_local := (qPy_a + qPy_b + 1) >> 1;
+	        	println("qPy_local = " + qPy_local);
+	        	if CuQpDelta != 0 then
+	        		qp_y := ((qPy_local + CuQpDelta + 52 + 2 * qp_bd_offset_luma) mod
+	        		(52 + qp_bd_offset_luma)) - qp_bd_offset_luma;
+	        	else
+	        		qp_y := qPy_local;
+	        	end
+	        	println("qp_y = " + qp_y);
+	       	end
+	       	println("memeset");
+	       	println("length = " + length);
+	       	x := ct_y_cb * min_cb_width + ct_x_cb;
+        	foreach int y in 0 .. length - 1 do
+        		foreach int i in 0 .. length - 1 do
+        			qp_y_tab[x + i] := qp_y;
         		end
-
-   		 		//x := y_cb * min_cb_width + x_cb;
-			    foreach  int y in 0 .. length - 1 do
-			    	foreach int x in 0 .. length - 1 do
-			        	qp_y_tab[x +  y * min_cb_width] :=  qp_y;
-			        end
-			       //x := x + min_cb_width;
-			    end
-			
-			    if(((cu_x0 + (1<<cu_log2CbSize)) & qp_block_mask) = 0 and
-			       ((cu_y0 + (1<<cu_log2CbSize)) & qp_block_mask) = 0) then
-			        qPy_pred := qp_y;
-			    end
-//              println("read_CodingUnit_end ");
-        		foreach uint i  in 0 .. length-1 do
-	                cu_top_ctDepth[x_cb + i]  := cu_ctDepth;
-	                cu_left_ctDepth[y_cb + i] := cu_ctDepth;
-                end
-                
-                
+        		x := x + min_cb_width;
+        	end
+        	if (((cu_x0 + (1 << cu_log2CbSize)) & qp_block_mask) = 0 && ((cu_y0 + (1 << cu_log2CbSize)) & qp_block_mask) = 0) then // cu_xo and cu_y0 to be checked TODO
+        		qPy_pred := qp_y;
+        	end
+	        foreach uint i in 0 .. length - 1 do
+	        	cu_top_ctDepth[ct_x_cb + i] := cu_ctDepth;
+	        	cu_left_ctDepth[ct_y_cb + i] := cu_ctDepth;
+	        end
         end
 
         /**************************************************************************
@@ -4545,11 +4539,8 @@ read_CodingQuadTree.start : action ==>
         uint(size= 1) cbf_luma;
         uint(size= 8) cur_intra_pred_mode;
         uint(size= 1) split_transform_flag;
-         
-        uint(size=16) xBase;
-        uint(size=16) yBase;  
         uint(size=16) cbf_xBase;
-        uint(size=16) cbf_yBase;             
+        uint(size=16) cbf_yBase;                
 
         /**************************************************************************
          * read_TransformTree.start
@@ -4561,7 +4552,8 @@ read_CodingQuadTree.start : action ==>
         var
                 uint(size=16) x0                                = ttStack[ttStack_idx][TT_x0],
                 uint(size=16) y0                                = ttStack[ttStack_idx][TT_y0],
-               
+                uint(size=16) xBase                             = ttStack[ttStack_idx][TT_xBase],
+                uint(size=16) yBase                             = ttStack[ttStack_idx][TT_yBase],
                 uint(size= 8) log2TrafoSize         = ttStack[ttStack_idx][TT_log2TrafoSize],
                 uint(size= 8) trafoDepth                = ttStack[ttStack_idx][TT_trafoDepth],
                 uint(size=16) cbf_x0                    = x0 & ((1<<log2TrafoSize)-1),
@@ -4570,8 +4562,6 @@ read_CodingQuadTree.start : action ==>
                 uint(size= 1) IntraSplitFlag   = if predMode = INTRA and partMode = PART_NxN then 1 else 0 end,
                 uint(size= 1) InterSplitFlag   = if sps_max_transform_hierarchy_depth_inter[sps_id] = 0 and predMode = INTER and partMode != PART_2Nx2N and trafoDepth = 0 then 1 else 0 end
         do
-        	xBase                       := ttStack[ttStack_idx][TT_xBase];
-            yBase                       := ttStack[ttStack_idx][TT_yBase];
     		cbf_xBase := xBase & ((1 << log2TrafoSize) - 1);
     		cbf_yBase := yBase & ((1 << log2TrafoSize) - 1);
     		if DEBUG_CABAC and DEBUG_TRACE1 then
@@ -4668,8 +4658,8 @@ read_CodingQuadTree.start : action ==>
                 tu_y0                                                   := ttStack[ttStack_idx][TT_y0];
                 tu_xBase                                                := ttStack[ttStack_idx][TT_xBase];
                 tu_yBase                                                := ttStack[ttStack_idx][TT_yBase];
-                tu_log2TrafoSize                                := ttStack[ttStack_idx][TT_log2TrafoSize];
-                tu_trafoDepth                                   := ttStack[ttStack_idx][TT_trafoDepth];
+                tu_log2TrafoSize                                		:= ttStack[ttStack_idx][TT_log2TrafoSize];
+                tu_trafoDepth                                   		:= ttStack[ttStack_idx][TT_trafoDepth];
                 tu_blkIdx                                               := ttStack[ttStack_idx][TT_blkIdx];
         end
         /**************************************************************************
@@ -4685,11 +4675,11 @@ read_CodingQuadTree.start : action ==>
                 ttStack[ttStack_idx][TT_idx]                            := ttStack[ttStack_idx][TT_idx] + 1;
                 ttStack_idx                                                             := ttStack_idx + 1;
                 ttStack[ttStack_idx][TT_idx]                            := 1;
-                ttStack[ttStack_idx][TT_x0]                                     := ttStack[idx][TT_x0];
-                ttStack[ttStack_idx][TT_y0]                                     := ttStack[idx][TT_y0];
+                ttStack[ttStack_idx][TT_x0]                             := ttStack[idx][TT_x0];
+                ttStack[ttStack_idx][TT_y0]                             := ttStack[idx][TT_y0];
                 ttStack[ttStack_idx][TT_xBase]                          := ttStack[idx][TT_x0];
                 ttStack[ttStack_idx][TT_yBase]                          := ttStack[idx][TT_y0];
-                ttStack[ttStack_idx][TT_log2TrafoSize]          := ttStack[idx][TT_log2TrafoSize] - 1;
+                ttStack[ttStack_idx][TT_log2TrafoSize]          		:= ttStack[idx][TT_log2TrafoSize] - 1;
                 ttStack[ttStack_idx][TT_trafoDepth]                     := ttStack[idx][TT_trafoDepth] + 1;
                 if ttStack[idx][TT_idx] = 4 then
                         ttStack[ttStack_idx][TT_blkIdx]                 := 0;
@@ -4697,11 +4687,11 @@ read_CodingQuadTree.start : action ==>
                         ttStack[ttStack_idx][TT_x0]                     := ttStack[idx][TT_x1];
                         ttStack[ttStack_idx][TT_blkIdx]                 := 1;
                 elsif ttStack[idx][TT_idx] = 6 then
-                        ttStack[ttStack_idx][TT_y0]                             := ttStack[idx][TT_y1];
+                        ttStack[ttStack_idx][TT_y0]                     := ttStack[idx][TT_y1];
                         ttStack[ttStack_idx][TT_blkIdx]                 := 2;
                 else
-                        ttStack[ttStack_idx][TT_x0]                             := ttStack[idx][TT_x1];
-                        ttStack[ttStack_idx][TT_y0]                             := ttStack[idx][TT_y1];
+                        ttStack[ttStack_idx][TT_x0]                     := ttStack[idx][TT_x1];
+                        ttStack[ttStack_idx][TT_y0]                     := ttStack[idx][TT_y1];
                         ttStack[ttStack_idx][TT_blkIdx]                 := 3;
                 end
         end
@@ -4732,8 +4722,7 @@ read_CodingQuadTree.start : action ==>
         uint(size= 8) tu_trafoDepth;
         uint(size= 8) tu_blkIdx;
         uint(size= 8) tu_log2TrafoSize;
-        int qp_y_tab [4096]; // to be checked
-        int qPy_pred:=0;
+        int qp_y_tab [4096 * 2048]; // to be checked
 
         /**************************************************************************
          * read_TransformUnit.start
@@ -4747,15 +4736,16 @@ read_CodingQuadTree.start : action ==>
         		int qPy_local := 0,
                 uint(size=16) cbf_x0                    = tu_x0 & ((1<<tu_log2TrafoSize)-1),
                 uint(size=16) cbf_y0                    = tu_y0 & ((1<<tu_log2TrafoSize)-1),
-			    int MinCuQpDeltaSizeMask := (1 << (Log2CtbSize -
-			                                      pps_diff_cu_qp_delta_depth[pps_id])) - 1,
-			    int ctb_size_mask        = (1 <<Log2CtbSize) - 1,
-			    int xQgBase              := xBase - (xBase & MinCuQpDeltaSizeMask),
-			    int yQgBase              := yBase - (yBase & MinCuQpDeltaSizeMask),
-			    int x_cb                 := xQgBase >> sps_log2_min_coding_block_size[sps_id],
-			    int y_cb                 := yQgBase >> sps_log2_min_coding_block_size[sps_id],
-			    int availableA           := 0,//if ((xBase   & ctb_size_mask) != 0 and (xQgBase & ctb_size_mask) != 0) then 1 else 0 end,
-			    int availableB           := 0,//if (yBase   & ctb_size_mask) != 0 and (yQgBase & ctb_size_mask) != 0 then 1 else 0 end,
+                int ctb_size_mask        := (1 << Log2CtbSize) - 1,
+			    int MinCuQpDeltaSizeMask := (1 << (Log2CtbSize - pps_diff_cu_qp_delta_depth[pps_id])) - 1,
+			    int xQgBase              := tu_x0 - (tu_x0 & MinCuQpDeltaSizeMask),
+			    int yQgBase              := tu_y0 - (tu_y0 & MinCuQpDeltaSizeMask),
+			    int x_cb                 := xQgBase >> Log2MinCbSize,
+			    int y_cb                 := yQgBase >> Log2MinCbSize,
+			    int availableA           := if ((tu_x0   & ctb_size_mask) != 0 and (xQgBase & ctb_size_mask) != 0) then 1 else 0 end,
+			    int availableB           := if (tu_y0   & ctb_size_mask) != 0 and (yQgBase & ctb_size_mask) != 0 then 1 else 0 end,
+    			int local_qPy_pred:=0,
+                
                 int qPy_a := 0,
     			int qPy_b := 0
         do
@@ -4767,44 +4757,61 @@ read_CodingQuadTree.start : action ==>
                 end
                 if cbf_luma = 1 or cbf_cb[cbf_x0][cbf_y0][tu_trafoDepth] = 1 or
                 cbf_cr[cbf_x0][cbf_y0][tu_trafoDepth] = 1 then
-                	if pps_cu_qp_delta_enabled_flag[pps_id] = 1 and
-                	IsCuQpDeltaCoded = 0 then
-                		get_CU_QP_DELTA_ABS(codIRange, codIOffset, ctxTable, fifo,
-                		res);
+                	if pps_cu_qp_delta_enabled_flag[pps_id] != 0 and IsCuQpDeltaCoded = 0 then
+                		get_CU_QP_DELTA_ABS(codIRange, codIOffset, ctxTable, fifo, res);
                 		CuQpDelta := res[0];
                 		if CuQpDelta != 0 then
-                			get_CU_QP_DELTA_SIGN_FLAG(codIRange, codIOffset, fifo,
-                			res);
+                			get_CU_QP_DELTA_SIGN_FLAG(codIRange, codIOffset, fifo, res);
                 			if res[0] = 1 then
                 				CuQpDelta := -CuQpDelta;
                 			end
                 		end
                 		IsCuQpDeltaCoded := 1;
                 		
-                		if (first_qp_group != 0) or (xQgBase = 0 and yQgBase = 0) then
-        					first_qp_group := if IsCuQpDeltaCoded != 0 then 0 else 1 end;
-        					qPy_pred := slice_qp;
-        				else
-        					qPy_pred := qp_y;
-        				end	
-        				
-        				if (availableA = 0) then
-				        	qPy_a := qPy_pred;
-					    else
-					        qPy_a := qp_y_tab[(x_cb - 1) + y_cb * min_cb_width];
-						end
-					    if (availableB = 0) then
-					        qPy_b := qPy_pred;
-					    else
-					        qPy_b := qp_y_tab[x_cb + (y_cb - 1) * min_cb_width];
-					    end
-					    qPy_local :=  (qPy_a + qPy_b + 1) >> 1;
-					    
-                		if CuQpDelta != 0 then
-                			qp_y    := ((qPy_local + CuQpDelta + 52 + 2 * qp_bd_offset_luma) mod (52 + qp_bd_offset_luma)) - qp_bd_offset_luma;
+                		println("start");
+                		
+                		println("xQgBase = " + xQgBase);
+                		println("yQgBase = " + yQgBase);
+                		println("x_cb = " + x_cb);
+                		println("y_cb = " + y_cb);
+                		println("IsCuQpDeltaCoded = " + IsCuQpDeltaCoded);
+                		println("availableA = " + availableA);
+                		println("availableB = " + availableB);
+                		println("first_qp_group1 = " + first_qp_group);
+                		if first_qp_group != 0 or (xQgBase = 0 and yQgBase = 0) then
+                			first_qp_group := if IsCuQpDeltaCoded != 0 then
+                				0
+                			else
+                				1
+                			end;
+                			local_qPy_pred := slice_qp;
                 		else
-				        	qp_y := qPy_local;
+                			local_qPy_pred := qPy_pred;
                 		end
+                		println("slice_qp = " + slice_qp);
+                		//println("qPy_pred = " + qPy_pred);
+                		println("first_qp_group2 = " + first_qp_group);
+                		println("local_qPy_pred = " + local_qPy_pred);
+                		if (availableA = 0) then
+                			qPy_a := local_qPy_pred;
+                		else
+                			qPy_a := qp_y_tab[(x_cb - 1) + y_cb * min_cb_width];
+                		end
+                		println("qPy_a = " + qPy_a);
+                		if (availableB = 0) then
+                			qPy_b := local_qPy_pred;
+                		else
+                			qPy_b := qp_y_tab[x_cb + (y_cb - 1) * min_cb_width];
+                		end
+                		println("qPy_b = " + qPy_b);
+                		qPy_local := (qPy_a + qPy_b + 1) >> 1;
+                		println("qPy_local = " + qPy_local);
+                		if CuQpDelta != 0 then
+                			qp_y := ((qPy_local + CuQpDelta + 52 + 2 * qp_bd_offset_luma) mod (52 + qp_bd_offset_luma)) - qp_bd_offset_luma;
+                		else
+                			qp_y := qPy_local;
+                		end
+                		println("qp_y = " + qp_y);
                 	end
                 end
                 tu_idx                          := 8; // skipResidualCoding
@@ -4925,6 +4932,8 @@ read_CodingQuadTree.start : action ==>
         uint(size= 1) coded_sub_block_flag[8][8];
         uint(size= 8) LastSignificantCoeffX;
         uint(size= 8) LastSignificantCoeffY;
+        
+        uint(size=16) num_coeff;
 
         /**************************************************************************
          * read_ResidualCoding.start
@@ -4953,15 +4962,20 @@ read_CodingQuadTree.start : action ==>
                 isFifoFull(fifo)
         var
          int(size=32) res[1],
-        uint(size=16) xS := 0,
-        uint(size=16) yS := 0,
-         int(size=16) xC := -1,
-         int(size=16) yC := -1,
+//        uint(size=16) xS := 0,
+//        uint(size=16) yS := 0,
+//         int(size=16) xC := -1,
+//         int(size=16) yC := -1,
          int sz = 1 << rc_log2TrafoSize,
         uint(size=1) transform_skip_flag,
          int matrix_id,
          int qp_offset,
          int(size=16) qp_i,
+         
+         int x_cg_last_sig, 
+		 int y_cg_last_sig,
+		 int last_x_c,
+         int last_y_c,
          
          
         uint(size= 8) qp_c[15] = [ 29, 30, 31, 32, 33, 33, 34, 34, 35, 35, 36, 36, 37, 37],
@@ -5037,14 +5051,14 @@ read_CodingQuadTree.start : action ==>
             get_LAST_SIGNIFICANT_COEFF_Y_PREFIX(codIRange, codIOffset, ctxTable, fifo, res, rc_log2TrafoSize, rc_cIdx);
             LastSignificantCoeffY := res[0];
             if LastSignificantCoeffX > 3 then
-                    get_LAST_SIGNIFICANT_COEFF_XY_SUFFIX(codIRange, codIOffset, fifo, res, LastSignificantCoeffX);
-                    LastSignificantCoeffX := (1 << ((LastSignificantCoeffX >> 1) - 1)) *
-                                                                     (2  +  (LastSignificantCoeffX & 1 )) + res[0];
+            	get_LAST_SIGNIFICANT_COEFF_XY_SUFFIX(codIRange, codIOffset, fifo, res, LastSignificantCoeffX);
+            	LastSignificantCoeffX := (1 << ((LastSignificantCoeffX >> 1) - 1)) *
+                                         (2  +  (LastSignificantCoeffX & 1 )) + res[0];
             end
             if LastSignificantCoeffY > 3 then
-                    get_LAST_SIGNIFICANT_COEFF_XY_SUFFIX(codIRange, codIOffset, fifo, res, LastSignificantCoeffY);
-                    LastSignificantCoeffY := (1 << ((LastSignificantCoeffY >> 1) - 1)) *
-                                                                     (2  +  (LastSignificantCoeffY & 1 )) + res[0];
+            	get_LAST_SIGNIFICANT_COEFF_XY_SUFFIX(codIRange, codIOffset, fifo, res, LastSignificantCoeffY);
+            	LastSignificantCoeffY := (1 << ((LastSignificantCoeffY >> 1) - 1)) *
+                                         (2  +  (LastSignificantCoeffY & 1 )) + res[0];
             end
 
 
@@ -5053,24 +5067,35 @@ read_CodingQuadTree.start : action ==>
                     LastSignificantCoeffX := LastSignificantCoeffY;
                     LastSignificantCoeffY := res[0];
             end
+ 
+			x_cg_last_sig := LastSignificantCoeffX >> 2;
+            y_cg_last_sig := LastSignificantCoeffY >> 2;
 
-            rc_lastScanPos := 16;
-            rc_lastSubBlock := (1 << (rc_log2TrafoSize - 2)) * (1 <<
-            (rc_log2TrafoSize - 2)) - 1;
-            while not(xC = LastSignificantCoeffX and yC =
-            LastSignificantCoeffY) do
-            	if rc_lastScanPos = 0 then
-            		rc_lastScanPos := 16;
-            		rc_lastSubBlock := rc_lastSubBlock - 1;
-            	end
-            	rc_lastScanPos := rc_lastScanPos - 1;
-            	xS := ScanOrder[rc_log2TrafoSize -
-            	2][rc_scanIdx][rc_lastSubBlock][0];
-            	yS := ScanOrder[rc_log2TrafoSize -
-            	2][rc_scanIdx][rc_lastSubBlock][1];
-            	xC := (xS << 2) + ScanOrder[2][rc_scanIdx][rc_lastScanPos][0];
-            	yC := (yS << 2) + ScanOrder[2][rc_scanIdx][rc_lastScanPos][1]; //                      println(xC+", "+LastSignificantCoeffX+" : "+yC+", "+LastSignificantCoeffY+", rc_lastSubBlock = "+rc_lastSubBlock+", rc_lastScanPos = "+rc_lastScanPos);
-            end //              println("LastSignificantCoeffX = "+LastSignificantCoeffX+", LastSignificantCoeffY = "+LastSignificantCoeffY+", rc_lastSubBlock = "+(rc_lastSubBlock)+" rc_scanIdx = "+rc_scanIdx);
+            if rc_scanIdx = 0 then
+              last_x_c := LastSignificantCoeffX & 3;
+              last_y_c := LastSignificantCoeffY & 3;
+
+              num_coeff := diag_scan4x4_inv[last_y_c][last_x_c];
+
+              if rc_log2TrafoSize = 3 then
+                num_coeff := (num_coeff + (diag_scan2x2_inv[y_cg_last_sig][x_cg_last_sig] << 4));
+              elsif rc_log2TrafoSize = 4 then
+                num_coeff := (num_coeff + (diag_scan4x4_inv[y_cg_last_sig][x_cg_last_sig] << 4));
+              else // rc_log2TrafoSize = 5 then
+                num_coeff := (num_coeff + (diag_scan8x8_inv[y_cg_last_sig][x_cg_last_sig] << 4));
+              end
+        
+            elsif rc_scanIdx = 1 then
+              num_coeff := horiz_scan8x8_inv[LastSignificantCoeffY][LastSignificantCoeffX];
+        
+            elsif rc_scanIdx = 2 then
+              num_coeff := horiz_scan8x8_inv[LastSignificantCoeffX][LastSignificantCoeffY];
+            end
+      
+            num_coeff := num_coeff + 1;
+            rc_lastSubBlock := (num_coeff - 1) >> 4;
+            rc_lastScanPos := num_coeff - (rc_lastSubBlock << 4) - 1;
+        
             rc_i := rc_lastSubBlock;
         end
         
