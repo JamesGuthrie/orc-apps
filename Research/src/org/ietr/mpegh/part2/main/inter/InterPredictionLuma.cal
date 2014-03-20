@@ -562,14 +562,8 @@ actor InterPredictionLuma()
 		uint(size=9) offsetDst
 	do
 	    offsetDst := iLoop + jLoop * cuSize[0];
-		foreach uint y in 0 .. 3
-		do
-			foreach uint x in 0 .. 3
-			do
-				pix[y * 4 + x] := dst[offsetDst + x];
-			end
-			offsetDst := offsetDst + cuSize[0];
-		end
+	    copy_block4x4_cal(pix, dst, 0, offsetDst, 0, cuSize[0]);
+		
 		iLoop := iLoop + 4;
 		if(iLoop = cuSize[0]) then
 			iLoop := 0;

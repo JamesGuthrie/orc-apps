@@ -401,5 +401,25 @@ unit InterFunctions :
 	        end
 	    end
 	end
+	
+	@optimize_c(condition="defined(SSE_ENABLE)", name="copy_block4x4_orcc")
+	procedure copy_block4x4_cal(
+		uint(size= 8) outputSample[16], 
+		uint(size= 8) inputSample[64 * 64], 
+		uint(size= 9) offsetOut, 
+		uint(size= 9) offsetIn,
+		uint(size= 7) strideOut,
+		uint(size= 7) strideIn)
+	begin
+	foreach uint y in 0 .. 3
+		do
+			foreach uint x in 0 .. 3
+			do
+				outputSample[offsetOut + y * 4 + x] := inputSample[offsetIn + x];
+			end
+			offsetIn := offsetIn + strideIn;
+			offsetOut := offsetOut + strideOut;
+		end
+	end
 
 end
