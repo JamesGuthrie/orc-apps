@@ -329,9 +329,17 @@ unit CommonConstantHEVC :
         coord[0] := ZscanToAbsCoord0[rasterIdx];
         coord[1] := ZscanToAbsCoord1[rasterIdx];
     end
+    
+    /**************************************************************************
+     * absCoordToWeirdScan (4x4 block, blocks in raster scan)
+     *************************************************************************/
+    function absCoordToWeirdScan(uint(size=16) x, uint(size=16) y, uint(size=16) stride) --> uint(size=16)
+	:
+	     (x & 3) + ((y & 3) << 2) + ((x >> 2) << 4) + (y >> 2) * (stride << 2)
+	end
 
     /**************************************************************************
-     * absCoordToRasterScan
+     * absCoordToZScan
      *************************************************************************/
 	function absCoordToZScan(uint(size=16) addr[2]) --> uint(size=16)
 	var
