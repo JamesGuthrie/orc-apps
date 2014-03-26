@@ -513,6 +513,7 @@ unit InterFunctions :
 	    end
 	end
 	
+	/* Gather 4x4 non-contiguous elements */
 	@optimize_c(condition="defined(SSE_ENABLE) && (defined __SSE2__)", name="gather32_4x4_orcc")
 	procedure gather32_4x4_cal(
 		uint(size= 8) outputSample[16], 
@@ -533,19 +534,4 @@ unit InterFunctions :
 		end
 	end
 	
-	// Only for test
-	procedure gather32_4x4_cal_temp(
-		uint(size= 8) outputSample[16], 
-		uint(size= 8) inputSample[64 * 64], 
-		uint(size= 9) offsetOut, 
-		uint(size= 9) offsetIn,
-		uint(size= 7) strideOut,
-		uint(size= 7) strideIn)
-	begin
-	foreach uint y in 0 .. 15
-		do
-			outputSample[y] := inputSample[offsetIn + y];
-		end
-	end
-
 end
