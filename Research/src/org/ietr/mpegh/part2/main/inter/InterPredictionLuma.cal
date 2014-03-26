@@ -113,10 +113,7 @@ actor InterPredictionLuma()
 
 	uint(size=8) refSamples[(64+7)*(64+7)];
 	int (size=16) predSamples[2][64*64];
-	// int (size=16) dst[64*64];
-	//uint (size=8) dst[64*64];
 	
-	uint(size=9) offsetDst;
     /* Coefficients used for the 8-tap filter (luma component) and 4-tap filter
      * (chroma component).
      */
@@ -542,19 +539,19 @@ actor InterPredictionLuma()
 		compPuIdxMax := [cuSize[i]-1:for int i in 0 .. 1];
 		if(numList = 1) then
 			if(wpIdc = 0) then
-				put_unweighted_pred_zscan(predSamples, compPuIdxMax[0], compPuIdxMax[1], rdList, dst);
+				put_unweighted_pred_zscan(predSamples, compPuIdxMax[0], compPuIdxMax[1], rdList, dst, 0);
 			else
 				if(isBiPredOrLx != BI_PRED) then
-					weighted_pred_zscan (logWD , weightCu, offsetCu, predSamples, compPuIdxMax[0], compPuIdxMax[1], rdList, dst);
+					weighted_pred_zscan (logWD , weightCu, offsetCu, predSamples, compPuIdxMax[0], compPuIdxMax[1], rdList, dst, 0);
 				else
-					weighted_pred_mono_zscan (logWD , weightCu, offsetCu, predSamples, compPuIdxMax[0], compPuIdxMax[1], dst);
+					weighted_pred_mono_zscan (logWD , weightCu, offsetCu, predSamples, compPuIdxMax[0], compPuIdxMax[1], dst, 0);
 				end
 			end
 		else
 			if(wpIdc = 0) then
-				put_weighted_pred_avg_zscan (predSamples, compPuIdxMax[0], compPuIdxMax[1], dst);
+				put_weighted_pred_avg_zscan (predSamples, compPuIdxMax[0], compPuIdxMax[1], dst, 0);
 			else
-				weighted_pred_avg_zscan (logWD, weightCu, offsetCu, predSamples, compPuIdxMax[0], compPuIdxMax[1], dst);
+				weighted_pred_avg_zscan (logWD, weightCu, offsetCu, predSamples, compPuIdxMax[0], compPuIdxMax[1], dst, 0);
 			end
 		end
 	end
